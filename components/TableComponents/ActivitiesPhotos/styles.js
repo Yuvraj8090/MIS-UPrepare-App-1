@@ -1,0 +1,110 @@
+import { StyleSheet } from "react-native";
+import { width, height } from "../../../services/helper";
+
+const styles = StyleSheet.create({
+  table: {
+    flexDirection: "column",
+    borderWidth: 1.5,
+    borderColor: "#000",
+    marginHorizontal: "0.5%",
+    borderRadius: 2,
+  },
+  row: {
+    flexDirection: "row",
+  },
+  headerSnoCell: {
+    width: width * 0.13,
+    paddingHorizontal: "1%",
+    paddingVertical: "3%",
+    fontFamily: "Jost-SemiBold",
+    backgroundColor: "#f0f0f0",
+    textAlign: "center",
+    // backgroundColor: "red",
+  },
+  headerImgCell: {
+    width: width * 0.28,
+    paddingHorizontal: "1%",
+    paddingVertical: "3%",
+    fontFamily: "Jost-SemiBold",
+    backgroundColor: "#f0f0f0",
+    textAlign: "center",
+    // backgroundColor: "green",
+  },
+  headerCell: {
+    flex: 1,
+    paddingVertical: "3%",
+    fontFamily: "Jost-SemiBold",
+    backgroundColor: "#f0f0f0",
+    textAlign: "center",
+    fontSize: 13,
+  },
+  snocellView: {
+    width: width * 0.13,
+    paddingHorizontal: "1%",
+    paddingVertical: "3%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  snocell: {
+    textAlign: "center",
+    fontFamily: "Jost-Medium",
+  },
+  cellImgView: {
+    width: width * 0.28,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: "1.5%",
+    paddingVertical: "2%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    // backgroundColor: "red",
+  },
+  cellView: {
+    width: width * 0.19,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: "1%",
+    paddingVertical: "2%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  cell: {
+    textAlign: "center",
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+  },
+  imgContainer: {
+    width: width * 0.2,
+    height: height * 0.1,
+    overflow: "hidden",
+    borderRadius: 3,
+    borderWidth: 0.3,
+    borderColor: "#ccc",
+    justifyContent: "center",
+  },
+  img: {
+    width: "100%",
+    height: "100%",
+  },
+  buttonView: {
+    width: width * 0.15,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#007bff",
+    padding: "5%",
+    paddingVertical: "2%",
+    borderRadius: 4,
+  },
+  loader: {
+    position: "absolute",
+    left: "40%",
+    top: "35%",
+    // alignSelf: "center",
+    // transform: [{ translateX: -25 }, { translateY: -25 }],
+  },
+});
+
+export default styles;
