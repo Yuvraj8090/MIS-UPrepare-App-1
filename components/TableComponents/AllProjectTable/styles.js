@@ -1,139 +1,177 @@
 import { StyleSheet } from "react-native";
-import { width, height } from "../../../services/helper";
 
 const styles = StyleSheet.create({
-  table: {
-    flexDirection: "column",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginHorizontal: "0.5%",
-    borderRadius: 5,
-  },
-  row: {
-    flexDirection: "row",
-  },
-  headerSnoCell: {
-    width: width * 0.12,
-    // flex: 1,
-    paddingHorizontal: "1%",
-    paddingVertical: "3%",
-    fontFamily: "Jost-SemiBold",
-    backgroundColor: "#f0f0f0",
-    textAlign: "center",
-  },
-  headerCell: {
-    // width: width * 0.26,
+  screen: {
     flex: 1,
-    // paddingHorizontal: "2%",
-    paddingLeft: "5%",
-    paddingVertical: "3%",
-    fontFamily: "Jost-SemiBold",
-    backgroundColor: "#f0f0f0",
-    textAlign: "center",
+    backgroundColor: "#eef1f4",
+  },
+  headerArea: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 4,
+  },
+  headerTitle: {
+    fontFamily: "Jost-Bold",
+    fontSize: 22,
+    color: "#0f172a",
+  },
+  headerSubtitle: {
+    marginTop: 4,
+    fontFamily: "Jost-Regular",
     fontSize: 13,
+    lineHeight: 19,
+    color: "#64748b",
   },
-  snocellView: {
-    width: width * 0.1,
-    paddingHorizontal: "1%",
-    paddingVertical: "3%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+  searchWrap: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 16,
+    backgroundColor: "#fff",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.05,
+    shadowRadius: 14,
+    elevation: 2,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontFamily: "Jost-Regular",
+    fontSize: 14,
+    color: "#0f172a",
+  },
+  listContent: {
+    paddingBottom: 28,
+  },
+  projectCardContent: {
+    gap: 14,
+  },
+  projectTitleRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  projectIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 999,
+    backgroundColor: "#e8f1ff",
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 2,
   },
-  snocell: {
-    textAlign: "center",
+  projectTitleContent: {
+    flex: 1,
+  },
+  projectName: {
     fontFamily: "Jost-Medium",
+    fontSize: 17,
+    lineHeight: 25,
+    color: "#0f172a",
   },
-  cellNameView: {
-    width: width * 0.5,
-    // flex: 1,
-    // alignItems: "center",
-    justifyContent: "center",
-    paddingLeft: "2.5%",
-    paddingRight: "5%",
-    // paddingHorizontal: "2%",
-    paddingVertical: "2%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    // backgroundColor: "red",
-  },
-  cellView: {
-    width: width * 0.3,
-    // flex: 1,
-    alignItems: "center",
-    // justifyContent: "center",
-    paddingHorizontal: "1%",
-    paddingVertical: "2%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    // backgroundColor: "green",
-  },
-  cell: {
-    // textAlign: "center",
+  expandText: {
+    marginTop: 4,
     fontFamily: "Jost-Regular",
     fontSize: 12,
+    color: "#0b57a4",
+    alignSelf: "flex-start",
   },
-  buttonView: {
-    width: width * 0.25,
+  metaBlock: {
+    gap: 4,
+  },
+  metaText: {
+    fontFamily: "Jost-Regular",
+    fontSize: 15,
+    color: "#334155",
+  },
+  metaLabel: {
+    fontFamily: "Jost-SemiBold",
+    color: "#0f172a",
+  },
+  metaHighlight: {
+    fontFamily: "Jost-SemiBold",
+    color: "#14813d",
+  },
+  progressBlock: {
+    gap: 6,
+  },
+  progressHeader: {
     flexDirection: "row",
     alignItems: "center",
-    // justifyContent: "center",
-    backgroundColor: "#007bff",
-    padding: "5%",
-    // paddingVertical: "2%",
-    borderRadius: 4,
-  },
-  card: {
-    backgroundColor: "#fff",
-    padding: 15,
-    marginBottom: 15,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  title: {
-    fontSize: 12,
-    fontWeight: "600",
-    marginBottom: 5,
-    color: "#333",
-  },
-  contract: {
-    fontSize: 12,
-    marginBottom: 12,
-    color: "green",
-  },
-  row: {
-    flexDirection: "row",
     justifyContent: "space-between",
-    marginBottom: 5,
+    gap: 12,
   },
-  label: {
-    fontSize: 11,
-    fontWeight: "500",
+  progressLabel: {
+    flex: 1,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+    color: "#0f172a",
   },
-  value: {
-    fontSize: 12,
-    fontWeight: "500",
-    color: "#444",
+  progressValue: {
+    fontFamily: "Jost-Medium",
+    fontSize: 13,
+    color: "#475569",
   },
-  button: {
+  actionGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginTop: 4,
+  },
+  actionButton: {
+    minHeight: 44,
+    minWidth: 96,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderRadius: 6,
-    minWidth: "40%",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 14,
+    flexGrow: 1,
+  },
+  actionIcon: {
+    marginRight: 8,
+  },
+  actionText: {
+    color: "#fff",
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+  },
+  emptyState: {
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 15,
+    color: "#64748b",
+    textAlign: "center",
+  },
+  skeletonList: {
+    paddingTop: 8,
+  },
+  skeletonCard: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 20,
+    backgroundColor: "#fff",
+  },
+  skeletonGap: {
     marginBottom: 8,
   },
-  buttonText: {
-    color: "#fff",
-    fontFamily: "Jost-Medium",
-    fontSize: 13,
+  skeletonGapLg: {
+    marginBottom: 12,
+  },
+  skeletonButtonRow: {
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 10,
   },
 });
 
