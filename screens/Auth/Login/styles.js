@@ -30,6 +30,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.18)",
     backgroundColor: "rgba(11, 87, 164, 0.20)",
     paddingHorizontal: 12,
     paddingVertical: 8,
@@ -42,32 +43,17 @@ const styles = StyleSheet.create({
     fontSize: 12,
     letterSpacing: 0.2,
   },
-  logoCard: {
-    width: 96,
-    height: 72,
-    borderRadius: 18,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "rgba(255,255,255,0.92)",
-    marginBottom: 18,
-    shadowColor: "#020617",
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.28,
-    shadowRadius: 26,
-    elevation: 1,
-  },
-logo: {
-    width: 300,       // Keep your custom width
-    height: 90,      // Keep your custom height
+  logo: {
+    width: "100%",
+    maxWidth: 300,
+    height: 90,
     backgroundColor: "rgba(255,255,255,0.92)",
     paddingHorizontal: 14,
     paddingVertical: 12,
-     elevation: 1,
-           // Keep your custom height
-    borderRadius: 6,  // Adjusted to exactly half of the height for a perfect pill shape
+    elevation: 1,
+    borderRadius: 6,
     overflow: "hidden",
-   
-},
+  },
   heroTitle: {
     color: "#ffffff",
     fontSize: 30,
@@ -97,10 +83,11 @@ logo: {
     shadowOpacity: 0.22,
     shadowRadius: 26,
     elevation: 10,
+    gap: 2,
   },
   formHeader: {
     marginBottom: 16,
-      alignItems: "center",
+    alignItems: "center",
   },
   formTitle: {
     color: "#0f172a",
@@ -156,6 +143,9 @@ logo: {
     fontFamily: "Jost-SemiBold",
     marginBottom: 8,
   },
+  fieldBlock: {
+    marginBottom: 2,
+  },
   inputShell: {
     minHeight: 56,
     borderWidth: 1,
@@ -191,7 +181,7 @@ logo: {
     fontSize: 12,
     fontFamily: "Jost-Medium",
     marginTop: 7,
-    marginBottom: 12,
+    marginBottom: 14,
   },
   metaRow: {
     marginTop: 8,

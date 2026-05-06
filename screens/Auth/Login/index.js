@@ -11,14 +11,9 @@ import { useNavigation } from "@react-navigation/native";
 import NetInfo from "@react-native-community/netinfo";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import Animated, {
-  Easing,
-  FadeInDown,
-  FadeInUp,
-  LinearTransition,
   interpolateColor,
   useAnimatedStyle,
   useSharedValue,
-  withRepeat,
   withSequence,
   withSpring,
   withTiming,
@@ -101,18 +96,6 @@ const LoginScreen = () => {
   const usernameShake = useSharedValue(0);
   const passwordShake = useSharedValue(0);
   const buttonScale = useSharedValue(1);
-  const bannerPulse = useSharedValue(0);
-
-  useEffect(() => {
-    bannerPulse.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1800, easing: Easing.inOut(Easing.ease) })
-      ),
-      -1,
-      true
-    );
-  }, [bannerPulse]);
 
   useEffect(() => {
     usernameFocus.value = withTiming(activeField === "username" ? 1 : 0, {
@@ -122,18 +105,6 @@ const LoginScreen = () => {
       duration: 180,
     });
   }, [activeField, passwordFocus, usernameFocus]);
-
-  const bannerStyle = useAnimatedStyle(() => {
-    const borderColor = interpolateColor(
-      bannerPulse.value,
-      [0, 1],
-      ["rgba(255,255,255,0.10)", "rgba(255,255,255,0.28)"]
-    );
-
-    return {
-      borderColor,
-    };
-  });
 
   const buttonAnimatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: buttonScale.value }],
@@ -298,44 +269,48 @@ const LoginScreen = () => {
         style={loginStyles.flex}
         contentContainerStyle={loginStyles.scrollContent}
         enableOnAndroid={true}
-        extraHeight={140}
-        extraScrollHeight={120}
+        extraHeight={96}
+        extraScrollHeight={72}
         keyboardOpeningTime={0}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View entering={FadeInUp.duration(650)} style={loginStyles.heroWrap}>
-          <Animated.View style={[loginStyles.topBadge, bannerStyle]}>
+        <View style={loginStyles.heroWrap}>
+          <View style={loginStyles.topBadge}>
             <Ionicons
               name="shield-checkmark-outline"
               size={16}
               color="#dbeafe"
             />
             <Text style={loginStyles.topBadgeText}>Project Monitoring Portal</Text>
-          </Animated.View>
+          </View>
 
-          
-            <Image
-              source={require("../../../assets/images/logo.png")}
-             
-              style={loginStyles.logo}
-            />
-    
+          <Image
+            source={require("../../../assets/images/logo.png")}
+            style={loginStyles.logo}
+            resizeMode="contain"
+          />
+        </View>
 
-          
-        </Animated.View>
-
-        <Animated.View
-          entering={FadeInDown.duration(700)}
-          layout={LinearTransition.springify().damping(15)}
-          style={loginStyles.formCard}
-        >
+        <View style={loginStyles.formCard}>
           <View style={loginStyles.formHeader}>
             <Text style={loginStyles.formTitle}>Sign in</Text>
           </View>
 
+          {feedback.message ? (
+            <View style={[loginStyles.feedbackCard, feedbackVariant.card]}>
+              <Ionicons
+                name={feedbackVariant.icon}
+                size={18}
+                color={feedbackVariant.iconColor}
+              />
+              <Text style={[loginStyles.feedbackText, feedbackVariant.text]}>
+                {feedback.message}
+              </Text>
+            </View>
+          ) : null}
 
-          <Animated.View entering={FadeInDown.delay(80).duration(450)}>
+          <View style={loginStyles.fieldBlock}>
             <Text style={loginStyles.label}>Username</Text>
             <FieldShell
               focused={usernameFocus}
@@ -370,9 +345,9 @@ const LoginScreen = () => {
             {fieldErrors.username ? (
               <Text style={loginStyles.fieldError}>{fieldErrors.username}</Text>
             ) : null}
-          </Animated.View>
+          </View>
 
-          <Animated.View entering={FadeInDown.delay(140).duration(450)}>
+          <View style={loginStyles.fieldBlock}>
             <Text style={loginStyles.label}>Password</Text>
             <FieldShell
               focused={passwordFocus}
@@ -416,7 +391,7 @@ const LoginScreen = () => {
             {fieldErrors.password ? (
               <Text style={loginStyles.fieldError}>{fieldErrors.password}</Text>
             ) : null}
-          </Animated.View>
+          </View>
 
           <View style={loginStyles.metaRow}>
             
@@ -456,9 +431,7 @@ const LoginScreen = () => {
               />
             </View>
           </AnimatedPressable>
-
-          
-        </Animated.View>
+        </View>
       </KeyboardAwareScrollView>
 
       <LoaderCard
