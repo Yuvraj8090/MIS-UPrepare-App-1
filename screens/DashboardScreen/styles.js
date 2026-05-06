@@ -5,15 +5,12 @@ const { width, height } = Dimensions.get("window");
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#eef1f4",
     height: height,
   },
   container: {
-    alignItems: "center",
-    flexDirection: "row",
-    flexWrap: "wrap",
-
-    // paddingVertical: "5%",
+    alignItems: "stretch",
+    flexDirection: "column",
   },
 });
 
