@@ -1,193 +1,337 @@
+import React, { useEffect, useState } from "react";
 import {
-  ScrollView,
-  View,
-  Text,
   Image,
-  ToastAndroid,
-  Dimensions,
   ImageBackground,
+  Pressable,
+  Text,
+  TextInput,
+  ToastAndroid,
+  View,
 } from "react-native";
-import React, { useState } from "react";
-import styles from "./styles";
-import TextField from "../../components/TextField/TextField";
-import BButton from "../../components/Button/BButton";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import Animated, {
+  interpolateColor,
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from "react-native-reanimated";
+import {
+  Ionicons,
+  MaterialCommunityIcons,
+} from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
-import { forgotPassword } from "../../services/api/fetch";
-import { useAuth } from "../../navigation/AuthContext/AuthContext";
-import LoaderCard from "../../components/LoaderCard";
 
-const { width, height } = Dimensions.get("window");
+import LoaderCard from "../../components/LoaderCard";
+import { forgotPassword } from "../../services/api/fetch";
+import loginStyles, { feedbackVariants } from "../Auth/Login/styles";
+import styles from "./styles";
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
+
+const FieldShell = ({
+  children,
+  icon,
+  focused,
+  hasError,
+  accessory,
+  shakeValue,
+}) => {
+  const animatedStyle = useAnimatedStyle(() => {
+    const borderColor = interpolateColor(
+      focused.value,
+      [0, 1],
+      [hasError ? "#dc2626" : "#cbd5e1", hasError ? "#dc2626" : "#0b57a4"]
+    );
+    const backgroundColor = interpolateColor(
+      focused.value,
+      [0, 1],
+      ["#ffffff", "#f8fbff"]
+    );
+
+    return {
+      borderColor,
+      backgroundColor,
+      transform: [{ translateX: shakeValue.value }],
+      shadowOpacity: focused.value ? 0.16 : 0.06,
+      shadowRadius: focused.value ? 18 : 10,
+    };
+  }, [hasError]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    tintColor: interpolateColor(focused.value, [0, 1], ["#64748b", "#0b57a4"]),
+    transform: [{ scale: focused.value ? 1.06 : 1 }],
+  }));
+
+  return (
+    <Animated.View style={[loginStyles.inputShell, animatedStyle]}>
+      <Animated.View style={[loginStyles.leadingIconWrap, iconStyle]}>
+        {icon}
+      </Animated.View>
+      <View style={loginStyles.inputContent}>{children}</View>
+      {accessory ? <View style={loginStyles.accessoryWrap}>{accessory}</View> : null}
+    </Animated.View>
+  );
+};
 
 const ForgotScreen = () => {
-  const [userName, setUserName] = React.useState("");
-  const [showLCard, setShowLCard] = useState(false);
-
-  // For Error Messagee
-  const [userNameError, setUserNameError] = React.useState("");
-
   const navigation = useNavigation();
+  const [userName, setUserName] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [activeField, setActiveField] = useState(null);
+  const [fieldError, setFieldError] = useState("");
+  const [feedback, setFeedback] = useState({ type: "info", message: "" });
 
-  const { user } = useAuth();
+  const usernameFocus = useSharedValue(0);
+  const usernameShake = useSharedValue(0);
+  const buttonScale = useSharedValue(1);
 
-  // useEffect(function () {
-  //   fetchData();
-  // }, []);
+  useEffect(() => {
+    usernameFocus.value = withTiming(activeField === "username" ? 1 : 0, {
+      duration: 180,
+    });
+  }, [activeField, usernameFocus]);
 
-  // const fetchData = async () => {
-  //   var keyy = await getKey();
-  //   var data = await getStoreData(keyy);
-  //   setToken(data?.api_token);
-  // };
+  const buttonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }],
+    opacity: loading ? 0.75 : 1,
+  }));
 
-  // const handleSubmit = async () => {
-  //   var token = user?.token;
-
-  //   var body = {
-  //     email: email,
-  //   };
-  //   console.log("Email Address :", body);
-  //   await ForgotPassword({ body })
-  //     .then((data) => {
-  //       console.log("User Data :", data);
-
-  //       if (data?.status === true) {
-  //         setSuccess(true);
-  //         ToastAndroid.show("Email Sent Successfully", ToastAndroid.LONG);
-  //         // navigation.navigate("Home1");
-  //       } else {
-  //         setError(data?.errors?.email);
-  //         ToastAndroid.show("Something went wrong", ToastAndroid.LONG);
-  //       }
-  //     })
-  //     .catch((error) => {
-  //       console.error("Error::::::", error);
-  //     });
-  //   setTimeout(() => {
-  //     setSuccess(false);
-  //     setError(null);
-  //   }, 5000);
-  // };
+  const triggerShake = () => {
+    usernameShake.value = withSequence(
+      withTiming(-8, { duration: 45 }),
+      withTiming(8, { duration: 45 }),
+      withTiming(-6, { duration: 40 }),
+      withTiming(6, { duration: 40 }),
+      withTiming(0, { duration: 40 })
+    );
+  };
 
   const validateUserName = (username) => {
-    // For example, allowing alphanumeric characters and underscores, with a length of 3 to 20 characters
+    const trimmedUserName = username.trim();
     const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
 
-    if (!usernameRegex.test(userName)) {
-      setUserNameError("Invalid username with a length of 3 to 20 characters.");
+    if (!trimmedUserName) {
+      setFieldError("Username is required.");
+      triggerShake();
       return false;
-    } else {
-      setUserNameError("");
-      return true;
     }
+
+    if (!usernameRegex.test(trimmedUserName)) {
+      setFieldError("Enter a valid username with 3 to 20 characters.");
+      triggerShake();
+      return false;
+    }
+
+    setFieldError("");
+    return true;
   };
 
   const handleSubmit = async () => {
-    setShowLCard(true);
-    const isUserNameValid = validateUserName();
-    var formData = {
-      username: userName,
-    };
+    const trimmedUserName = userName.trim();
 
-    if (isUserNameValid) {
-      // Implement your login logic here
-      // If everything is valid, proceed with login
+    if (!validateUserName(trimmedUserName)) {
+      setFeedback({
+        type: "error",
+        message: "Please fix the highlighted field and try again.",
+      });
+      return;
+    }
 
-      await forgotPassword(formData).then((data) => {
-        console.log("USER DATATAA  ::", data);
+    setLoading(true);
+    setFeedback({
+      type: "info",
+      message: "Preparing password reset instructions...",
+    });
+    buttonScale.value = withSpring(0.98, { damping: 12, stiffness: 180 });
 
-        if (data?.data?.ok) {
-          setTimeout(() => {
-            setShowLCard(false);
-            ToastAndroid.show(data?.data?.msg, ToastAndroid.LONG);
-            navigation.navigate("OTPScreen", { userName: userName });
-          }, 2000);
-        } else {
-          // console.log("OUTTT", data.msg);
-          // setError(data?.errors?.email);
-          ToastAndroid.show(data?.data?.msg, ToastAndroid.LONG);
-          setShowLCard(false);
-        }
+    try {
+      const response = await forgotPassword({
+        username: trimmedUserName,
       });
 
-      // .catch((error) => {
-      //   console.error("Error::::::", error);
-      // });
+      if (response?.data?.ok) {
+        const message = response?.data?.msg || "OTP sent successfully.";
+        setFeedback({
+          type: "success",
+          message,
+        });
+        ToastAndroid.show(message, ToastAndroid.LONG);
+        navigation.navigate("OTPScreen", { userName: trimmedUserName });
+        return;
+      }
 
-      // ToastAndroid.show("OTP Sent Successfully", ToastAndroid.LONG);
-      // alert("Forgot Successfully!!");
+      const message =
+        response?.data?.msg || "We couldn't process your request right now.";
+      setFieldError(message);
+      triggerShake();
+      setFeedback({
+        type: "error",
+        message,
+      });
+      ToastAndroid.show(message, ToastAndroid.LONG);
+    } catch (error) {
+      const message =
+        error?.response?.data?.msg ||
+        "Unable to process your request right now. Please try again.";
+      setFieldError(message);
+      triggerShake();
+      setFeedback({
+        type: "error",
+        message,
+      });
+      ToastAndroid.show(message, ToastAndroid.LONG);
+    } finally {
+      buttonScale.value = withSpring(1, { damping: 12, stiffness: 180 });
+      setLoading(false);
     }
   };
+
+  const feedbackVariant = feedbackVariants[feedback.type] || feedbackVariants.info;
 
   return (
     <ImageBackground
       source={require("../../assets/images/home.jpeg")}
-      style={styles.mainContainer}
+      style={loginStyles.screen}
+      imageStyle={loginStyles.backgroundImage}
     >
-      <ScrollView
-        // style={styles.mainContainer}
+      <View style={loginStyles.overlay} />
+
+      <KeyboardAwareScrollView
+        style={loginStyles.flex}
+        contentContainerStyle={loginStyles.scrollContent}
+        enableOnAndroid={true}
+        extraHeight={96}
+        extraScrollHeight={72}
+        keyboardOpeningTime={0}
+        keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* <CustomHeader Title={"Forgot Password"} /> */}
-        <View style={styles.container}>
+        <View style={loginStyles.heroWrap}>
+          <View style={loginStyles.topBadge}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={16}
+              color="#dbeafe"
+            />
+            <Text style={loginStyles.topBadgeText}>Project Monitoring Portal</Text>
+          </View>
+
           <Image
-            source={require("../../assets/images/forgot.png")}
+            source={require("../../assets/images/logo.png")}
+            style={loginStyles.logo}
             resizeMode="contain"
-            style={styles.logo}
           />
-          <Text style={styles.title}>Forgot Your Password</Text>
-          <View style={styles.subtitleview}>
-            <Text style={styles.subTitle}>
-              Enter your username and we will send you instructions to reset
-              your password
+        </View>
+
+        <View style={loginStyles.formCard}>
+          <View style={loginStyles.formHeader}>
+            <Text style={loginStyles.formTitle}>Forgot password</Text>
+            <Text style={styles.formCaption}>
+              Enter your username and we&apos;ll send reset instructions.
             </Text>
           </View>
-          <TextField
-            err={userNameError}
-            value={userName}
-            setData={setUserName}
-            iconName="account"
-            placeholder="Username"
-          />
 
-          {userNameError && (
-            <Text
-              style={{
-                fontFamily: "Jost-Medium",
-                fontSize: 12,
-                color: "red",
-                marginVertical: "1%",
-              }}
+          {feedback.message ? (
+            <View style={[loginStyles.feedbackCard, feedbackVariant.card]}>
+              <Ionicons
+                name={feedbackVariant.icon}
+                size={18}
+                color={feedbackVariant.iconColor}
+              />
+              <Text style={[loginStyles.feedbackText, feedbackVariant.text]}>
+                {feedback.message}
+              </Text>
+            </View>
+          ) : null}
+
+          <View style={loginStyles.fieldBlock}>
+            <Text style={loginStyles.label}>Username</Text>
+            <FieldShell
+              focused={usernameFocus}
+              hasError={Boolean(fieldError)}
+              shakeValue={usernameShake}
+              icon={
+                <MaterialCommunityIcons
+                  name="account-outline"
+                  size={22}
+                  color="#64748b"
+                />
+              }
             >
-              {userNameError}
-            </Text>
-          )}
+              <AnimatedTextInput
+                value={userName}
+                onFocus={() => setActiveField("username")}
+                onBlur={() => setActiveField(null)}
+                onChangeText={(text) => {
+                  setUserName(text.replace(/^\s+/, ""));
+                  if (fieldError) {
+                    setFieldError("");
+                  }
+                }}
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="default"
+                placeholder="Enter your username"
+                placeholderTextColor="#94a3b8"
+                selectionColor="#0b57a4"
+                returnKeyType="done"
+                onSubmitEditing={handleSubmit}
+                style={loginStyles.input}
+              />
+            </FieldShell>
+            {fieldError ? (
+              <Text style={loginStyles.fieldError}>{fieldError}</Text>
+            ) : null}
+          </View>
 
-          <BButton
-            Title={"Submit"}
-            // isOn={email.length <= 8 ? isOn : <></>}
+          <View style={loginStyles.metaRow}>
+            <Pressable
+              onPress={() => navigation.navigate("LoginScreen")}
+              hitSlop={10}
+            >
+              <Text style={loginStyles.linkText}>Back to sign in</Text>
+            </Pressable>
+          </View>
+
+          <AnimatedPressable
             onPress={handleSubmit}
-          />
-          {/* {error && (
-        <>
-        <Image
-            source={require("../../../assets/failed.gif")}
-            style={{ width: 40, height: 40 }}
-          />
-          <Text style={styles.error}>{`${error}`}</Text>
-        </>
-        )}
-      {success && (
-        <>
-          <Image
-            source={require("../../../assets/send.gif")}
-            style={{ width: 40, height: 40 }}
-            />
-            <Text style={styles.status}>"Email Send Successfully!!"</Text>
-            </>
-          )} */}
+            disabled={loading}
+            onPressIn={() => {
+              buttonScale.value = withSpring(0.97, {
+                damping: 12,
+                stiffness: 210,
+              });
+            }}
+            onPressOut={() => {
+              buttonScale.value = withSpring(1, {
+                damping: 12,
+                stiffness: 210,
+              });
+            }}
+            style={[loginStyles.button, buttonAnimatedStyle]}
+          >
+            <View style={loginStyles.buttonInner}>
+              <Text style={loginStyles.buttonText}>
+                {loading ? "Sending..." : "Send OTP"}
+              </Text>
+              <Ionicons
+                name={loading ? "hourglass-outline" : "arrow-forward"}
+                size={18}
+                color="#ffffff"
+              />
+            </View>
+          </AnimatedPressable>
         </View>
-      </ScrollView>
-      <LoaderCard show={showLCard} text={"Processing..."} />
+      </KeyboardAwareScrollView>
+
+      <LoaderCard
+        visible={loading}
+        message="Processing..."
+        backgroundColor="rgba(15,23,42,0.28)"
+      />
     </ImageBackground>
   );
 };
