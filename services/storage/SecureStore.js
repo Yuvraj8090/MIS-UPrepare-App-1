@@ -1,31 +1,46 @@
 import * as SecureStore from "expo-secure-store";
 
-const sessionSecrets = new Map();
+import {
+  ACCESS_TOKEN_KEY,
+  REFRESH_TOKEN_KEY,
+  getStoredRefreshToken,
+  getValidAccessToken,
+} from "@/services/auth/tokenStorage";
 
-// Sensitive values are held only in memory for the active session.
-export async function savetoSS(key, value) {
-  sessionSecrets.set(key, value);
+const parseStoredValue = (value) => {
+  if (typeof value !== "string") {
+    return value ?? null;
+  }
 
   try {
-    await SecureStore.deleteItemAsync(key);
+    return JSON.parse(value);
   } catch (error) {
-    console.log(`Unable to remove persisted secure key ${key}`, error);
+    return value;
+  }
+};
+
+export async function savetoSS(key, value) {
+  try {
+    const serialisedValue =
+      typeof value === "string" ? value : JSON.stringify(value);
+    await SecureStore.setItemAsync(key, serialisedValue);
+  } catch (error) {
+    console.log(`Unable to save secure key ${key}`, error);
   }
 }
 
 export async function getFromSS(key) {
-  if (sessionSecrets.has(key)) {
-    return sessionSecrets.get(key);
-  }
-
   try {
-    const legacyValue = await SecureStore.getItemAsync(key);
-
-    if (legacyValue !== null) {
-      await SecureStore.deleteItemAsync(key);
+    if (key === ACCESS_TOKEN_KEY) {
+      const tokenState = await getValidAccessToken();
+      return tokenState.token;
     }
 
-    return legacyValue;
+    if (key === REFRESH_TOKEN_KEY) {
+      return await getStoredRefreshToken();
+    }
+
+    return parseStoredValue(await SecureStore.getItemAsync(key));
   } catch (error) {
     console.log(`Unable to read secure key ${key}`, error);
     return null;
@@ -33,8 +48,6 @@ export async function getFromSS(key) {
 }
 
 export async function deleteFromSS(key) {
-  sessionSecrets.delete(key);
-
   try {
     await SecureStore.deleteItemAsync(key);
   } catch (error) {
@@ -43,9 +56,9 @@ export async function deleteFromSS(key) {
 }
 
 export async function clearSecureSessionStore() {
-  const keys = Array.from(sessionSecrets.keys());
-  sessionSecrets.clear();
-
-  await Promise.allSettled(keys.map((key) => SecureStore.deleteItemAsync(key)));
-  await Promise.allSettled(["authToken"].map((key) => SecureStore.deleteItemAsync(key)));
+  await Promise.allSettled(
+    [ACCESS_TOKEN_KEY, REFRESH_TOKEN_KEY].map((key) =>
+      SecureStore.deleteItemAsync(key)
+    )
+  );
 }

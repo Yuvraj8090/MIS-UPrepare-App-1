@@ -40,9 +40,13 @@ export async function validateApiAvailability(authToken = null) {
 }
 
 export async function userLogin(data) {
-  console.log("USER DATA Credenatils ::", data);
   try {
-    console.log("Call User Login API ::");
+    if (__DEV__) {
+      console.log("Call User Login API ::", {
+        usernamePresent: Boolean(data?.username),
+        passwordLength: data?.password?.length ?? 0,
+      });
+    }
     const response = await axios.post(endpoints.login, data);
     return response;
   } catch (error) {
@@ -66,6 +70,28 @@ export async function userLogOut(authToken) {
     return response;
   } catch (error) {
     console.log("Fetch User API Error: ", error.message);
+    return returnErrorMsg(error);
+  }
+}
+
+export async function refreshUserToken(refreshToken) {
+  if (!endpoints.refresh) {
+    return {
+      status: 501,
+      ok: false,
+      data: {
+        status: false,
+        msg: "Refresh endpoint is not configured.",
+      },
+    };
+  }
+
+  try {
+    const response = await axios.post(endpoints.refresh, {
+      refresh_token: refreshToken,
+    });
+    return response;
+  } catch (error) {
     return returnErrorMsg(error);
   }
 }

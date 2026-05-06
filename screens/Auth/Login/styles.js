@@ -3,10 +3,10 @@ import { StyleSheet } from "react-native";
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: "#071120",
+    backgroundColor: "#07112000",
   },
   backgroundImage: {
-    opacity: 0.28,
+    opacity: 0.88,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
@@ -44,8 +44,8 @@ const styles = StyleSheet.create({
   },
   logoCard: {
     width: 96,
-    height: 96,
-    borderRadius: 28,
+    height: 72,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "rgba(255,255,255,0.92)",
@@ -54,12 +54,20 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.28,
     shadowRadius: 26,
-    elevation: 10,
+    elevation: 1,
   },
-  logo: {
-    width: 72,
-    height: 72,
-  },
+logo: {
+    width: 300,       // Keep your custom width
+    height: 90,      // Keep your custom height
+    backgroundColor: "rgba(255,255,255,0.92)",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+     elevation: 1,
+           // Keep your custom height
+    borderRadius: 6,  // Adjusted to exactly half of the height for a perfect pill shape
+    overflow: "hidden",
+   
+},
   heroTitle: {
     color: "#ffffff",
     fontSize: 30,
@@ -92,6 +100,7 @@ const styles = StyleSheet.create({
   },
   formHeader: {
     marginBottom: 16,
+      alignItems: "center",
   },
   formTitle: {
     color: "#0f172a",

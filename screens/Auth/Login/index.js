@@ -31,9 +31,8 @@ import {
 
 import LoaderCard from "../../../components/LoaderCard";
 import { useAuth } from "../../../navigation/AuthContext/AuthContext";
-import { savetoSS } from "../../../services/storage/SecureStore";
-import { saveStorageData } from "../../../services/storage/AsyncStorage";
 import { userLogin } from "../../../services/api/fetch";
+import { saveAuthSession } from "../../../services/auth/tokenStorage";
 import loginStyles, { feedbackVariants } from "./styles";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -95,10 +94,7 @@ const LoginScreen = () => {
   const [loading, setLocalLoading] = useState(false);
   const [activeField, setActiveField] = useState(null);
   const [fieldErrors, setFieldErrors] = useState({});
-  const [feedback, setFeedback] = useState({
-    type: "info",
-    message: "Sign in with your assigned project account.",
-  });
+  const [feedback, setFeedback] = useState({ type: "info", message: "" });
 
   const usernameFocus = useSharedValue(0);
   const passwordFocus = useSharedValue(0);
@@ -249,8 +245,7 @@ const LoginScreen = () => {
           return;
         }
 
-        await saveStorageData("userDetails", responseData);
-        await savetoSS("authToken", token);
+        await saveAuthSession(responseData);
         setUserToken(token);
         setUser(user);
         setFeedback({
@@ -319,19 +314,15 @@ const LoginScreen = () => {
             <Text style={loginStyles.topBadgeText}>Project Monitoring Portal</Text>
           </Animated.View>
 
-          <View style={loginStyles.logoCard}>
+          
             <Image
               source={require("../../../assets/images/logo.png")}
-              resizeMode="contain"
+             
               style={loginStyles.logo}
             />
-          </View>
+    
 
-          <Text style={loginStyles.heroTitle}>Welcome back</Text>
-          <Text style={loginStyles.heroSubtitle}>
-            Sign in to continue tracking progress, finances, and field updates
-            for U-PREPARE.
-          </Text>
+          
         </Animated.View>
 
         <Animated.View
@@ -341,24 +332,8 @@ const LoginScreen = () => {
         >
           <View style={loginStyles.formHeader}>
             <Text style={loginStyles.formTitle}>Sign in</Text>
-            <Text style={loginStyles.formCaption}>
-              Use your official project credentials.
-            </Text>
           </View>
 
-          <Animated.View
-            layout={LinearTransition.springify().damping(15)}
-            style={[loginStyles.feedbackCard, feedbackVariant.card]}
-          >
-            <Ionicons
-              name={feedbackVariant.icon}
-              size={18}
-              color={feedbackVariant.iconColor}
-            />
-            <Text style={[loginStyles.feedbackText, feedbackVariant.text]}>
-              {feedback.message}
-            </Text>
-          </Animated.View>
 
           <Animated.View entering={FadeInDown.delay(80).duration(450)}>
             <Text style={loginStyles.label}>Username</Text>
@@ -444,9 +419,7 @@ const LoginScreen = () => {
           </Animated.View>
 
           <View style={loginStyles.metaRow}>
-            <Text style={loginStyles.metaText}>
-              Secure mobile sign-in with live API validation
-            </Text>
+            
             <Pressable
               onPress={() => navigation.navigate("ForgotScreen")}
               hitSlop={10}
@@ -484,17 +457,7 @@ const LoginScreen = () => {
             </View>
           </AnimatedPressable>
 
-          <View style={loginStyles.footerNote}>
-            <MaterialCommunityIcons
-              name="information-outline"
-              size={16}
-              color="#64748b"
-            />
-            <Text style={loginStyles.footerText}>
-              Login errors and API messages are shown inline for a smoother
-              mobile experience.
-            </Text>
-          </View>
+          
         </Animated.View>
       </KeyboardAwareScrollView>
 

@@ -1,10 +1,25 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const sessionStore = new Map();
+const parseStoredValue = (value) => {
+  if (typeof value !== "string") {
+    return value ?? null;
+  }
 
-// Session-only storage: values live in memory and are wiped on startup/logout.
+  try {
+    return JSON.parse(value);
+  } catch (error) {
+    return value;
+  }
+};
+
 const saveStorageData = async (key, value) => {
-  sessionStore.set(key, value);
+  try {
+    const serialisedValue =
+      typeof value === "string" ? value : JSON.stringify(value);
+    await AsyncStorage.setItem(key, serialisedValue);
+  } catch (error) {
+    console.log(`Error saving async storage key ${key}`, error);
+  }
 };
 
 const storeExpoToken = async (value) => {
@@ -12,7 +27,13 @@ const storeExpoToken = async (value) => {
 };
 
 const getStorageData = async (key) => {
-  return sessionStore.has(key) ? sessionStore.get(key) : null;
+  try {
+    const value = await AsyncStorage.getItem(key);
+    return parseStoredValue(value);
+  } catch (error) {
+    console.log(`Error reading async storage key ${key}`, error);
+    return null;
+  }
 };
 
 const getExpoToken = async () => {
@@ -20,10 +41,7 @@ const getExpoToken = async () => {
 };
 
 const removeAllData = async () => {
-  sessionStore.clear();
-
   try {
-    // Also purge any legacy persisted storage left by older builds.
     await AsyncStorage.clear();
   } catch (error) {
     console.log("Error clearing async storage", error);
@@ -31,10 +49,10 @@ const removeAllData = async () => {
 };
 
 const storeImage = async (key, uri) => {
-  const existingQueue = sessionStore.get(key) || [];
-  existingQueue.push(uri);
-  sessionStore.set(key, existingQueue);
-  return existingQueue;
+  const existingQueue = (await getStorageData(key)) || [];
+  const nextQueue = [...existingQueue, uri];
+  await saveStorageData(key, nextQueue);
+  return nextQueue;
 };
 
 export {
