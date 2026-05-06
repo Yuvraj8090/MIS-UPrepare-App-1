@@ -1,10 +1,11 @@
 import React from "react";
 import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
-import { PieChart } from "react-native-chart-kit";
+import { BarChart } from "react-native-chart-kit";
 
 import SectionCard from "@/components/UI/SectionCard";
 
 const screenWidth = Dimensions.get("window").width;
+const chartWidth = Math.min(screenWidth - 56, 360);
 
 const safeNum = (value) => {
   const parsed = Number(value);
@@ -33,21 +34,41 @@ const ContractsDistributaionCharts = ({ data }) => {
   return (
     <SectionCard title="Type of Contracts Distribution">
       <View style={styles.chartBlock}>
-        <PieChart
-          data={typeOfContracts}
-          width={Math.min(screenWidth - 80, 320)}
-          height={240}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="0"
-          hasLegend={false}
-          chartConfig={{
-            backgroundColor: "#fff",
-            backgroundGradientFrom: "#fff",
-            backgroundGradientTo: "#fff",
-            color: (opacity = 1) => `rgba(0,0,0,${opacity})`,
-          }}
-        />
+        <View style={styles.chartStage}>
+          <BarChart
+            data={{
+              labels: typeOfContracts.map((item) => item.name),
+              datasets: [
+                {
+                  data: typeOfContracts.map((item) => safeNum(item.population)),
+                },
+              ],
+            }}
+            width={chartWidth}
+            height={240}
+            fromZero
+            showValuesOnTopOfBars
+            withInnerLines={false}
+            yAxisLabel=""
+            yAxisSuffix=""
+            chartConfig={{
+              backgroundColor: "#fff",
+              backgroundGradientFrom: "#fff",
+              backgroundGradientTo: "#fff",
+              decimalPlaces: 0,
+              barPercentage: 0.65,
+              color: (opacity = 1) => `rgba(11, 87, 164, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(51, 65, 85, ${opacity})`,
+              propsForBackgroundLines: {
+                stroke: "#e2e8f0",
+              },
+              propsForLabels: {
+                fontSize: 11,
+              },
+            }}
+            style={styles.chartCanvas}
+          />
+        </View>
 
         <View style={styles.legendList}>
           {typeOfContracts.map((item) => (
@@ -94,6 +115,15 @@ const styles = StyleSheet.create({
   chartBlock: {
     alignItems: "center",
     gap: 8,
+  },
+  chartStage: {
+    width: "100%",
+    minHeight: 248,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  chartCanvas: {
+    borderRadius: 12,
   },
   legendList: {
     width: "100%",

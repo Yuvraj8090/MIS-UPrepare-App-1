@@ -1,10 +1,11 @@
 import React from "react";
 import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
-import { PieChart } from "react-native-chart-kit";
+import PieChart from "react-native-pie-chart";
 
 import SectionCard from "@/components/UI/SectionCard";
 
 const screenWidth = Dimensions.get("window").width;
+const chartSize = Math.min(screenWidth - 88, 260);
 
 const safeNum = (value) => {
   const parsed = Number(value);
@@ -59,21 +60,27 @@ const DepartmentOviewCharts = ({ data }) => {
   return (
     <SectionCard title="Department Contract Overview">
       <View style={styles.chartBlock}>
-        <PieChart
-          data={contractOverviewData}
-          width={Math.min(screenWidth - 80, 320)}
-          height={240}
-          accessor="population"
-          backgroundColor="transparent"
-          paddingLeft="0"
-          hasLegend={false}
-          chartConfig={{
-            backgroundColor: "#fff",
-            backgroundGradientFrom: "#fff",
-            backgroundGradientTo: "#fff",
-            color: (opacity = 1) => `rgba(0,0,0,${opacity})`,
-          }}
-        />
+        <View style={styles.chartStage}>
+          <PieChart
+            widthAndHeight={chartSize}
+            series={contractOverviewData.map((item) => ({
+              value: safeNum(item.population),
+              color: item.color,
+            }))}
+            cover={{ radius: 0.58, color: "#ffffff" }}
+            style={styles.donutChart}
+          />
+          <View style={styles.donutCenter}>
+            <Text style={styles.donutCenterLabel}>Total CR</Text>
+            <Text style={styles.donutCenterValue}>
+              {toFixedStr(
+                safeNum(dept?.contract_signed_cr) +
+                  safeNum(dept?.contract_to_be_signed_cr),
+                0
+              )}
+            </Text>
+          </View>
+        </View>
 
         <View style={styles.legendList}>
           <View style={styles.legendItem}>
@@ -139,6 +146,31 @@ const styles = StyleSheet.create({
   chartBlock: {
     alignItems: "center",
     gap: 8,
+  },
+  chartStage: {
+    width: "100%",
+    minHeight: 248,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  donutChart: {
+    alignSelf: "center",
+  },
+  donutCenter: {
+    position: "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  donutCenterLabel: {
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    color: "#64748b",
+  },
+  donutCenterValue: {
+    marginTop: 2,
+    fontFamily: "Jost-Bold",
+    fontSize: 22,
+    color: "#0f172a",
   },
   legendList: {
     width: "100%",
