@@ -1,26 +1,13 @@
-// AuthContext.js
-
 import * as React from "react";
-
-import { ToastAndroid, BackHandler, Platform } from "react-native";
-import { userDetails, verifyOTP } from "../../services/api/fetch";
-import {
-  deleteFromSS,
-  getFromSS,
-  savetoSS,
-} from "../../services/storage/SecureStore";
-import {
-  getStorageData,
-  removeAllData,
-  saveStorageData,
-} from "../../services/storage/AsyncStorage";
+import { BackHandler, ToastAndroid } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
-import {
-  clearDB,
-  fetchAccessToken,
-  fetchUserData,
-} from "@/services/database/database";
+
 import NetInfo from "@react-native-community/netinfo";
+import { userDetails } from "../../services/api/fetch";
+import { getFromSS } from "../../services/storage/SecureStore";
+import { getStorageData } from "../../services/storage/AsyncStorage";
+import { validateApiAvailability } from "@/services/api/fetch";
+import { clearRuntimeAppData } from "@/services/session/runtimeCleanup";
 
 const AuthContext = React.createContext();
 
@@ -30,51 +17,60 @@ const AuthProvider = ({ children }) => {
   const [showLCard, setShowLCard] = React.useState(false);
   const [isAppStart, setIsAppStart] = React.useState(true);
   const [isBiometricAvailable, setIsBiometricAvailable] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+  const [apiAvailable, setApiAvailable] = React.useState(true);
+  const [apiStatusLoading, setApiStatusLoading] = React.useState(false);
+  const [apiErrorMessage, setApiErrorMessage] = React.useState("");
 
-  // useEffect(() => {
-  //   checkBiometricAvailability();
-  // }, []);
+  const clearSession = React.useCallback(async () => {
+    await clearRuntimeAppData();
+    setUser(null);
+    setUserToken(null);
+  }, []);
 
-  // React.useEffect(() => {
-  //   if (!isInternet) {
+  const runApiValidation = React.useCallback(async (token = null) => {
+    setApiStatusLoading(true);
 
-  //     LocalCheck();
-  //   }
-  // }, [isInternet]);
+    const response = await validateApiAvailability(token);
+    setApiAvailable(response.ok);
+    setApiErrorMessage(response.ok ? "" : response.message);
 
-  const LocalCheck = async () => {
-    console.log("LOCALL CHECK");
-    try {
-      const res = await fetchUserData();
-      console.log("USERRR RSSS ::", res);
-      if (res) {
-        setUser(res[0]);
-        saveStorageData("userDetails", res[0]);
-        fetchAccessToken().then((res) => {
-          console.log("Tokennn RSSS ::", res);
-          savetoSS("authToken", res?.access_token);
-          setUserToken(res?.access_token);
-        });
-      }
-    } catch (error) {
-      console.log("Error :", error);
+    if (!response.ok) {
+      await clearRuntimeAppData();
+      setUser(null);
+      setUserToken(null);
     }
-  };
+
+    setApiStatusLoading(false);
+    return response;
+  }, []);
+
+  const bootstrapApp = React.useCallback(async () => {
+    setLoading(true);
+
+    // Always start from a clean runtime to avoid stale cached tokens/data.
+    await clearSession();
+    await runApiValidation();
+
+    setIsAppStart(false);
+    setLoading(false);
+  }, [clearSession, runApiValidation]);
+
+  React.useEffect(() => {
+    bootstrapApp();
+  }, [bootstrapApp]);
+
+  React.useEffect(() => {
+    if (user && userToken) {
+      runApiValidation(userToken);
+    }
+  }, [runApiValidation, user, userToken]);
 
   const checkBiometricAvailability = async () => {
     const available =
       (await LocalAuthentication.hasHardwareAsync()) &&
       (await LocalAuthentication.isEnrolledAsync());
 
-    // const supportedTypes =
-    //   await LocalAuthentication.supportedAuthenticationTypesAsync();
-    // console.log(
-    //   "Supportt TYpe ::",
-    //   supportedTypes.includes(
-    //     LocalAuthentication.AuthenticationType.FACIAL_RECOGNITION
-    //   )
-    // );
     setIsBiometricAvailable(available);
   };
 
@@ -88,7 +84,9 @@ const AuthProvider = ({ children }) => {
       });
 
       if (result?.success) {
-        if (userData) checkLogin();
+        if (userData) {
+          checkLogin();
+        }
         ToastAndroid.show("Authentication succeeded", ToastAndroid.LONG);
       } else {
         ToastAndroid.show("Authentication Failed", ToastAndroid.LONG);
@@ -96,7 +94,6 @@ const AuthProvider = ({ children }) => {
       }
     } catch (error) {
       console.error("Authentication error:", error);
-
       ToastAndroid.show(
         "Could not authenticate using biometrics",
         ToastAndroid.LONG
@@ -105,66 +102,44 @@ const AuthProvider = ({ children }) => {
   };
 
   const LogIn = async (data) => {
-    //   // Implement your login logic here
-    console.log("USER DATA :", data);
-    // setUserToken(data?.token);
-    setUser(data);
-    // setUser("Login");
+    setUser(data?.user ?? data);
+    setUserToken(data?.token ?? null);
     setIsAppStart(false);
   };
 
-  React.useEffect(() => {
-    checkLogin();
-  }, []);
-
   const checkLogin = async () => {
-    console.log("CALLING CHECKLOGIN API.......");
     setLoading(true);
-    // setShowLCard(true);
 
-    // const data = await getStorageData("userDetails");
     const authToken = await getFromSS("authToken");
-    console.log("AUTH TOKENNNNNLL :", authToken);
 
     if (!authToken) {
-      console.log("No token found, logging out...");
-      LogOut();
+      await clearSession();
       setLoading(false);
       return;
     }
 
-    const isInternet = await NetInfo.fetch();
+    const networkState = await NetInfo.fetch();
 
     try {
-      if (isInternet?.isConnected) {
+      if (networkState?.isConnected) {
+        const apiStatus = await runApiValidation(authToken);
+
+        if (!apiStatus.ok) {
+          setLoading(false);
+          return;
+        }
+
         const res = await userDetails(authToken);
-        console.log("USER DATA :", res);
 
         if (res?.data?.user) {
-          console.log("Access Token Received:-", authToken);
-          console.log("User Data api/Me Received:-", res?.data?.user);
-          await savetoSS("authToken", authToken);
-
           setUser(res?.data?.user);
           setUserToken(authToken);
-          setShowLCard(false);
-          setLoading(false);
         } else {
-          // setUser(null);
-          // setUserToken(null);
-          // removeAllData();
-          // deleteFromSS("authToken");
-          // ToastAndroid.show(
-          //   "Your Session Expired!! Please Log-In Again",
-          //   ToastAndroid.LONG
-          // );
-          // setShowLCard(false);
-          setLoading(false);
+          await clearSession();
         }
       } else {
-        // LocalCheck();
-        console.log("CALL LOCAL");
-        setLoading(false);
+        setApiAvailable(false);
+        setApiErrorMessage("No internet connection. API validation failed.");
       }
     } catch (error) {
       console.log("Check User Method Error: ", error);
@@ -174,45 +149,10 @@ const AuthProvider = ({ children }) => {
     }
   };
 
-  // const validateOTP = async (data) => {
-  //   setShowLCard(true);
-
-  //   console.log("Data from Verify OTP Method of Auth Context!", data);
-
-  //   try {
-  //     const resp = await verifyOTP(data);
-
-  //     ToastAndroid.show(resp.data.msg, ToastAndroid.LONG);
-
-  //     if (resp?.authToken) {
-  //       console.log("Access Token Received:-", resp.data.access_token);
-  //       await savetoSS("authToken", resp.data.access_token);
-
-  //       setUser(resp.data.user);
-  //       setUserToken(resp.data.access_token);
-  //     }
-  //   } catch (error) {
-  //     console.log("Validate OTP Method Error: ", error);
-  //   } finally {
-  //     setShowLCard(false);
-  //   }
-  // };
-
   const LogOut = async () => {
-    // Implement your logout logic here
-    setUser(null);
-    setUserToken(null);
+    await clearSession();
     setIsAppStart(false);
-    removeAllData();
-    deleteFromSS("authToken");
-    clearDB();
-    // ToastAndroid.show(
-    //   "Your Session Expired!! Please Log-In Again",
-    //   ToastAndroid.LONG
-    // );
   };
-
-  // value={{ user, setUser, signOut }}
 
   return (
     <AuthContext.Provider
@@ -224,7 +164,6 @@ const AuthProvider = ({ children }) => {
         showLCard,
         userToken,
         isAppStart,
-        // validateOTP,
         setShowLCard,
         setUserToken,
         setIsAppStart,
@@ -232,9 +171,13 @@ const AuthProvider = ({ children }) => {
         checkBiometricAvailability,
         handleBiometricAuth,
         isBiometricAvailable,
-        LocalCheck,
         loading,
         setLoading,
+        apiAvailable,
+        apiStatusLoading,
+        apiErrorMessage,
+        runApiValidation,
+        clearSession,
       }}
     >
       {children}

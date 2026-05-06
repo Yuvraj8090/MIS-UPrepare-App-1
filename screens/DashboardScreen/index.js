@@ -7,6 +7,7 @@ import {
   Dimensions,
   ActivityIndicator,
   ScrollView,
+  StyleSheet,
 } from "react-native";
 import {
   MaterialCommunityIcons,
@@ -245,13 +246,16 @@ const DashboardScreen = () => {
       ) : (
         <>
           {isInternet && !load && <PhotoCard />}
-          <View style={{ marginHorizontal: "3%", marginVertical: "3%" }}>
-            <Text style={{ fontFamily: "Jost-Medium", fontSize: 26 }}>
+          <View style={localStyles.greetingBlock}>
+            <Text style={localStyles.greetingText}>
               Hi, {user?.name}
             </Text>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={localStyles.scrollContent}
+          >
             {/* <TotalContracts data={dasboardData?.contractsStatus} /> */}
 
             <DepartmentOviewCharts data={dasboardData} />
@@ -375,3 +379,19 @@ const DashboardScreen = () => {
 };
 
 export default DashboardScreen;
+
+const localStyles = StyleSheet.create({
+  greetingBlock: {
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  greetingText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 26,
+    color: "#0f172a",
+  },
+  scrollContent: {
+    paddingBottom: 28,
+  },
+});

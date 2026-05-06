@@ -1,6 +1,5 @@
-import { View, Text, TouchableOpacity, Dimensions } from "react-native";
+import { Text, TouchableOpacity } from "react-native";
 import React from "react";
-const { width, height } = Dimensions.get("window");
 
 const BButton = ({ Title, icon, onPress = () => {} }) => {
   return (
@@ -8,24 +7,26 @@ const BButton = ({ Title, icon, onPress = () => {} }) => {
       activeOpacity={0.8}
       onPress={onPress}
       style={{
-        width: width * 0.6,
-        padding: "4%",
+        width: "100%",
+        minHeight: 54,
+        paddingHorizontal: 18,
+        paddingVertical: 14,
         flexDirection: "row",
-        backgroundColor: "#1f2937",
+        backgroundColor: "#0b57a4",
         alignSelf: "center",
         alignItems: "center",
         justifyContent: "center",
-        margin: "5%",
-        borderRadius: 10,
+        marginTop: 14,
+        borderRadius: 16,
         zIndex: 5,
       }}
     >
       <Text
         style={{
           fontFamily: "Jost-Medium",
-          fontSize: 18,
+          fontSize: 17,
           color: "#fff",
-          marginHorizontal: "2%",
+          marginHorizontal: 6,
         }}
       >
         {Title}

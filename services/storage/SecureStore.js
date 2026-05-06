@@ -1,16 +1,51 @@
 import * as SecureStore from "expo-secure-store";
 
+const sessionSecrets = new Map();
+
+// Sensitive values are held only in memory for the active session.
 export async function savetoSS(key, value) {
-  await SecureStore.setItemAsync(key, value);
+  sessionSecrets.set(key, value);
+
+  try {
+    await SecureStore.deleteItemAsync(key);
+  } catch (error) {
+    console.log(`Unable to remove persisted secure key ${key}`, error);
+  }
 }
 
 export async function getFromSS(key) {
-  let result = await SecureStore.getItemAsync(key);
+  if (sessionSecrets.has(key)) {
+    return sessionSecrets.get(key);
+  }
 
-  console.log(`SS for key: ${key} —`, result);
-  return result;
+  try {
+    const legacyValue = await SecureStore.getItemAsync(key);
+
+    if (legacyValue !== null) {
+      await SecureStore.deleteItemAsync(key);
+    }
+
+    return legacyValue;
+  } catch (error) {
+    console.log(`Unable to read secure key ${key}`, error);
+    return null;
+  }
 }
 
 export async function deleteFromSS(key) {
-  await SecureStore.deleteItemAsync(key);
+  sessionSecrets.delete(key);
+
+  try {
+    await SecureStore.deleteItemAsync(key);
+  } catch (error) {
+    console.log(`Unable to delete secure key ${key}`, error);
+  }
+}
+
+export async function clearSecureSessionStore() {
+  const keys = Array.from(sessionSecrets.keys());
+  sessionSecrets.clear();
+
+  await Promise.allSettled(keys.map((key) => SecureStore.deleteItemAsync(key)));
+  await Promise.allSettled(["authToken"].map((key) => SecureStore.deleteItemAsync(key)));
 }

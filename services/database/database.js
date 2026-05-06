@@ -903,14 +903,16 @@ export const fetchImages = (callback) => {
 
 // Clear token
 export const clearDB = async () => {
-  const res1 = await db.runAsync("DELETE FROM token;");
-  // console.log("RESSS TOKENN::", res1);
-  const res2 = await db.runAsync("DELETE FROM user;");
-  // console.log("RESSS USERR::", res2);
-  const res = await db.runAsync("DELETE FROM userdashboard;");
-  // console.log("RESSS DASBB::", res);
-  // const res3 = await db.runAsync("DELETE FROM userProjects;");
-  // console.log("RESSS DASBB::", res3);
-  // await db.runAsync("DROP TABLE IF EXISTS projectDetails");
-  // console.log("RESSS DROP::", res);
+  await db.runAsync("DELETE FROM token;");
+  await db.runAsync("DELETE FROM user;");
+  await db.runAsync("DELETE FROM userdashboard;");
+  await db.runAsync("DELETE FROM userProjects;");
+  await db.runAsync("DELETE FROM projectDetails;");
+  await db.runAsync("DELETE FROM projectMilestones;");
+  await db.runAsync("DELETE FROM milestone_physicalProgress;");
+  await db.runAsync("DELETE FROM projectPhases;");
+  await db.runAsync("DELETE FROM phaseActivities;");
+  await db.runAsync("DELETE FROM phaseSubActivities;");
+  await db.runAsync("DELETE FROM phaseActivitiesImages;");
+  await db.runAsync("DELETE FROM milestonePhyicalImages;");
 };

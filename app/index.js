@@ -5,6 +5,8 @@ import "react-native-reanimated";
 import { AuthProvider, useAuth } from "../navigation/AuthContext/AuthContext";
 import AppNav from "../navigation/AppNav";
 import AnimatedSplash from "../navigation/StartupSplashScreen/StartSplashScreen";
+import { SafeAreaProvider } from "react-native-safe-area-context";
+import { StatusBar } from "expo-status-bar";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -43,9 +45,12 @@ export default function RootLayout() {
   // If appReady true and showAnimated false -> render app
   if (appReady && !showAnimated) {
     return (
-      <AuthProvider>
-        <AppNav />
-      </AuthProvider>
+      <SafeAreaProvider>
+        <StatusBar style="dark" />
+        <AuthProvider>
+          <AppNav />
+        </AuthProvider>
+      </SafeAreaProvider>
     );
   }
 

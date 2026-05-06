@@ -95,3 +95,4 @@ const endpoints = {
 };
 
 export default endpoints;
+export { baseURL, apiURL };

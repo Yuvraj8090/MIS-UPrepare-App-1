@@ -1,9 +1,7 @@
-import { View, TextInput, StyleSheet, Dimensions } from "react-native";
+import { View, TextInput, StyleSheet } from "react-native";
 import React, { useState } from "react";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { MaterialIcons } from "@expo/vector-icons";
-
-const { width, height } = Dimensions.get("screen");
 
 export default function PasswordField({
   err,
@@ -12,29 +10,26 @@ export default function PasswordField({
   password,
   ...props
 }) {
-  const [isFocus, setIsFocus] = useState(false);
-
   const styles = StyleSheet.create({
     inputContainer: {
-      width: width * 0.8,
-      height: height * 0.05,
-      backgroundColor: "#F3EEEA",
-      borderRadius: 10,
+      width: "100%",
+      minHeight: 54,
+      backgroundColor: "#f8fafc",
+      borderRadius: 16,
       flexDirection: "row",
       alignItems: "center",
-      // borderColor: "#161A30",
-      // borderBottomWidth: 1,
-      marginVertical: "2%",
+      marginVertical: 6,
+      paddingHorizontal: 14,
     },
     input: {
       flex: 1,
       fontSize: 16,
-      paddingVertical: 8,
+      paddingVertical: 12,
       fontFamily: "Jost-Medium",
-      color: "#000",
+      color: "#0f172a",
     },
     icon: {
-      marginHorizontal: "5%",
+      marginRight: 10,
     },
   });
 
@@ -42,17 +37,21 @@ export default function PasswordField({
 
   const toggleShowPassword = () => {
     setShowPassword(!showPassword);
-    setIsFocus(!isFocus);
   };
 
   return (
     <View
       style={[
         styles.inputContainer,
-        { borderWidth: err ? 1 : 0, borderColor: err ? "red" : "" },
+        { borderWidth: 1, borderColor: err ? "#dc2626" : "#cbd5e1" },
       ]}
     >
-      <MaterialIcons name="lock" size={24} color="#000" style={styles.icon} />
+      <MaterialIcons
+        name="lock"
+        size={22}
+        color="#475569"
+        style={styles.icon}
+      />
 
       {/* <TextInput
         style={styles.input}
@@ -72,17 +71,17 @@ export default function PasswordField({
         secureTextEntry={!showPassword}
         placeholder={placeholder}
         maxLength={15}
-        placeholderTextColor="#555"
-        selectionColor="#000" // Add this line
+        placeholderTextColor="#64748b"
+        selectionColor="#0b57a4"
         onChangeText={(txt) => setPassword(txt)}
         autoCapitalize="none"
-        color="#000" // <-- Add this line explicitly
+        color="#0f172a"
       />
 
       <MaterialCommunityIcons
         name={showPassword ? "eye-off" : "eye"}
-        size={24}
-        color="#000"
+        size={22}
+        color="#475569"
         style={styles.icon}
         onPress={toggleShowPassword}
       />

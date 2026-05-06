@@ -1,23 +1,18 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+const sessionStore = new Map();
+
+// Session-only storage: values live in memory and are wiped on startup/logout.
 const saveStorageData = async (key, value) => {
-  try {
-    await AsyncStorage.setItem(key, JSON.stringify(value));
-  } catch (e) {}
+  sessionStore.set(key, value);
 };
 
 const storeExpoToken = async (value) => {
-  try {
-    await saveStorageData("expoToken", value);
-  } catch (e) {}
+  await saveStorageData("expoToken", value);
 };
 
 const getStorageData = async (key) => {
-  try {
-    var data = await AsyncStorage.getItem(key);
-    console.log("DATA ASYNC:", data);
-    return JSON.parse(data);
-  } catch (e) {}
+  return sessionStore.has(key) ? sessionStore.get(key) : null;
 };
 
 const getExpoToken = async () => {
@@ -25,28 +20,21 @@ const getExpoToken = async () => {
 };
 
 const removeAllData = async () => {
+  sessionStore.clear();
+
   try {
-    // if (!key) {
-    //   return;
-    // }
+    // Also purge any legacy persisted storage left by older builds.
     await AsyncStorage.clear();
-    // await AsyncStorage.removeItem();
-  } catch (e) {
-    console.log("Error for " + key, e);
+  } catch (error) {
+    console.log("Error clearing async storage", error);
   }
 };
 
 const storeImage = async (key, uri) => {
-  try {
-    const existingQueue = await AsyncStorage.getItem(key);
-    let newQueue = JSON.parse(existingQueue) || [];
-    newQueue.push(uri);
-    await AsyncStorage.setItem(key, JSON.stringify(newQueue));
-    setImageQueue(newQueue);
-    console.log("Image added to upload queue");
-  } catch (error) {
-    console.error("Error adding image to queue: ", error);
-  }
+  const existingQueue = sessionStore.get(key) || [];
+  existingQueue.push(uri);
+  sessionStore.set(key, existingQueue);
+  return existingQueue;
 };
 
 export {

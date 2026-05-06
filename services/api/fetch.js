@@ -1,5 +1,43 @@
 import axios from "axios";
-import endpoints from "./endpoints";
+import endpoints, { apiURL } from "./endpoints";
+
+export async function validateApiAvailability(authToken = null) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 6000);
+
+  try {
+    const response = await fetch(authToken ? endpoints.user : apiURL, {
+      method: "GET",
+      headers: authToken
+        ? {
+            Authorization: `Bearer ${authToken}`,
+          }
+        : undefined,
+      signal: controller.signal,
+    });
+
+    return {
+      ok:
+        response.ok ||
+        [200, 204, 401, 403, 404, 405].includes(response.status),
+      status: response.status,
+      message: response.ok
+        ? "API is reachable."
+        : "API responded, but the endpoint returned a non-success status.",
+    };
+  } catch (error) {
+    return {
+      ok: false,
+      status: 0,
+      message:
+        error?.name === "AbortError"
+          ? "API health check timed out."
+          : "API is unreachable.",
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export async function userLogin(data) {
   console.log("USER DATA Credenatils ::", data);
@@ -727,23 +765,21 @@ export async function deleteWorkProgressById(authToken, Id) {
 }
 
 function returnErrorMsg(error) {
-  // Extracting different parts of the error
   let msg = error?.response?.data?.msg || error.message;
   let status = error?.response?.status || "No Status";
-  let headers = error?.response?.headers || "No Headers";
-  let request = error?.request || "No Request Object";
 
-  // Logging the error details for debugging
   console.log("Error :", error);
   console.log("Error Message:", msg);
   console.log("Error Status:", status);
-  console.log("Error Headers:", headers);
-  console.log("Error Request:", request);
-  // alert(JSON.stringify(request));
-  console.log("Full Error Object:", error);
-  console.log("Error Request _REsponse:", request?._response);
-  console.log("Error Request _URL:", request?._url);
+  console.log("Error Request _Response:", error?.request?._response);
+  console.log("Error Request _URL:", error?.request?._url);
 
-  // Returning a structured error message
-  return { data: { status: false, msg: msg } };
+  return {
+    status: typeof status === "number" ? status : 500,
+    ok: false,
+    data: {
+      status: false,
+      msg,
+    },
+  };
 }

@@ -14,10 +14,8 @@ import {
 } from "@react-navigation/drawer";
 import { MaterialCommunityIcons, FontAwesome6 } from "@expo/vector-icons";
 import { useAuth } from "./AuthContext/AuthContext";
-import { removeAllData } from "../services/storage/AsyncStorage";
 import { userLogOut } from "../services/api/fetch";
 import AppHeader from "../components/AppHeader/AppHeader";
-import { deleteFromSS, getFromSS } from "../services/storage/SecureStore";
 import TabNavigation from "./TabNavigation";
 import LoaderCard from "@/components/LoaderCard";
 
@@ -28,7 +26,7 @@ const Drawer = createDrawerNavigator();
 const { width, height } = Dimensions.get("window");
 
 const DrawerNavigation = () => {
-  const { user, LogOut, setLoading } = useAuth();
+  const { user, userToken, LogOut, setLoading } = useAuth();
   const [load, setLoad] = useState(false);
   const navigation = useNavigation();
 
@@ -42,16 +40,11 @@ const DrawerNavigation = () => {
   const handleLogOut = async (props) => {
     setLoad(true);
     setLoading(true);
-    const token = await getFromSS("authToken");
 
-    await userLogOut(token)
+    await userLogOut(userToken)
       .then((data) => {
-        // ToastAndroid.show(data?.data?.msg, ToastAndroid.LONG);
         LogOut();
-        removeAllData();
-        deleteFromSS("authToken");
         setLoad(false);
-        // navigation.dispatch(DrawerActions.closeDrawer());
       })
       .catch((error) => {
         console.error("Error::", error);
