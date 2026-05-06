@@ -30,34 +30,48 @@ const PhotoCard = ({ navPath }) => {
   const isInternet = NetConnected();
   const { user } = useAuth();
 
-  console.log("USERR :", user?.username);
-
   const [images, setImages] = useState([]);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadIndex, setUploadIndex] = useState(0);
-  console.log("IMGEE LENGTHH :", images?.length);
 
   useEffect(() => {
-    if (isInternet)
-      if (user?.username == "PWD3") {
-        fetchPhysicalImageLocal();
-      } else {
-        fetchLocal();
-      }
-  }, [isInternet]);
+    if (!isInternet || !user?.username) {
+      return;
+    }
+
+    if (user?.username == "PWD3") {
+      fetchPhysicalImageLocal();
+    } else {
+      fetchLocal();
+    }
+  }, [isInternet, user?.username]);
+
+  useEffect(() => {
+    if (!__DEV__) {
+      return;
+    }
+
+    if (!isInternet) {
+      console.log("Photo sync skipped: device is offline.");
+      return;
+    }
+
+    if (!user?.username) {
+      console.log("Photo sync skipped: user is not ready yet.");
+      return;
+    }
+
+    console.log("Pending photo sync count ::", images?.length ?? 0);
+  }, [images?.length, isInternet, user?.username]);
 
   const fetchLocal = async () => {
     const imagesData = await fetchPhasesActivitiesImages();
-    console.log("IMAGEEE DATATA ::", imagesData);
     setImages(imagesData);
-    console.log("Phiycalal Imagee");
   };
 
   const fetchPhysicalImageLocal = async () => {
-    console.log("Phiycalal Imagee");
     const imagesData = await fetchMilestonePhyicalImages();
-    console.log("IMAGEEE DATATA ::", imagesData);
     setImages(imagesData);
   };
 
@@ -83,10 +97,7 @@ const PhotoCard = ({ navPath }) => {
         fileName: phyImageName,
       });
 
-      console.log("FORMDATAAA :::", formData);
-
       const AuthStr = `Bearer ${authToken}`;
-      console.log("AuthTOKENN :::", AuthStr);
 
       const config = {
         headers: {
@@ -106,7 +117,6 @@ const PhotoCard = ({ navPath }) => {
       try {
         if (isInternet) {
           const res = await uploadActivitiesImage(formData, config);
-          console.log("RESSS ::", res);
           if (res?.data?.ok) {
             ToastAndroid.show(
               "Photo Uploaded Successfully!",
@@ -164,10 +174,7 @@ const PhotoCard = ({ navPath }) => {
         fileName: phyImageName,
       });
 
-      console.log("FORMDATAAA :::", formData);
-
       const AuthStr = `Bearer ${authToken}`;
-      console.log("AuthTOKENN :::", AuthStr);
 
       const config = {
         headers: {
@@ -187,7 +194,6 @@ const PhotoCard = ({ navPath }) => {
       try {
         if (isInternet) {
           const res = await uploadMilestoneImage(formData, config);
-          console.log("RESSS ::", res);
           if (res?.data?.ok) {
             ToastAndroid.show(
               "Photo Physical Uploaded Successfully!",

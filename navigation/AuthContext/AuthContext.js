@@ -4,10 +4,14 @@ import * as LocalAuthentication from "expo-local-authentication";
 
 import NetInfo from "@react-native-community/netinfo";
 import { userDetails } from "../../services/api/fetch";
-import { getFromSS } from "../../services/storage/SecureStore";
 import { getStorageData } from "../../services/storage/AsyncStorage";
 import { validateApiAvailability } from "@/services/api/fetch";
 import { clearRuntimeAppData } from "@/services/session/runtimeCleanup";
+import {
+  clearAuthSession,
+  getAuthBootstrapState,
+  saveAuthSession,
+} from "@/services/auth/tokenStorage";
 
 const AuthContext = React.createContext();
 
@@ -23,6 +27,7 @@ const AuthProvider = ({ children }) => {
   const [apiErrorMessage, setApiErrorMessage] = React.useState("");
 
   const clearSession = React.useCallback(async () => {
+    await clearAuthSession();
     await clearRuntimeAppData();
     setUser(null);
     setUserToken(null);
@@ -35,12 +40,6 @@ const AuthProvider = ({ children }) => {
     setApiAvailable(response.ok);
     setApiErrorMessage(response.ok ? "" : response.message);
 
-    if (!response.ok) {
-      await clearRuntimeAppData();
-      setUser(null);
-      setUserToken(null);
-    }
-
     setApiStatusLoading(false);
     return response;
   }, []);
@@ -48,9 +47,42 @@ const AuthProvider = ({ children }) => {
   const bootstrapApp = React.useCallback(async () => {
     setLoading(true);
 
-    // Always start from a clean runtime to avoid stale cached tokens/data.
-    await clearSession();
-    await runApiValidation();
+    const bootstrapState = await getAuthBootstrapState();
+    const networkState = await NetInfo.fetch();
+
+    if (bootstrapState?.token) {
+      setUserToken(bootstrapState.token);
+
+      if (bootstrapState?.user) {
+        setUser(bootstrapState.user);
+      }
+
+      if (networkState?.isConnected) {
+        const apiStatus = await runApiValidation(bootstrapState.token);
+
+        if (apiStatus.ok) {
+          const res = await userDetails(bootstrapState.token);
+
+          if (res?.data?.user) {
+            setUser(res.data.user);
+            await saveAuthSession({
+              ...(await getStorageData("userDetails")),
+              token: bootstrapState.token,
+              user: res.data.user,
+            });
+          } else {
+            await clearSession();
+          }
+        }
+      } else {
+        setApiAvailable(false);
+        setApiErrorMessage(
+          "No internet connection. Using your stored session until the network returns."
+        );
+      }
+    } else {
+      await runApiValidation();
+    }
 
     setIsAppStart(false);
     setLoading(false);
@@ -109,8 +141,8 @@ const AuthProvider = ({ children }) => {
 
   const checkLogin = async () => {
     setLoading(true);
-
-    const authToken = await getFromSS("authToken");
+    const bootstrapState = await getAuthBootstrapState();
+    const authToken = bootstrapState?.token;
 
     if (!authToken) {
       await clearSession();
@@ -134,12 +166,23 @@ const AuthProvider = ({ children }) => {
         if (res?.data?.user) {
           setUser(res?.data?.user);
           setUserToken(authToken);
+          await saveAuthSession({
+            ...(await getStorageData("userDetails")),
+            token: authToken,
+            user: res.data.user,
+          });
         } else {
           await clearSession();
         }
       } else {
         setApiAvailable(false);
-        setApiErrorMessage("No internet connection. API validation failed.");
+        setApiErrorMessage(
+          "No internet connection. Using your stored session until the network returns."
+        );
+        setUserToken(authToken);
+        if (bootstrapState?.user) {
+          setUser(bootstrapState.user);
+        }
       }
     } catch (error) {
       console.log("Check User Method Error: ", error);

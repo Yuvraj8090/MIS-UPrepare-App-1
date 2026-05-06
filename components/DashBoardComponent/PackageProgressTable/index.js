@@ -5,10 +5,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
   StyleSheet,
-  Linking,
-  Alert,
   Platform,
   LayoutAnimation,
   UIManager,
@@ -72,10 +69,12 @@ import {
 //   },
 // ];
 
-if (
+const canEnableExperimentalLayoutAnimation =
   Platform.OS === "android" &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
+  !global?.nativeFabricUIManager &&
+  typeof UIManager.setLayoutAnimationEnabledExperimental === "function";
+
+if (canEnableExperimentalLayoutAnimation) {
   UIManager.setLayoutAnimationEnabledExperimental(true);
 }
 
@@ -90,9 +89,6 @@ const sortButtons = [
 
 export default function ProjectList({ data }) {
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState(null);
-  const [sortOrder, setSortOrder] = useState("asc"); // asc | desc
-  const [filter, setFilter] = useState({});
   const [expandedCards, setExpandedCards] = useState({});
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -124,6 +120,20 @@ export default function ProjectList({ data }) {
       return sortConfig.direction === "asc" ? valA - valB : valB - valA;
     });
   }, [data, sortConfig]);
+
+  const visibleData = useMemo(() => {
+    const query = search.trim().toLowerCase();
+
+    if (!query) {
+      return sortedData;
+    }
+
+    return sortedData.filter((item) => {
+      const packageNumber = item?.package_number?.toLowerCase?.() || "";
+      const name = item?.name?.toLowerCase?.() || "";
+      return packageNumber.includes(query) || name.includes(query);
+    });
+  }, [search, sortedData]);
 
   const toggleExpand = (id) => {
     LayoutAnimation.easeInEaseOut();
@@ -244,13 +254,19 @@ export default function ProjectList({ data }) {
         }}
       />
 
-      {/* List */}
-      <FlatList
-        data={sortedData}
-        keyExtractor={(item) => item?.id?.toString()}
-        renderItem={renderItem}
-        contentContainerStyle={{ padding: 14 }}
-      />
+      <View style={styles.listContent}>
+        {visibleData.map((item, index) => (
+          <View key={item?.id?.toString() || `sub-project-${index}`}>
+            {renderItem({ item, index })}
+          </View>
+        ))}
+
+        {visibleData.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyText}>No sub-projects match your search.</Text>
+          </View>
+        ) : null}
+      </View>
     </View>
   );
 }
@@ -330,6 +346,22 @@ const styles = StyleSheet.create({
     shadowRadius: 6,
     width: width * 0.95,
     alignSelf: "center",
+  },
+  listContent: {
+    padding: 14,
+    paddingBottom: 32,
+  },
+  emptyState: {
+    marginTop: 16,
+    padding: 18,
+    borderRadius: 12,
+    backgroundColor: "#fff",
+    alignItems: "center",
+  },
+  emptyText: {
+    fontFamily: "Jost-Medium",
+    color: "#64748b",
+    textAlign: "center",
   },
   index: { fontFamily: "Jost-SemiBold" },
   package: { fontFamily: "Jost-SemiBold", color: "#007bff", fontSize: 15 },

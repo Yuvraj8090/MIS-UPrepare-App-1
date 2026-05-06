@@ -13,7 +13,7 @@ const SmallCard = ({ data, title, icon, bgColor, navPath }) => {
       // onPress={() => navigation.navigate(navPath)}
       style={[styles.smallContainer, { backgroundColor: bgColor }]}
     >
-      <View style={{ alignSelf: "flex-end", marginRight: "5%" }}>{icon}</View>
+      <View style={{ alignSelf: "flex-end", marginRight: "1%" }}>{icon}</View>
 
       <View>
         {/* <Text style={styles.smallTitle}>{data}</Text> */}
