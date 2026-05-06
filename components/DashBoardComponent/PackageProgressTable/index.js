@@ -1,73 +1,19 @@
-import { getNestedPercentFilter, width } from "@/services/helper";
-import React, { useState, useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
-  View,
+  LayoutAnimation,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  Platform,
-  LayoutAnimation,
   UIManager,
-  ScrollView,
+  View,
 } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 
-// const data = [
-//   {
-//     id: 11,
-//     contract_id: 5,
-//     name: "24M Span Intermediate lane motor bridge & its approach in Km-2 of Ujjawalpur to Gwad Dungri Jaspur Motor Road in Block Karnprayag",
-//     package_number: "09/BR/RFB-EPC/UGRIDP/2023",
-//     contract_value: 37000000,
-//     finance_percent: 34.28,
-//     physical_percent: 23,
-//     safeguards: [
-//       {
-//         id: 1,
-//         compliance: "Environmental",
-//         phases: [
-//           { id: 1, phase: "Pre Construction", percent: 17.86 },
-//           { id: 2, phase: "During Construction", percent: 3.65 },
-//         ],
-//       },
-//       {
-//         id: 2,
-//         compliance: "Social",
-//         phases: [
-//           { id: 1, phase: "Pre Construction", percent: 0 },
-//           { id: 2, phase: "During Construction", percent: 0.17 },
-//         ],
-//       },
-//     ],
-//   },
-//   {
-//     id: 12,
-//     contract_id: 5,
-//     name: "Construction of 48M Span intermediate lane Motor Bridge & its approach over Meeng Gadera in Km-1 of Gadhani Motor Road in Block Narayanbagar",
-//     package_number: "09/BR/RFB-EPC/UGRIDP/2023",
-//     contract_value: 37000000,
-//     finance_percent: 37.83,
-//     physical_percent: 0,
-//     safeguards: [
-//       {
-//         id: 1,
-//         compliance: "Environmental",
-//         phases: [
-//           { id: 1, phase: "Pre Construction", percent: 0 },
-//           { id: 2, phase: "During Construction", percent: 0 },
-//         ],
-//       },
-//       {
-//         id: 2,
-//         compliance: "Social",
-//         phases: [
-//           { id: 1, phase: "Pre Construction", percent: 0 },
-//           { id: 2, phase: "During Construction", percent: 0.86 },
-//         ],
-//       },
-//     ],
-//   },
-// ];
+import { getNestedPercentFilter } from "@/services/helper";
+import SectionCard from "@/components/UI/SectionCard";
 
 const canEnableExperimentalLayoutAnimation =
   Platform.OS === "android" &&
@@ -87,35 +33,94 @@ const sortButtons = [
   { label: "Social During-Con", key: "social_during" },
 ];
 
-export default function ProjectList({ data }) {
+const formatCurrency = (value) =>
+  `₹ ${(Number(value || 0) / 10000000).toFixed(2)} Cr`;
+
+const getProgressTone = (value) => {
+  if (value >= 80) {
+    return {
+      fill: "#16a34a",
+      badgeBg: "#dcfce7",
+      badgeText: "#166534",
+    };
+  }
+
+  if (value >= 40) {
+    return {
+      fill: "#f59e0b",
+      badgeBg: "#fef3c7",
+      badgeText: "#92400e",
+    };
+  }
+
+  return {
+    fill: "#dc2626",
+    badgeBg: "#fee2e2",
+    badgeText: "#991b1b",
+  };
+};
+
+const ProgressMetric = ({ label, value }) => {
+  const tone = getProgressTone(value);
+
+  return (
+    <View style={styles.progressBlock}>
+      <View style={styles.progressHeader}>
+        <Text style={styles.progressLabel}>{label}</Text>
+        <View style={[styles.progressBadge, { backgroundColor: tone.badgeBg }]}>
+          <Text style={[styles.progressBadgeText, { color: tone.badgeText }]}>
+            {value.toFixed(2)}%
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.progressTrack}>
+        <View
+          style={[
+            styles.progressFill,
+            {
+              width: `${Math.max(0, Math.min(value, 100))}%`,
+              backgroundColor: tone.fill,
+            },
+          ]}
+        />
+      </View>
+    </View>
+  );
+};
+
+const SafeguardGroup = ({ safeguard }) => (
+  <View style={styles.safeguardCard}>
+    <View style={styles.safeguardHeader}>
+      <Text style={styles.safeguardTitle}>{safeguard?.compliance || "Compliance"}</Text>
+    </View>
+
+    {safeguard?.phases?.map((phase, index) => (
+      <ProgressMetric
+        key={`${safeguard?.compliance || "phase"}-${phase?.phase || index}`}
+        label={phase?.phase || "Phase"}
+        value={Number(phase?.percent || 0)}
+      />
+    ))}
+  </View>
+);
+
+export default function ProjectList({ data = [] }) {
   const [search, setSearch] = useState("");
   const [expandedCards, setExpandedCards] = useState({});
   const [sortConfig, setSortConfig] = useState({
-    key: null,
+    key: "physical_percent",
     direction: "desc",
   });
 
-  const colorScale = (v) => {
-    if (v >= 60) return "#1fa750"; // green
-    if (v >= 30) return "#f0ad4e"; // yellow
-    return "#d9534f"; // red
-  };
-
-  const handleSort = (key) => {
-    setSortConfig((prev) => {
-      if (prev.key === key) {
-        return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
-      }
-      return { key, direction: "desc" }; // default direction
-    });
-  };
-
   const sortedData = useMemo(() => {
-    if (!sortConfig.key) return data;
+    if (!sortConfig.key) {
+      return data;
+    }
 
     return [...data].sort((a, b) => {
-      const valA = getNestedPercentFilter(a, sortConfig.key);
-      const valB = getNestedPercentFilter(b, sortConfig.key);
+      const valA = Number(getNestedPercentFilter(a, sortConfig.key) || 0);
+      const valB = Number(getNestedPercentFilter(b, sortConfig.key) || 0);
 
       return sortConfig.direction === "asc" ? valA - valB : valB - valA;
     });
@@ -135,131 +140,204 @@ export default function ProjectList({ data }) {
     });
   }, [search, sortedData]);
 
+  const averagePhysical =
+    visibleData.length > 0
+      ? visibleData.reduce((sum, item) => sum + Number(item?.physical_percent || 0), 0) /
+        visibleData.length
+      : 0;
+
+  const averageFinancial =
+    visibleData.length > 0
+      ? visibleData.reduce((sum, item) => sum + Number(item?.finance_percent || 0), 0) /
+        visibleData.length
+      : 0;
+
+  const totalContractCr =
+    visibleData.reduce((sum, item) => sum + Number(item?.contract_value || 0), 0) / 10000000;
+
   const toggleExpand = (id) => {
     LayoutAnimation.easeInEaseOut();
     setExpandedCards((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const renderProgress = (label, value) => (
-    <View key={label} style={styles.progressRow}>
-      <Text style={{ flex: 1, fontFamily: "Jost-Medium" }}>{label}</Text>
-      <View style={styles.progressBar}>
-        <View
-          style={[
-            styles.progressFill,
-            { width: `${value}%`, backgroundColor: colorScale(value) },
-          ]}
-        />
-      </View>
-      <Text style={{ width: 55, textAlign: "right" }}>{value.toFixed(2)}%</Text>
-    </View>
-  );
+  const handleSort = (key) => {
+    setSortConfig((prev) => {
+      if (prev.key === key) {
+        return {
+          key,
+          direction: prev.direction === "asc" ? "desc" : "asc",
+        };
+      }
 
-  const renderItem = ({ item, index }) => {
-    const isOpen = expandedCards[item?.id];
-    return (
-      <View style={styles.card}>
-        <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-          <Text style={styles.index}>#{index + 1} -</Text>
-          <Text style={styles.package}>{item?.package_number}</Text>
-        </View>
-        <Text style={styles.name}>{item?.name}</Text>
-        <Text style={styles.value}>
-          Contract Value ₹ {item?.contract_value.toLocaleString()}
-        </Text>
-
-        {renderProgress("Physical Progress", item?.physical_percent || 0)}
-        {renderProgress("Finance Progress", item?.finance_percent || 0)}
-
-        <TouchableOpacity onPress={() => toggleExpand(item.id)}>
-          <Text style={styles.safeguardToggle}>
-            Safeguards {isOpen ? "▲" : "▼"}
-          </Text>
-        </TouchableOpacity>
-
-        {isOpen &&
-          item?.safeguards?.map((sg, i) => (
-            <View key={i} style={styles.safeBox}>
-              <Text style={styles.safeTitle}>
-                {sg.compliance === "Environmental" ? "🌿" : "👥"}{" "}
-                {sg.compliance}
-              </Text>
-
-              {sg?.phases?.map((p) => renderProgress(p.phase, p.percent || 0))}
-            </View>
-          ))}
-      </View>
-    );
+      return {
+        key,
+        direction: "desc",
+      };
+    });
   };
 
   return (
-    <View style={{ flex: 1, padding: 10 }}>
-      <View style={styles.headerBox}>
-        <Text style={styles.headerTitle}>📦 Package SubProject Progress</Text>
+    <SectionCard
+      title="Sub-Project Progress"
+      contentStyle={styles.sectionContent}
+    >
+      <View style={styles.summaryRow}>
+        <View style={styles.summaryChip}>
+          <Text style={styles.summaryLabel}>Sub-Projects</Text>
+          <Text style={styles.summaryValue}>{visibleData.length}</Text>
+        </View>
+
+        <View style={styles.summaryChip}>
+          <Text style={styles.summaryLabel}>Avg Physical</Text>
+          <Text style={styles.summaryValue}>{averagePhysical.toFixed(1)}%</Text>
+        </View>
+
+        <View style={styles.summaryChip}>
+          <Text style={styles.summaryLabel}>Avg Financial</Text>
+          <Text style={styles.summaryValue}>{averageFinancial.toFixed(1)}%</Text>
+        </View>
+
+        <View style={styles.summaryChip}>
+          <Text style={styles.summaryLabel}>Contract Value</Text>
+          <Text style={styles.summaryValue}>₹ {totalContractCr.toFixed(2)} Cr</Text>
+        </View>
       </View>
 
-      {/* Search */}
-      <TextInput
-        style={styles.search}
-        placeholder="Search by Package / Name"
-        value={search}
-        onChangeText={setSearch}
-      />
+      <View style={styles.searchShell}>
+        <Ionicons name="search-outline" size={18} color="#64748b" />
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search by package number or sub-project name"
+          placeholderTextColor="#94a3b8"
+          value={search}
+          onChangeText={setSearch}
+        />
+        {search ? (
+          <Pressable onPress={() => setSearch("")} hitSlop={10}>
+            <Ionicons name="close-circle" size={18} color="#94a3b8" />
+          </Pressable>
+        ) : null}
+      </View>
 
-      {/* Sorting Buttons */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.sortContainer}
+        contentContainerStyle={styles.sortRow}
       >
-        {sortButtons?.map((btn, i) => {
-          const isActive = sortConfig.key === btn.key;
+        {sortButtons.map((button) => {
+          const isActive = sortConfig.key === button.key;
           const arrow = isActive
             ? sortConfig.direction === "asc"
-              ? "▲"
-              : "▼"
+              ? "↑"
+              : "↓"
             : "";
 
           return (
-            <TouchableOpacity
-              key={i}
-              onPress={() => handleSort(btn.key)}
-              style={[styles.sortBtn, isActive && styles.activeSortBtn]}
+            <Pressable
+              key={button.key}
+              onPress={() => handleSort(button.key)}
+              style={[styles.sortChip, isActive && styles.sortChipActive]}
             >
-              <Text
-                style={[styles.sortText, isActive && styles.activeSortText]}
-              >
-                {btn.label} {arrow}
+              <Text style={[styles.sortChipText, isActive && styles.sortChipTextActive]}>
+                {button.label} {arrow}
               </Text>
-            </TouchableOpacity>
+            </Pressable>
           );
         })}
       </ScrollView>
 
-      {sortConfig?.key && (
-        <Text style={styles.sortStatus}>
-          Sorting by: {sortButtons.find((o) => o.key === sortConfig.key)?.label}{" "}
-          ({sortConfig.direction.toUpperCase()})
-        </Text>
-      )}
+      <View style={styles.listWrap}>
+        {visibleData.map((item, index) => {
+          const isOpen = expandedCards[item?.id];
+          const physicalValue = Number(item?.physical_percent || 0);
+          const financialValue = Number(item?.finance_percent || 0);
 
-      <View
-        style={{
-          width: width,
-          position: "relative",
-          left: -10,
-          height: 1,
-          backgroundColor: "#ccc",
-          marginVertical: 10,
-        }}
-      />
+          return (
+            <View key={item?.id?.toString() || `sub-project-${index}`} style={styles.projectCard}>
+              <View style={styles.projectTopRow}>
+                <View style={styles.projectMetaWrap}>
+                  <Text style={styles.index}>#{index + 1}</Text>
+                  <Text style={styles.package}>{item?.package_number || "N/A"}</Text>
+                </View>
 
-      <View style={styles.listContent}>
-        {visibleData.map((item, index) => (
-          <View key={item?.id?.toString() || `sub-project-${index}`}>
-            {renderItem({ item, index })}
-          </View>
-        ))}
+                <View style={[styles.statusPill, { backgroundColor: getProgressTone(physicalValue).badgeBg }]}>
+                  <Text
+                    style={[
+                      styles.statusPillText,
+                      { color: getProgressTone(physicalValue).badgeText },
+                    ]}
+                  >
+                    {physicalValue >= 80
+                      ? "On Track"
+                      : physicalValue >= 40
+                        ? "Needs Push"
+                        : "Critical"}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.name}>{item?.name}</Text>
+
+              <View style={styles.metricRow}>
+                <View style={styles.metricTile}>
+                  <MaterialCommunityIcons
+                    name="file-document-outline"
+                    size={18}
+                    color="#0b57a4"
+                  />
+                  <View style={styles.metricTextWrap}>
+                    <Text style={styles.metricLabel}>Contract Value</Text>
+                    <Text style={styles.metricValue}>
+                      {formatCurrency(item?.contract_value)}
+                    </Text>
+                  </View>
+                </View>
+
+                <View style={styles.metricTile}>
+                  <MaterialCommunityIcons
+                    name="shield-check-outline"
+                    size={18}
+                    color="#14813d"
+                  />
+                  <View style={styles.metricTextWrap}>
+                    <Text style={styles.metricLabel}>Safeguard Groups</Text>
+                    <Text style={styles.metricValue}>
+                      {item?.safeguards?.length || 0}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+
+              <ProgressMetric label="Physical Progress" value={physicalValue} />
+              <ProgressMetric label="Financial Progress" value={financialValue} />
+
+              <Pressable
+                onPress={() => toggleExpand(item.id)}
+                style={styles.expandRow}
+              >
+                <Text style={styles.expandText}>
+                  {isOpen ? "Hide safeguards" : "View safeguards"}
+                </Text>
+                <Ionicons
+                  name={isOpen ? "chevron-up" : "chevron-down"}
+                  size={18}
+                  color="#0b57a4"
+                />
+              </Pressable>
+
+              {isOpen ? (
+                <View style={styles.safeguardList}>
+                  {item?.safeguards?.map((safeguard, safeguardIndex) => (
+                    <SafeguardGroup
+                      key={`${item?.id || index}-safeguard-${safeguardIndex}`}
+                      safeguard={safeguard}
+                    />
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          );
+        })}
 
         {visibleData.length === 0 ? (
           <View style={styles.emptyState}>
@@ -267,95 +345,236 @@ export default function ProjectList({ data }) {
           </View>
         ) : null}
       </View>
-    </View>
+    </SectionCard>
   );
 }
 
 const styles = StyleSheet.create({
-  search: {
-    backgroundColor: "#fff",
-    margin: 10,
-    padding: 10,
-    borderRadius: 8,
+  sectionContent: {
+    paddingTop: 14,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  summaryChip: {
+    minWidth: 136,
+    flexGrow: 1,
+    borderRadius: 16,
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#ccc",
-    fontFamily: "Jost-Medium",
+    borderColor: "#e2e8f0",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
   },
-
-  headerBox: {
-    backgroundColor: "#0275d8",
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    marginBottom: 10,
-
-    // shadow
-    elevation: 4,
-    shadowColor: "#000",
-    shadowOpacity: 0.12,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
+  summaryLabel: {
+    color: "#64748b",
+    fontSize: 12,
+    fontFamily: "Jost-Regular",
   },
-  headerTitle: {
-    color: "#fff",
+  summaryValue: {
+    marginTop: 4,
+    color: "#0f172a",
     fontSize: 16,
     fontFamily: "Jost-Bold",
   },
-
-  sortContainer: {
-    paddingVertical: 8,
-    paddingHorizontal: 4,
-  },
-  sortBtn: {
-    paddingVertical: 8,
+  searchShell: {
+    marginTop: 14,
+    minHeight: 52,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#dbe3ec",
+    backgroundColor: "#f8fafc",
+    flexDirection: "row",
+    alignItems: "center",
     paddingHorizontal: 14,
-    backgroundColor: "#E7E7E7",
-    borderRadius: 20,
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    color: "#0f172a",
+    fontSize: 15,
+    fontFamily: "Jost-Regular",
+    paddingVertical: 12,
+  },
+  sortRow: {
+    paddingTop: 12,
+    paddingBottom: 4,
+  },
+  sortChip: {
     marginRight: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 999,
+    backgroundColor: "#edf2f7",
   },
-  activeSortBtn: {
-    backgroundColor: "#007bff",
+  sortChipActive: {
+    backgroundColor: "#0b57a4",
   },
-  sortText: {
-    color: "#000",
-    fontWeight: "600",
+  sortChipText: {
+    color: "#334155",
     fontSize: 13,
+    fontFamily: "Jost-SemiBold",
   },
-  activeSortText: {
+  sortChipTextActive: {
     color: "#fff",
   },
-  sortStatus: {
-    margin: 6,
-    color: "#007bff",
-    fontWeight: "700",
+  listWrap: {
+    paddingTop: 8,
+    gap: 14,
   },
-
-  card: {
+  projectCard: {
+    borderRadius: 18,
     backgroundColor: "#ffffff",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 14,
-
-    // ANDROID shadow
-    elevation: 5,
-
-    // iOS shadow
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 6,
-    width: width * 0.95,
-    alignSelf: "center",
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
-  listContent: {
-    padding: 14,
-    paddingBottom: 32,
+  projectTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  projectMetaWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    gap: 6,
+    flex: 1,
+  },
+  index: {
+    fontFamily: "Jost-SemiBold",
+    color: "#475569",
+    fontSize: 12,
+  },
+  package: {
+    fontFamily: "Jost-SemiBold",
+    color: "#0b57a4",
+    fontSize: 13,
+  },
+  statusPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  statusPillText: {
+    fontSize: 11,
+    fontFamily: "Jost-SemiBold",
+  },
+  name: {
+    marginTop: 10,
+    color: "#0f172a",
+    fontSize: 16,
+    lineHeight: 24,
+    fontFamily: "Jost-SemiBold",
+  },
+  metricRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+  },
+  metricTile: {
+    minWidth: 140,
+    flexGrow: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: "#f8fafc",
+  },
+  metricTextWrap: {
+    flex: 1,
+  },
+  metricLabel: {
+    color: "#64748b",
+    fontSize: 11,
+    fontFamily: "Jost-Regular",
+  },
+  metricValue: {
+    marginTop: 2,
+    color: "#0f172a",
+    fontSize: 14,
+    fontFamily: "Jost-SemiBold",
+  },
+  progressBlock: {
+    marginTop: 12,
+  },
+  progressHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  progressLabel: {
+    flex: 1,
+    color: "#0f172a",
+    fontSize: 13,
+    fontFamily: "Jost-SemiBold",
+  },
+  progressBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  progressBadgeText: {
+    fontSize: 11,
+    fontFamily: "Jost-SemiBold",
+  },
+  progressTrack: {
+    marginTop: 8,
+    height: 10,
+    width: "100%",
+    borderRadius: 999,
+    backgroundColor: "#e2e8f0",
+    overflow: "hidden",
+  },
+  progressFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  expandRow: {
+    marginTop: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: "#edf2f7",
+  },
+  expandText: {
+    color: "#0b57a4",
+    fontSize: 13,
+    fontFamily: "Jost-SemiBold",
+  },
+  safeguardList: {
+    marginTop: 12,
+    gap: 10,
+  },
+  safeguardCard: {
+    borderRadius: 14,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  safeguardHeader: {
+    marginBottom: 4,
+  },
+  safeguardTitle: {
+    color: "#0f172a",
+    fontSize: 13,
+    fontFamily: "Jost-SemiBold",
   },
   emptyState: {
-    marginTop: 16,
+    marginTop: 2,
     padding: 18,
-    borderRadius: 12,
-    backgroundColor: "#fff",
+    borderRadius: 16,
+    backgroundColor: "#f8fafc",
     alignItems: "center",
   },
   emptyText: {
@@ -363,37 +582,4 @@ const styles = StyleSheet.create({
     color: "#64748b",
     textAlign: "center",
   },
-  index: { fontFamily: "Jost-SemiBold" },
-  package: { fontFamily: "Jost-SemiBold", color: "#007bff", fontSize: 15 },
-  name: { marginVertical: 4, fontSize: 13, fontFamily: "Jost-Medium" },
-  value: { fontFamily: "Jost-SemiBold", marginBottom: 6 },
-
-  progressRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginVertical: 2,
-  },
-  progressBar: {
-    height: 8,
-    flex: 1,
-    backgroundColor: "#e0e0e0",
-    marginHorizontal: 6,
-    borderRadius: 4,
-  },
-  progressFill: { height: "100%", borderRadius: 4 },
-
-  safeguardToggle: {
-    color: "#000",
-    marginTop: 6,
-    fontFamily: "Jost-SemiBold",
-    paddingVertical: 4,
-  },
-
-  safeBox: {
-    padding: 6,
-    backgroundColor: "#f8f8f8",
-    borderRadius: 6,
-    marginTop: 6,
-  },
-  safeTitle: { fontFamily: "Jost-Medium", marginBottom: 4 },
 });

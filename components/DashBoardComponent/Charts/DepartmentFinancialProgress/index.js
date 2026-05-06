@@ -31,10 +31,18 @@ const DepartmentFinancialCharts = ({ data }) => {
 
   const chartData = financialRows.map((item, index) => ({
     name: item?.name || "-",
+    budgetCr: safeNum(item?.budget) / 10000000,
+    contractCr: safeNum(item?.contract_cr),
     financeCr: safeNum(item?.finance_cr),
+    pendingCr: safeNum(item?.pending_cr),
     financePercentage: safeNum(item?.finance_percentage),
     color: colors[index % colors.length],
   }));
+
+  const totalFinanceCr = chartData.reduce(
+    (sum, item) => sum + safeNum(item.financeCr),
+    0
+  );
 
   return (
     <SectionCard title="Department-wise Financial Progress">
@@ -43,16 +51,16 @@ const DepartmentFinancialCharts = ({ data }) => {
           <PieChart
             widthAndHeight={chartSize}
             series={chartData.map((item) => ({
-              value: safeNum(item.financePercentage),
+              value: Math.max(safeNum(item.financeCr), 0.01),
               color: item.color,
             }))}
             cover={{ radius: 0.62, color: "#ffffff" }}
             style={styles.donutChart}
           />
           <View style={styles.donutCenter}>
-            <Text style={styles.donutCenterLabel}>Financial</Text>
+            <Text style={styles.donutCenterLabel}>Spent CR</Text>
             <Text style={styles.donutCenterValue}>
-              {chartData.length}
+              {totalFinanceCr.toFixed(2)}
             </Text>
           </View>
         </View>
@@ -62,7 +70,7 @@ const DepartmentFinancialCharts = ({ data }) => {
             <View key={item.name} style={styles.legendItem}>
               <View style={[styles.legendDot, { backgroundColor: item.color }]} />
               <Text style={styles.legendText}>
-                {item.name}: {item.financePercentage.toFixed(2)}%
+                {item.name}: {item.financeCr.toFixed(2)} CR ({item.financePercentage.toFixed(2)}%)
               </Text>
             </View>
           ))}
@@ -75,7 +83,10 @@ const DepartmentFinancialCharts = ({ data }) => {
             <Text style={[styles.tableHeadCell, styles.departmentColumn]}>
               Department
             </Text>
-            <Text style={styles.tableHeadCell}>Finance (CR)</Text>
+            <Text style={styles.tableHeadCell}>Budget</Text>
+            <Text style={styles.tableHeadCell}>Contract</Text>
+            <Text style={styles.tableHeadCell}>Spent</Text>
+            <Text style={styles.tableHeadCell}>Pending</Text>
             <Text style={styles.tableHeadCell}>Finance %</Text>
           </View>
 
@@ -90,7 +101,10 @@ const DepartmentFinancialCharts = ({ data }) => {
               <Text style={[styles.tableCell, styles.departmentColumn, styles.departmentText]}>
                 {row.name}
               </Text>
+              <Text style={styles.tableCell}>{row.budgetCr.toFixed(2)}</Text>
+              <Text style={styles.tableCell}>{row.contractCr.toFixed(2)}</Text>
               <Text style={styles.tableCell}>{row.financeCr.toFixed(2)}</Text>
+              <Text style={styles.tableCell}>{row.pendingCr.toFixed(2)}</Text>
               <Text style={styles.tableCell}>{row.financePercentage.toFixed(2)}%</Text>
             </View>
           ))}
@@ -155,7 +169,7 @@ const styles = StyleSheet.create({
     color: "#334155",
   },
   table: {
-    minWidth: 560,
+    minWidth: 860,
     borderWidth: 1,
     borderColor: "#dbe7da",
     borderRadius: 14,

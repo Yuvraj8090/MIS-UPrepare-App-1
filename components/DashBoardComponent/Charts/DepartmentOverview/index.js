@@ -21,19 +21,26 @@ const DepartmentOviewCharts = ({ data }) => {
   }
 
   const overviewRows = data?.department_contract_overview || [];
-  const dept = overviewRows[0] || {};
+  const totals = overviewRows.reduce(
+    (acc, item) => ({
+      allocated: acc.allocated + safeNum(item?.total_amount_allocated_cr),
+      signed: acc.signed + safeNum(item?.contract_signed_cr),
+      pending: acc.pending + safeNum(item?.contract_to_be_signed_cr),
+    }),
+    { allocated: 0, signed: 0, pending: 0 }
+  );
 
   const contractOverviewData = [
     {
       name: "Contract Signed",
-      population: safeNum(dept.contract_signed_cr),
+      population: totals.signed,
       color: "#3466CC",
       legendFontColor: "#334155",
       legendFontSize: 12,
     },
     {
       name: "Remaining Budget",
-      population: safeNum(dept.contract_to_be_signed_cr),
+      population: totals.pending,
       color: "#DC3913",
       legendFontColor: "#334155",
       legendFontSize: 12,
@@ -71,13 +78,9 @@ const DepartmentOviewCharts = ({ data }) => {
             style={styles.donutChart}
           />
           <View style={styles.donutCenter}>
-            <Text style={styles.donutCenterLabel}>Total CR</Text>
+            <Text style={styles.donutCenterLabel}>Allocated CR</Text>
             <Text style={styles.donutCenterValue}>
-              {toFixedStr(
-                safeNum(dept?.contract_signed_cr) +
-                  safeNum(dept?.contract_to_be_signed_cr),
-                0
-              )}
+              {toFixedStr(totals.allocated, 0)}
             </Text>
           </View>
         </View>
@@ -86,14 +89,14 @@ const DepartmentOviewCharts = ({ data }) => {
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: "#3466CC" }]} />
             <Text style={styles.legendText}>
-              Contract Signed: {formatCR(dept?.contract_signed_cr || 0)}
+              Contract Signed: {formatCR(totals.signed)}
             </Text>
           </View>
 
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: "#DC3913" }]} />
             <Text style={styles.legendText}>
-              Remaining Budget: {formatCR(dept?.contract_to_be_signed_cr || 0)}
+              Remaining Budget: {formatCR(totals.pending)}
             </Text>
           </View>
         </View>

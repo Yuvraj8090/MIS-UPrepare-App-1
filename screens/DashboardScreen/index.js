@@ -21,6 +21,8 @@ import DepartmentOviewCharts from "../../components/DashBoardComponent/Charts/De
 import ContractsDistributaionCharts from "../../components/DashBoardComponent/Charts/ContractDistribution";
 import DepartmentPhysicalProgress from "../../components/DashBoardComponent/Charts/DepartmentPhysicalProgress";
 import DepartmentFinanicalProgress from "../../components/DashBoardComponent/Charts/DepartmentFinancialProgress";
+import ExecutiveSummary from "../../components/DashBoardComponent/ExecutiveSummary";
+import DepartmentPortfolioBoard from "../../components/DashBoardComponent/DepartmentPortfolioBoard";
 
 const DashboardScreen = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -94,6 +96,8 @@ const DashboardScreen = () => {
             </Text>
           </View>
 
+          <ExecutiveSummary data={dashboardData} />
+          <DepartmentPortfolioBoard data={dashboardData} />
           <DepartmentOviewCharts data={dashboardData} />
           <ContractsDistributaionCharts data={dashboardData} />
           <DepartmentPhysicalProgress data={dashboardData} />
