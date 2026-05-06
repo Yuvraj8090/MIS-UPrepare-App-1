@@ -8,7 +8,6 @@ import {
   View,
 } from "react-native";
 
-import AppHeader from "../../components/AppHeader/AppHeader";
 import {
   fetchDashBoardData,
 } from "../../services/api/fetch";
@@ -71,8 +70,6 @@ const DashboardScreen = () => {
 
   return (
     <View style={styles.mainContainer}>
-      <AppHeader Title={"U-PREPARE"} />
-
       {loading ? (
         <View style={styles.loaderWrap}>
           <ActivityIndicator size="small" color="#0b57a4" />
