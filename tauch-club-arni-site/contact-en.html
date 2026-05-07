@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Contact | Tauch Club Arni</title>
+    <meta
+      name="description"
+      content="Contact Tauch Club Arni through a polished responsive inquiry form."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Manrope:wght@400;500;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="./assets/styles.css" />
+  </head>
+  <body>
+    <div class="site-shell">
+      <header class="site-header">
+        <div class="container header-inner">
+          <a class="brand" href="./index-en.html">
+            <span class="brand-mark"><i class="fa-solid fa-water"></i></span>
+            <span class="brand-copy">
+              <span class="brand-name">Tauch Club Arni</span>
+              <span class="brand-tag">Alpine Diving Community</span>
+            </span>
+          </a>
+          <button class="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <nav class="site-nav" aria-label="Main navigation">
+            <div class="nav-links">
+              <a href="./index-en.html">Home</a>
+              <a href="./about-en.html">About Us</a>
+              <a href="./services-en.html">Services</a>
+              <a href="./contact-en.html">Contact</a>
+            </div>
+            <div class="utility-links">
+              <div class="lang-switch" aria-label="Language switcher">
+                <a href="./contact-en.html" aria-current="page">EN</a>
+                <a href="./contact-de.html">DE</a>
+              </div>
+              <a class="button-secondary" href="./services-en.html">View Programs</a>
+            </div>
+          </nav>
+        </div>
+      </header>
+
+      <main>
+        <section class="page-hero">
+          <div class="container">
+            <div class="page-hero-panel">
+              <div class="page-hero-copy">
+                <span class="eyebrow">Contact the Club</span>
+                <h1 class="page-title">Let’s talk about your next dive plan.</h1>
+                <p class="page-intro">
+                  This contact page uses a polished demo form with a clear layout, modern fields,
+                  and a friendly confirmation message to create a functional-looking experience.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section">
+          <div class="container contact-grid">
+            <div class="contact-panel">
+              <span class="kicker">Inquiry Form</span>
+              <h3>Send your message</h3>
+              <form class="contact-form" data-demo-form>
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="first-name-en">First name</label>
+                    <input id="first-name-en" name="first-name" type="text" placeholder="Your first name" required />
+                  </div>
+                  <div class="field">
+                    <label for="last-name-en">Last name</label>
+                    <input id="last-name-en" name="last-name" type="text" placeholder="Your last name" required />
+                  </div>
+                </div>
+                <div class="field-grid">
+                  <div class="field">
+                    <label for="email-en">Email</label>
+                    <input id="email-en" name="email" type="email" placeholder="name@example.com" required />
+                  </div>
+                  <div class="field">
+                    <label for="interest-en">Interest</label>
+                    <select id="interest-en" name="interest" required>
+                      <option value="">Select an option</option>
+                      <option>Beginner course</option>
+                      <option>Advanced training</option>
+                      <option>Membership</option>
+                      <option>Expedition travel</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="field">
+                  <label for="message-en">Message</label>
+                  <textarea
+                    id="message-en"
+                    name="message"
+                    rows="6"
+                    placeholder="Tell us what kind of diving experience you are looking for."
+                    required
+                  ></textarea>
+                </div>
+                <button class="button" type="submit">Send Inquiry</button>
+                <p class="form-note">
+                  Demo interaction: this form shows a confirmation message without submitting to a
+                  backend service.
+                </p>
+                <div class="form-success" data-form-success>
+                  Thank you. Your inquiry has been captured in this demo experience, and the form is
+                  ready to be connected to a real backend or email service.
+                </div>
+              </form>
+            </div>
+            <aside class="info-card">
+              <span class="kicker">Contact Details</span>
+              <h3>Club communication</h3>
+              <ul class="bullet-list">
+                <li>Email: info@tauchclubarni.ch</li>
+                <li>Location: Zurich Region, Switzerland</li>
+                <li>Availability: replies typically within two business days</li>
+              </ul>
+              <p>
+                If you want to turn this into a truly working contact form later, the current
+                structure is ready for integration with a backend endpoint or external form service.
+              </p>
+            </aside>
+          </div>
+        </section>
+      </main>
+
+      <footer class="site-footer">
+        <div class="container">
+          <div class="footer-grid">
+            <div class="footer-brand">
+              <h3 class="brand-name">Tauch Club Arni</h3>
+              <p>Responsive contact experience with matching bilingual navigation and styling.</p>
+            </div>
+            <div class="footer-links">
+              <a href="./index-en.html">Home</a>
+              <a href="./about-en.html">About Us</a>
+              <a href="./services-en.html">Services</a>
+              <a href="./contact-en.html">Contact</a>
+            </div>
+            <div class="footer-meta">
+              <p>Zurich Region, Switzerland</p>
+              <p>info@tauchclubarni.ch</p>
+              <p>English version</p>
+            </div>
+          </div>
+          <div class="footer-bottom">
+            <span>© 2026 Tauch Club Arni. All rights reserved.</span>
+            <span>Contact page</span>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <script src="./assets/script.js"></script>
+  </body>
+</html>

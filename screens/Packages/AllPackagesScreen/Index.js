@@ -1,126 +1,148 @@
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  RefreshControl,
-} from "react-native";
+import { View, StyleSheet } from "react-native";
 import React from "react";
+
 import CustomHeader from "../../../components/AppHeader/CustomHeader";
 import { getFromSS } from "../../../services/storage/SecureStore";
-import { fetchPackages, fetchProjects } from "../../../services/api/fetch";
-import AllProjectTable from "../../../components/TableComponents/AllProjectTable";
-import {
-  fetchUserProjectData,
-  saveSqlProjectData,
-} from "@/services/database/database";
+import { fetchPackages } from "../../../services/api/fetch";
 import { NetConnected } from "@/services/helper";
-import { useAuth } from "@/navigation/AuthContext/AuthContext";
 import AllPackageTable from "@/components/TableComponents/AllPackageTable";
-import { useNavigation } from "@react-navigation/native";
+import {
+  getPackageCacheAgeLabel,
+  isPackageCacheFresh,
+  readPackageCache,
+  writePackageCache,
+} from "@/services/packages/cache";
 
 const AllPackagesScreen = () => {
   const [packageData, setPackageData] = React.useState([]);
-  const [load, setLoad] = React.useState(true);
-  const [refresh, setRefresh] = React.useState(false);
+  const [loading, setLoading] = React.useState(true);
+  const [refreshing, setRefreshing] = React.useState(false);
+  const [errorMessage, setErrorMessage] = React.useState("");
+  const [cacheMessage, setCacheMessage] = React.useState("");
+  const [isStaleData, setIsStaleData] = React.useState(false);
   const isInternet = NetConnected();
-  const { user } = useAuth();
 
   React.useEffect(() => {
-    fetchDataBasedOnConnectivity();
-    // getProjectSql();
+    bootstrapPackages();
   }, [isInternet]);
 
-  const fetchDataBasedOnConnectivity = async () => {
-    setLoad(true);
-    try {
-      if (isInternet) {
-        console.log("Fetching data from the server...");
-        await getProjectsData();
-      } else {
-        console.log("Fetching data from local storage...");
-        // await getProjectSql();
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setTimeout(() => {
-        setLoad(false);
-      }, 3000);
+  const bootstrapPackages = async () => {
+    setLoading(true);
+    setErrorMessage("");
+
+    const cached = await readPackageCache();
+
+    if (cached?.items?.length) {
+      setPackageData(cached.items);
+      setCacheMessage(getPackageCacheAgeLabel(cached.timestamp) || "");
+      setIsStaleData(!isPackageCacheFresh(cached.timestamp));
     }
+
+    if (isInternet === false && cached?.items?.length) {
+      setLoading(false);
+      setErrorMessage("Showing saved package data while you are offline.");
+      return;
+    }
+
+    if (isInternet === false && !cached?.items?.length) {
+      setLoading(false);
+      setErrorMessage("No internet connection and no saved package data found.");
+      return;
+    }
+
+    if (isInternet) {
+      await getPackagesData({ isRefresh: false });
+      return;
+    }
+
+    setLoading(false);
   };
 
-  const getProjectSql = async () => {
-    setLoad(true);
-    try {
-      await fetchUserProjectData(user?.id).then((res) => {
-        // console.log("RESS PROJECTT SQL ::", res);
-        setPackageData(res);
-      });
-    } catch (error) {
-      console.log("Eroro ::", error);
-    }
-  };
-
-  const getProjectsData = async () => {
+  const getPackagesData = async ({ isRefresh = false } = {}) => {
     const authToken = await getFromSS("authToken");
-    setLoad(true);
+
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoading(true);
+    }
+
     try {
       const res = await fetchPackages(authToken);
-      console.log("RESSSS  Packagess::", res);
-      if (res?.data) {
-        setPackageData(res?.data?.packages);
-        // const storeSql = {
-        //   userId: user?.id,
-        //   access_token: authToken,
-        //   data: res?.data?.projects,
-        // };
-        // await saveSqlProjectData(storeSql);
-        setTimeout(() => {
-          setLoad(false);
-        }, 2000);
+
+      if (res?.status >= 400 || res?.ok === false) {
+        throw new Error(res?.data?.msg || "Unable to load packages right now.");
       }
+
+      const packages = res?.data?.packages || [];
+      setPackageData(packages);
+      setErrorMessage("");
+      setIsStaleData(false);
+
+      const cache = await writePackageCache(packages);
+      setCacheMessage(getPackageCacheAgeLabel(cache.timestamp) || "");
     } catch (error) {
-      console.log("error ::", error);
-      setLoad(false);
+      const cached = await readPackageCache();
+
+      if (cached?.items?.length) {
+        setPackageData(cached.items);
+        setCacheMessage(getPackageCacheAgeLabel(cached.timestamp) || "");
+        setIsStaleData(true);
+        setErrorMessage(
+          "Could not refresh packages. Showing the most recent saved data."
+        );
+      } else {
+        setErrorMessage(
+          error?.message || "Unable to load packages. Please try again."
+        );
+      }
     } finally {
+      if (isRefresh) {
+        setRefreshing(false);
+      } else {
+        setLoading(false);
+      }
     }
   };
 
   const handleRefresh = () => {
-    setRefresh(true);
-    fetchDataBasedOnConnectivity();
-    setTimeout(() => setRefresh(false), 1000);
+    if (isInternet === false) {
+      setRefreshing(false);
+      setErrorMessage("Reconnect to the internet to refresh package data.");
+      return;
+    }
+
+    getPackagesData({ isRefresh: true });
   };
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: "#fff",
-      }}
-    >
+    <View style={styles.screen}>
       <CustomHeader Title={"All Packages"} GoBack={true} />
-
-      {/* {load ? (
-        <>
-          <ActivityIndicator size="small" color="#000" style={{marginTop:"2%"}} />
-        </>
-      ) : (
-        <> */}
-      <View>
+      <View style={styles.content}>
         <AllPackageTable
-          refresh={refresh}
+          refresh={refreshing}
           handleRefresh={handleRefresh}
           projectData={packageData}
-          loading={load}
+          loading={loading}
+          errorMessage={errorMessage}
+          cacheMessage={cacheMessage}
+          isStaleData={isStaleData}
+          isOnline={isInternet}
+          onRetry={() => getPackagesData({ isRefresh: false })}
         />
       </View>
-      {/* </>
-      )} */}
     </View>
   );
 };
 
 export default AllPackagesScreen;
+
+const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#f4f7fb",
+  },
+  content: {
+    flex: 1,
+  },
+});

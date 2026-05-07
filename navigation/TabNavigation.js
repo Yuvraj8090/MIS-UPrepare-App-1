@@ -38,8 +38,8 @@ const TabNavigation = (props) => {
         tabBarStyle: [
           styles.tabBar,
           {
-            height: 64 + Math.max(insets.bottom, 8),
-            paddingTop: 8,
+            height: 66 + Math.max(insets.bottom, 8),
+            paddingTop: 7,
             paddingBottom: Math.max(insets.bottom, 8),
           },
         ],
@@ -133,9 +133,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#d9e2ec",
+    shadowColor: "#0f172a",
+    shadowOffset: { width: 0, height: -3 },
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    elevation: 8,
   },
   tabIconWrap: {
-    width: 78,
+    minWidth: 74,
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
@@ -143,6 +148,7 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontFamily: "Jost-SemiBold",
     fontSize: 11,
+    lineHeight: 14,
     textAlign: "center",
   },
   tabLabelActive: {

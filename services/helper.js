@@ -1,78 +1,25 @@
-import { Dimensions, Platform, View, Text } from "react-native";
-import { LayoutAnimation, UIManager } from "react-native";
+import { Dimensions, View, Text, StyleSheet } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
-import { useEffect, useState } from "react";
 
 export const width = Dimensions.get("screen").width;
 export const height = Dimensions.get("screen").height;
 
 export const CheckInternet = () => {
-  const NetConnected = NetInfo.useNetInfo();
+  const netInfo = NetInfo.useNetInfo();
+  const isOffline = netInfo?.isConnected === false;
 
-  const [netCheck, setNetCheck] = useState(null);
-
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      setNetCheck(state.isConnected);
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
-
-  // useEffect(() => {
-  //   toggleShow();
-  // }, [NetConnected?.isConnected]);
-
-  // if (Platform.OS === "android") {
-  //   if (UIManager.setLayoutAnimationEnabledExperimental) {
-  //     UIManager.setLayoutAnimationEnabledExperimental(true);
-  //   }
-  // }
-
-  // const toggleShow = () => {
-  //   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-  //   setNetCheck(NetConnected?.isConnected);
-  // };
-
-  return (
-    <>
-      {!netCheck && (
-        <View
-          style={{
-            backgroundColor: "red",
-            alignItems: "center",
-            paddingVertical: "0.5%",
-          }}
-        >
-          <Text
-            style={{
-              fontFamily: "Jost-Medium",
-              color: "#fff",
-              fontSize: 12,
-            }}
-          >
-            No Internet Connectivity!!
-          </Text>
-        </View>
-      )}
-    </>
-  );
+  return isOffline ? (
+    <View style={styles.banner}>
+      <Text style={styles.bannerText}>
+        Offline mode: some data may be saved content.
+      </Text>
+    </View>
+  ) : null;
 };
 
 export const NetConnected = () => {
-  const [isInternet, setIsInternet] = useState(null);
-
-  // Subscribe to NetInfo to check internet connection status
-  useEffect(() => {
-    const unsubscribe = NetInfo.addEventListener((state) => {
-      setIsInternet(state.isConnected);
-    });
-
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
-  }, []);
-  return isInternet;
+  const netInfo = NetInfo.useNetInfo();
+  return netInfo?.isConnected ?? null;
 };
 
 export const convertToCr = (value) => {
@@ -104,3 +51,20 @@ export const formatDate = (date) => {
 
   return date.toISOString().split("T")[0];
 };
+
+const styles = StyleSheet.create({
+  banner: {
+    backgroundColor: "#fff4e5",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f5d0a7",
+  },
+  bannerText: {
+    fontFamily: "Jost-Medium",
+    color: "#8a4b08",
+    fontSize: 12,
+    textAlign: "center",
+  },
+});
