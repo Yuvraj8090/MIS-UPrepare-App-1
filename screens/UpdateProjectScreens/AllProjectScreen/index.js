@@ -23,6 +23,7 @@ import {
 import { NetConnected } from "@/services/helper";
 import { useAuth } from "@/navigation/AuthContext/AuthContext";
 import AllprojectTable from "@/components/TableComponents/AllProjectTable";
+import { UPDATE_REFRESH_KEYS, useUpdateFlow } from "@/navigation/UpdateFlowContext";
 
 const AllProjectScreen = () => {
   const [projectData, setProjectData] = React.useState([]);
@@ -30,11 +31,13 @@ const AllProjectScreen = () => {
   const [refresh, setRefresh] = React.useState(false);
   const isInternet = NetConnected();
   const { user } = useAuth();
+  const { refreshMap } = useUpdateFlow();
+  const refreshVersion = refreshMap[UPDATE_REFRESH_KEYS.allProjects] || 0;
 
   React.useEffect(() => {
     fetchDataBasedOnConnectivity();
     // getProjectSql();
-  }, [isInternet]);
+  }, [isInternet, refreshVersion]);
 
   const fetchDataBasedOnConnectivity = async () => {
     setLoad(true);

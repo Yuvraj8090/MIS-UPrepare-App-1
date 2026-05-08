@@ -1,25 +1,19 @@
-import { View, Text, TouchableOpacity, Dimensions } from "react-native";
+import { Text, TouchableOpacity, StyleSheet } from "react-native";
 import React from "react";
-const { width, height } = Dimensions.get("window");
+import { colors, radius, shadows, spacing } from "@/constants/theme";
 
-const Button = ({ Title, color, onPress = () => {} }) => {
+const Button = ({ Title, color, onPress = () => {}, style, textStyle }) => {
   return (
     <TouchableOpacity
-      activeOpacity={0.5}
+      activeOpacity={0.85}
       onPress={onPress}
-      style={{
-        // width: width * 0.4,
-        padding: "4%",
-        // paddingHorizontal: "10%",
-        backgroundColor: color,
-        alignSelf: "center",
-        alignItems: "center",
-        margin: "15%",
-        borderRadius: 10,
-        zIndex: 5,
-      }}
+      style={[
+        styles.button,
+        { backgroundColor: color || colors.primary },
+        style,
+      ]}
     >
-      <Text style={{ fontFamily: "Jost-Medium", fontSize: 15, color: "#fff" }}>
+      <Text style={[styles.text, textStyle]}>
         {Title}
       </Text>
     </TouchableOpacity>
@@ -27,3 +21,22 @@ const Button = ({ Title, color, onPress = () => {} }) => {
 };
 
 export default Button;
+
+const styles = StyleSheet.create({
+  button: {
+    minHeight: 52,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: 14,
+    alignSelf: "center",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: radius.md,
+    marginTop: spacing.md,
+    ...shadows.soft,
+  },
+  text: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 15,
+    color: colors.surface,
+  },
+});

@@ -1,24 +1,17 @@
 import { StyleSheet } from "react-native";
 import { width, height } from "../../services/helper";
+import { colors, radius, shadows, spacing } from "@/constants/theme";
 
 const styles = StyleSheet.create({
   mainContainer: {
     width: width * 0.45,
     height: height * 0.186,
-    // backgroundColor: "#65B741",
-    borderRadius: 20,
-    padding: "3%",
-    margin: "2.5%",
-    // Add shadow properties for iOS
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    // // Add elevation for Android
-    elevation: 5,
+    borderRadius: radius.lg,
+    padding: spacing.sm,
+    margin: spacing.xs,
     overflow: "hidden",
-    backgroundColor: "#fff",
-    // opacity: 0
+    backgroundColor: colors.surface,
+    ...shadows.card,
   },
   labelView: {
     width: width * 0.45,
@@ -28,11 +21,30 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.9)",
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: "4.5%",
+    alignItems: "center",
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   labelText: {
-    fontFamily: "Jost-Medium",
-    fontSize: 20,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 18,
+    color: colors.text,
+  },
+  uploadBanner: {
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    alignItems: "center",
+    ...shadows.soft,
+  },
+  uploadText: {
+    fontFamily: "Jost-Regular",
+    marginTop: spacing.sm,
+    color: colors.textMuted,
+    textAlign: "center",
   },
 });
 

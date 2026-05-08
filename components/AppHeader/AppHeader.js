@@ -5,6 +5,7 @@ import { DrawerActions, useNavigation } from "@react-navigation/native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckInternet } from "@/services/helper";
+import { colors, radius } from "@/constants/theme";
 
 export default function AppHeader({ Title }) {
   const navigation = useNavigation();
@@ -47,7 +48,7 @@ export default function AppHeader({ Title }) {
 
 const styles = StyleSheet.create({
   safeArea: {
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
   },
   mainContainer: {
     flexDirection: "row",
@@ -55,17 +56,17 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 10,
-    backgroundColor: "#fff",
+    backgroundColor: colors.surface,
     borderBottomWidth: 1,
-    borderBottomColor: "#d9e2ec",
+    borderBottomColor: colors.border,
   },
   menuButton: {
     width: 40,
     height: 40,
-    borderRadius: 12,
+    borderRadius: radius.sm,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f8fafc",
+    backgroundColor: colors.surfaceMuted,
   },
   titleWrap: {
     flex: 1,
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
   titleText: {
     fontFamily: "Jost-SemiBold",
     fontSize: 18,
-    color: "#0f172a",
+    color: colors.text,
     textAlign: "center",
   },
   trailingSpacer: {

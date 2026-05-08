@@ -769,6 +769,24 @@ export async function fetchAllWorkProgressSubPackageProjectById(authToken, Id) {
   }
 }
 
+export async function saveWorkProgress(authToken, payload) {
+  const AuthStr = "Bearer ".concat(authToken);
+
+  try {
+    const response = await axios.post(endpoints?.saveWorkProgress, payload, {
+      headers: {
+        Authorization: AuthStr,
+        "Content-Type": "application/json",
+      },
+    });
+
+    return response?.data;
+  } catch (error) {
+    console.log("Fetch User API Error: ", error.message);
+    return returnErrorMsg(error);
+  }
+}
+
 export async function deleteWorkProgressById(authToken, Id) {
   const AuthStr = "Bearer ".concat(authToken);
   // console.log("Auth ::", AuthStr);

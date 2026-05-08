@@ -130,20 +130,20 @@ const TabNavigation = (props) => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderTopColor: "#d9e2ec",
+    backgroundColor: "#ffffff",
+    borderTopWidth: 0,
     shadowColor: "#0f172a",
     shadowOffset: { width: 0, height: -3 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 12,
   },
   tabIconWrap: {
     minWidth: 74,
     alignItems: "center",
     justifyContent: "center",
     gap: 4,
+    paddingHorizontal: 4,
   },
   tabLabel: {
     fontFamily: "Jost-SemiBold",

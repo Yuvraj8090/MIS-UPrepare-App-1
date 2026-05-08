@@ -1,5 +1,6 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { colors, radius, shadows, spacing } from "@/constants/theme";
 
 export default function SectionCard({ title, children, contentStyle }) {
   return (
@@ -16,28 +17,24 @@ export default function SectionCard({ title, children, contentStyle }) {
 
 const styles = StyleSheet.create({
   card: {
-    marginHorizontal: 16,
-    marginTop: 16,
-    borderRadius: 20,
-    backgroundColor: "#fff",
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
     overflow: "hidden",
-    shadowColor: "#0f172a",
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.08,
-    shadowRadius: 18,
-    elevation: 4,
+    ...shadows.card,
   },
   header: {
-    backgroundColor: "#28A745",
+    backgroundColor: colors.primary,
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
   headerText: {
-    color: "#fff",
+    color: colors.surface,
     fontSize: 16,
     fontFamily: "Jost-Bold",
   },
   content: {
-    padding: 16,
+    padding: spacing.md,
   },
 });

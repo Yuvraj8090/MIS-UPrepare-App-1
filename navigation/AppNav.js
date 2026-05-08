@@ -8,6 +8,7 @@ import AnimatedSplash from "./SplashScreen";
 import ApiUnavailableScreen from "@/screens/System/ApiUnavailableScreen";
 import { useAuth } from "./AuthContext/AuthContext";
 import { initDB } from "@/services/database/database";
+import { UpdateFlowProvider } from "./UpdateFlowContext";
 
 const AppNav = () => {
   const {
@@ -30,24 +31,26 @@ const AppNav = () => {
   }
 
   return (
-    <SQLiteProvider databaseName="u_prepare_app.db">
-      <NavigationContainer>
-        {!user ? (
-          <AuthStack />
-        ) : apiAvailable ? (
-          <DrawerNavigation />
-        ) : (
-          <ApiUnavailableScreen
-            message={
-              apiErrorMessage ||
-              "Protected screens are blocked because the API is unavailable."
-            }
-            onRetry={() => runApiValidation(userToken)}
-            onSignOut={LogOut}
-          />
-        )}
-      </NavigationContainer>
-    </SQLiteProvider>
+    <UpdateFlowProvider>
+      <SQLiteProvider databaseName="u_prepare_app.db">
+        <NavigationContainer>
+          {!user ? (
+            <AuthStack />
+          ) : apiAvailable ? (
+            <DrawerNavigation />
+          ) : (
+            <ApiUnavailableScreen
+              message={
+                apiErrorMessage ||
+                "Protected screens are blocked because the API is unavailable."
+              }
+              onRetry={() => runApiValidation(userToken)}
+              onSignOut={LogOut}
+            />
+          )}
+        </NavigationContainer>
+      </SQLiteProvider>
+    </UpdateFlowProvider>
   );
 };
 

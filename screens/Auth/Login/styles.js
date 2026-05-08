@@ -44,13 +44,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
   logo: {
-    width: "100%",
-    maxWidth: 300,
+    width: 200,
     height: 90,
     backgroundColor: "rgba(255,255,255,0.92)",
-    paddingHorizontal: 14,
+    
     paddingVertical: 12,
-    elevation: 1,
     borderRadius: 6,
     overflow: "hidden",
   },

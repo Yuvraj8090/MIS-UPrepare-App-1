@@ -43,9 +43,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 10,
     marginTop: 12,
+    flexWrap: "wrap",
   },
   summaryChip: {
     flex: 1,
+    minWidth: 92,
     borderRadius: 14,
     backgroundColor: "#eef4ff",
     paddingHorizontal: 10,
@@ -128,15 +130,21 @@ const styles = StyleSheet.create({
   contractRow: {
     flexDirection: "row",
     gap: 10,
+    flexWrap: "wrap",
   },
   contractChip: {
     flex: 1,
+    minWidth: 96,
     borderRadius: 14,
     borderWidth: 1,
     borderColor: "#d6e1eb",
     backgroundColor: "#ffffff",
     alignItems: "center",
     paddingVertical: 10,
+    paddingHorizontal: 10,
+  },
+  contractChipCompact: {
+    flexBasis: "48%",
   },
   contractChipActive: {
     backgroundColor: "#eef4ff",
@@ -202,10 +210,16 @@ const styles = StyleSheet.create({
   },
   metaChip: {
     flex: 1,
+    minWidth: 130,
     borderRadius: 14,
     backgroundColor: "#f8fafc",
     paddingHorizontal: 10,
     paddingVertical: 10,
+  },
+  metaLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   metaLabel: {
     fontFamily: "Jost-Regular",
@@ -263,11 +277,12 @@ const styles = StyleSheet.create({
   },
   actionRow: {
     marginTop: 16,
-    alignItems: "flex-end",
+    alignItems: "stretch",
   },
   primaryButton: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     gap: 8,
     borderRadius: 12,
     backgroundColor: "#0b57a4",

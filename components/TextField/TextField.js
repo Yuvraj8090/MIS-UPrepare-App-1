@@ -1,6 +1,7 @@
 import React from "react";
 import { View, TextInput, StyleSheet } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { colors, radius, spacing } from "@/constants/theme";
 
 const TextField = ({ err, otp, number, iconName, ...props }) => {
   return (
@@ -9,14 +10,14 @@ const TextField = ({ err, otp, number, iconName, ...props }) => {
         styles.inputContainer,
         {
           borderWidth: 1,
-          borderColor: err ? "#dc2626" : "#cbd5e1",
+          borderColor: err ? colors.danger : colors.borderStrong,
         },
       ]}
     >
       <MaterialCommunityIcons
         name={iconName}
         size={22}
-        color="#475569"
+        color={colors.textMuted}
         style={styles.icon}
       />
       <TextInput
@@ -30,7 +31,7 @@ const TextField = ({ err, otp, number, iconName, ...props }) => {
         editable={!props.disable}
         placeholderTextColor="#64748b"
         autoCapitalize="none"
-        selectionColor="#0b57a4"
+        selectionColor={colors.primary}
       />
     </View>
   );
@@ -41,10 +42,10 @@ const styles = StyleSheet.create({
     width: "100%",
     minHeight: 54,
     alignItems: "center",
-    borderRadius: 16,
+    borderRadius: radius.md,
     flexDirection: "row",
-    marginVertical: 6,
-    backgroundColor: "#f8fafc",
+    marginVertical: spacing.xs,
+    backgroundColor: colors.surfaceMuted,
     paddingHorizontal: 14,
   },
   input: {
@@ -52,7 +53,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Jost-Medium",
     paddingVertical: 12,
-    color: "#0f172a",
+    color: colors.text,
   },
   icon: {
     marginRight: 10,

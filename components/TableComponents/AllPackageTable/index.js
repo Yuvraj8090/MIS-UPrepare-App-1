@@ -7,6 +7,7 @@ import {
   ScrollView,
   TextInput,
   ActivityIndicator,
+  useWindowDimensions,
 } from "react-native";
 import React, { useMemo, useState } from "react";
 import { Feather, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
@@ -14,7 +15,7 @@ import { useNavigation } from "@react-navigation/native";
 
 import styles from "./styles";
 import SkeletonLoader from "@/components/SkeletonDesign/PackageTableRow";
-import { convertToCr, width } from "@/services/helper";
+import { convertToCr } from "@/services/helper";
 
 const contractFilters = [
   { key: "all", label: "All" },
@@ -34,6 +35,8 @@ const AllPackageTable = ({
   onRetry,
 }) => {
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const [searchText, setSearchText] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
   const [selectedContractFilter, setSelectedContractFilter] = useState("all");
@@ -272,7 +275,11 @@ const AllPackageTable = ({
               <Pressable
                 key={filter.key}
                 onPress={() => setSelectedContractFilter(filter.key)}
-                style={[styles.contractChip, active && styles.contractChipActive]}
+                style={[
+                  styles.contractChip,
+                  isCompact && styles.contractChipCompact,
+                  active && styles.contractChipActive,
+                ]}
               >
                 <Text
                   style={[
@@ -319,16 +326,34 @@ const AllPackageTable = ({
                 </View>
               </View>
 
-              <Text style={styles.packageName}>{item?.package_name}</Text>
+              <Text style={styles.packageName} numberOfLines={2}>
+                {item?.package_name}
+              </Text>
 
               <View style={styles.metaRow}>
                 <View style={styles.metaChip}>
-                  <Text style={styles.metaLabel}>Department</Text>
-                  <Text style={styles.metaValue}>{item?.department || "-"}</Text>
+                  <View style={styles.metaLabelRow}>
+                    <MaterialCommunityIcons
+                      name="office-building-outline"
+                      size={14}
+                      color="#64748b"
+                    />
+                    <Text style={styles.metaLabel}>Department</Text>
+                  </View>
+                  <Text style={styles.metaValue} numberOfLines={2}>
+                    {item?.department || "-"}
+                  </Text>
                 </View>
                 <View style={styles.metaChip}>
-                  <Text style={styles.metaLabel}>Category</Text>
-                  <Text style={styles.metaValue}>
+                  <View style={styles.metaLabelRow}>
+                    <MaterialCommunityIcons
+                      name="shape-outline"
+                      size={14}
+                      color="#64748b"
+                    />
+                    <Text style={styles.metaLabel}>Category</Text>
+                  </View>
+                  <Text style={styles.metaValue} numberOfLines={2}>
                     {item?.category || "-"}
                     {item?.sub_category ? ` (${item?.sub_category})` : ""}
                   </Text>
@@ -370,8 +395,8 @@ const AllPackageTable = ({
                     navigation.navigate("PackageInfoScreen", { data: item })
                   }
                 >
+                  <Feather name="info" size={16} color="#fff" />
                   <Text style={styles.primaryButtonText}>View Details</Text>
-                  <Feather name="arrow-right-circle" size={16} color="#fff" />
                 </Pressable>
               </View>
             </View>

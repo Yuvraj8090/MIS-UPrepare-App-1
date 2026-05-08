@@ -8,6 +8,7 @@ import PhysicalProgressMilestone from "../screens/UpdateProjectScreens/PhysicalP
 import PhysicalProgressForm from "../screens/UpdateProjectScreens/PhysicalProgressForm";
 import PhotoGallery from "../screens/UpdateProjectScreens/PhotoGalleryScreen";
 import AllProjectScreen from "../screens/UpdateProjectScreens/AllProjectScreen";
+import UpdateProgressStatusScreen from "../screens/UpdateProjectScreens/UpdateProgressStatus";
 import ProjectImagesScreen from "../screens/ProjectImagesScreen";
 import ProjectActivitiesScreen from "../screens/ProjectActivitiesScreen";
 import PhaseSubActivites from "../screens/PhaseSubActivitiesScreen";
@@ -118,6 +119,10 @@ const Navigation = (props) => {
       <Stack.Screen
         name="PhysicalProgressForm"
         component={PhysicalProgressForm}
+      />
+      <Stack.Screen
+        name="UpdateProgressStatus"
+        component={UpdateProgressStatusScreen}
       />
       <Stack.Screen name="PhotoGalleryScreen" component={PhotoGallery} />
       <Stack.Screen

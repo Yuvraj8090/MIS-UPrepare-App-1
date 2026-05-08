@@ -3,10 +3,14 @@ import {
   deleteWorkProgressById,
   fetchWorkProgressById,
 } from "@/services/api/fetch";
-import { width } from "@/services/helper";
 import { getFromSS } from "@/services/storage/SecureStore";
-import { FontAwesome, FontAwesome5, MaterialIcons } from "@expo/vector-icons";
-import React, { useState, useEffect } from "react";
+import {
+  Feather,
+  FontAwesome5,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from "@expo/vector-icons";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -15,127 +19,126 @@ import {
   FlatList,
   TouchableOpacity,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 
 import SubProgressCardSkeleton from "@/components/SkeletonDesign/SubProgressCardSkeleton";
 
-// Convert date to readable format (e.g., 30 Oct 2025)
 const formatDate = (dateString) => {
+  if (!dateString) {
+    return "--";
+  }
+
   const date = new Date(dateString);
-  const months = [
-    "Jan",
-    "Feb",
-    "Mar",
-    "Apr",
-    "May",
-    "Jun",
-    "Jul",
-    "Aug",
-    "Sep",
-    "Oct",
-    "Nov",
-    "Dec",
-  ];
-  return `${date.getDate()} ${months[date.getMonth()]} ${date.getFullYear()}`;
+
+  if (Number.isNaN(date.getTime())) {
+    return dateString;
+  }
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 };
 
+const InfoRow = ({ icon, label, value }) => (
+  <View style={styles.infoRow}>
+    <View style={styles.infoLabelWrap}>
+      <MaterialCommunityIcons name={icon} size={15} color="#64748b" />
+      <Text style={styles.infoLabel}>{label}</Text>
+    </View>
+    <Text style={styles.infoValue}>{value || "--"}</Text>
+  </View>
+);
+
 const WorkProjectProgressList = (props) => {
-  console.log("Poropsps ;;", props?.route?.params);
   const { workData } = props?.route?.params;
-  // const workProgressData = workData?.work_progress_data;
   const [search, setSearch] = useState("");
-  const [filteredData, setFilteredData] = useState([]);
   const [workProgressData, setWorkProgressData] = useState([]);
-  const [expandedTitle, setExpandedTitle] = useState(false);
   const [load, setLoad] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [expandedTitle, setExpandedTitle] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     getWorkProgress();
   }, []);
 
-  const getWorkProgress = async () => {
+  const getWorkProgress = async ({ isRefresh = false } = {}) => {
     const authToken = await getFromSS("authToken");
-    setLoad(true);
-    setWorkProgressData([]);
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoad(true);
+    }
+
     try {
       const res = await fetchWorkProgressById(authToken, workData?.id);
-      console.log("RESSSS SUb Packagess::", res);
-      if (res?.success) {
-        setWorkProgressData(res?.project?.work_progress_data);
-        // const storeSql = {
-        //   userId: user?.id,
-        //   access_token: authToken,
-        //   data: res?.data?.projects,
-        // };
-        // await saveSqlProjectData(storeSql);
-        setTimeout(() => {
-          setLoad(false);
-        }, 2000);
+
+      if (!res?.success) {
+        throw new Error(res?.data?.msg || "Unable to load progress details.");
       }
+
+      setWorkProgressData(res?.project?.work_progress_data || []);
+      setErrorMessage("");
     } catch (error) {
-      console.log("error ::", error);
-      setLoad(false);
+      setErrorMessage(
+        error?.message || "Something went wrong while loading progress details."
+      );
+      setWorkProgressData([]);
     } finally {
+      setLoad(false);
+      setRefreshing(false);
     }
   };
 
-  useEffect(() => {
+  const filteredData = useMemo(() => {
     if (!search.trim()) {
-      setFilteredData(workProgressData);
-      return;
+      return workProgressData;
     }
 
-    const lower = search?.toLowerCase();
-    const filtered = workProgressData?.filter((item) => {
+    const lower = search.toLowerCase();
+    return workProgressData?.filter((item) => {
       const comp = item?.work_component?.work_component?.toLowerCase() || "";
       const stage = item?.current_stage?.toLowerCase() || "";
       const remark = item?.remarks?.toLowerCase() || "";
+
       return (
         comp.includes(lower) || stage.includes(lower) || remark.includes(lower)
       );
     });
-
-    setFilteredData(filtered);
   }, [search, workProgressData]);
 
-  const handleDeleteProgress = async (ID) => {
-    // Step 1: Ask for confirmation
+  const handleDeleteProgress = async (id) => {
     Alert.alert(
-      "Confirm Delete",
-      "Are you sure you want to delete this progress?",
+      "Delete progress entry",
+      "Are you sure you want to delete this progress item?",
       [
+        { text: "Cancel", style: "cancel" },
         {
-          text: "No",
-          style: "cancel",
-        },
-        {
-          text: "Yes",
+          text: "Delete",
           style: "destructive",
-          onPress: () => confirmDelete(ID),
+          onPress: () => confirmDelete(id),
         },
       ]
     );
   };
 
-  const confirmDelete = async (ID) => {
+  const confirmDelete = async (id) => {
     const authToken = await getFromSS("authToken");
-    console.log("Delete ID:", ID);
 
     try {
-      const resp = await deleteWorkProgressById(authToken, ID);
+      const resp = await deleteWorkProgressById(authToken, id);
 
       if (resp?.success) {
-        Alert.alert(
-          "Success",
-          resp?.message || "Progress Deleted Successfully!"
-        );
-        getWorkProgress();
+        Alert.alert("Deleted", resp?.message || "Progress deleted successfully.");
+        getWorkProgress({ isRefresh: false });
       } else {
-        Alert.alert("Failed to Delete!", resp?.message || "Please try again");
+        Alert.alert("Delete failed", resp?.message || "Please try again.");
       }
     } catch (err) {
-      console.log(err);
-      Alert.alert("Error", "Something went wrong while deleting");
+      Alert.alert("Error", "Something went wrong while deleting progress.");
     }
   };
 
@@ -144,258 +147,349 @@ const WorkProjectProgressList = (props) => {
 
     return (
       <View style={styles.card}>
-        <View
-          style={{
-            flexDirection: "row",
-            alignItems: "center",
-            justifyContent: "space-between",
-          }}
-        >
-          <Text style={styles.title}>
-            <Text style={{ color: "#777" }}>ID: {item?.id}</Text> -{" "}
-            {wc?.work_component ? wc?.work_component : "--"}
-          </Text>
+        <View style={styles.cardHeader}>
+          <View style={styles.componentTag}>
+            <Text style={styles.componentTagText}>Entry #{item?.id}</Text>
+          </View>
           <TouchableOpacity
-            activeOpacity={0.5}
-            style={{ backgroundColor: "", padding: 5 }}
-            // onPress={() => Alert.alert("Delete")}
+            activeOpacity={0.7}
+            style={styles.deleteButton}
             onPress={() => handleDeleteProgress(item?.id)}
           >
-            <MaterialIcons name="delete-forever" size={24} color="red" />
+            <MaterialIcons name="delete-outline" size={20} color="#dc2626" />
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.row}>
-          <Text style={styles.label}>Stage: </Text>
-          {item?.current_stage ? item?.current_stage : "--"}
+        <Text style={styles.title} numberOfLines={2}>
+          {wc?.work_component || "--"}
         </Text>
 
-        <Text style={styles.row}>
-          <Text style={styles.label}>Progress: </Text>
-          {item?.progress_percentage ? `${item?.progress_percentage}%` : "--"}
-        </Text>
+        <View style={styles.progressRow}>
+          <View style={styles.progressChip}>
+            <Text style={styles.progressLabel}>Progress</Text>
+            <Text style={styles.progressValue}>
+              {item?.progress_percentage ? `${item?.progress_percentage}%` : "--"}
+            </Text>
+          </View>
+          <View style={styles.progressChip}>
+            <Text style={styles.progressLabel}>Qty / Length</Text>
+            <Text style={styles.progressValue}>{item?.qty_length || "--"}</Text>
+          </View>
+        </View>
 
-        {item?.qty_length && (
-          <Text style={styles.row}>
-            <Text style={styles.label}>Length: </Text>
-            {item?.qty_length ? item?.qty_length : "--"}
-          </Text>
-        )}
+        <InfoRow icon="stairs" label="Stage" value={item?.current_stage} />
+        <InfoRow icon="calendar-month-outline" label="Date" value={formatDate(item?.date_of_entry)} />
+        <InfoRow icon="account-outline" label="Added By" value={item?.user?.name} />
 
-        {item?.remarks && (
-          <Text style={styles.row}>
-            <Text style={styles.label}>Remarks: </Text>
-            {item?.remarks ? item?.remarks : "--"}
-          </Text>
-        )}
-
-        <Text style={styles.row}>
-          <Text style={styles.label}>Date: </Text>
-          {item?.date_of_entry ? formatDate(item?.date_of_entry) : "--"}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Addes By: </Text>
-          {item?.user?.name ? item?.user?.name : "--"}
-        </Text>
+        {item?.remarks ? (
+          <InfoRow icon="text-box-outline" label="Remarks" value={item?.remarks} />
+        ) : null}
 
         <View style={styles.separator} />
 
-        <Text style={styles.row}>
-          <Text style={styles.label}>Type: </Text>
-          {wc?.type_details ? wc?.type_details : "--"}
-        </Text>
-        <Text style={styles.row}>
-          <Text style={styles.label}>Side: </Text>
-          {wc?.side_location ? wc?.side_location : "--"}
-        </Text>
+        <InfoRow icon="toolbox-outline" label="Type" value={wc?.type_details} />
+        <InfoRow icon="map-marker-outline" label="Side" value={wc?.side_location} />
       </View>
     );
   };
 
+  const renderEmpty = () => (
+    <View style={styles.emptyState}>
+      <MaterialCommunityIcons
+        name={errorMessage ? "alert-circle-outline" : "text-search"}
+        size={32}
+        color={errorMessage ? "#dc2626" : "#64748b"}
+      />
+      <Text style={styles.emptyTitle}>
+        {errorMessage
+          ? "Progress details need attention"
+          : search
+          ? "No matching records found"
+          : "No progress entries available"}
+      </Text>
+      <Text style={styles.emptyText}>
+        {errorMessage ||
+          "Try a different search term for component, stage, or remarks."}
+      </Text>
+    </View>
+  );
+
   return (
-    <View style={{}}>
+    <View style={styles.screen}>
       <CustomHeader GoBack={true} Title={"Project Progress Details"} />
 
-      <View style={{ backgroundColor: "#fff" }}>
-        <View style={[styles.projectCard]}>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 4,
-              width: width * 0.85,
-            }}
-          >
-            <FontAwesome
-              name="folder-open"
-              size={12}
-              color="#007BFF"
-              style={{ marginTop: 2.5 }}
-            />
-            <Text
-              style={styles.projectTitle}
-              numberOfLines={expandedTitle ? undefined : 2}
-            >
-              {workData?.name}
-            </Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-between",
-            }}
-          >
-            <TouchableOpacity
-              activeOpacity={0.5}
-              style={{
-                alignSelf: "flex-start",
-                flexDirection: "row",
-                alignItems: "center",
-                backgroundColor: "#007BFF",
-                borderRadius: 10,
-                paddingVertical: "1.5%",
-                paddingHorizontal: "2.5%",
-                gap: 5,
-              }}
-              onPress={() =>
-                props?.navigation.navigate("UpdateWorkProgress", {
-                  project: workData,
-                })
-              }
-              // onPress={() => Alert.alert("Add Work Progress")}
-            >
-              <FontAwesome5 name="plus-circle" size={16} color="#fff" />
-              <Text
-                style={{
-                  fontFamily: "Jost-SemiBold",
-                  fontSize: 12,
-                  color: "#ffff",
-                }}
-              >
-                Add Progress
-              </Text>
-            </TouchableOpacity>
-
-            {workData?.name?.length > 60 && (
-              <TouchableOpacity
-                style={{ position: "absolute", right: 0, top: 1 }}
-                onPress={() => setExpandedTitle(!expandedTitle)}
-              >
+      <FlatList
+        data={load ? [] : filteredData}
+        keyExtractor={(item) => item.id.toString()}
+        refreshing={refreshing}
+        onRefresh={() => getWorkProgress({ isRefresh: true })}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.content}
+        ListHeaderComponent={
+          <View style={styles.headerSection}>
+            <View style={styles.projectCard}>
+              <View style={styles.projectTitleRow}>
+                <MaterialCommunityIcons
+                  name="folder-open-outline"
+                  size={18}
+                  color="#0b57a4"
+                />
                 <Text
-                  style={{
-                    fontFamily: "Jost-Regular",
-                    fontSize: 12,
-                    color: "#3488FD",
-                  }}
+                  style={styles.projectTitle}
+                  numberOfLines={expandedTitle ? undefined : 2}
                 >
-                  {expandedTitle ? "Hide ▲" : "View ▼"}
+                  {workData?.name}
                 </Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-      </View>
+              </View>
 
-      <View style={{ margin: 5 }}>
-        {/* Data List */}
-        {load ? (
-          Array.from({ length: 5 }).map((_, index) => (
-            <SubProgressCardSkeleton key={index} />
-          ))
-        ) : (
-          <FlatList
-            data={filteredData}
-            keyExtractor={(item) => item.id.toString()}
-            stickyHeaderIndices={[0]}
-            ListHeaderComponent={
+              <View style={styles.projectFooter}>
+                <TouchableOpacity
+                  activeOpacity={0.85}
+                  style={styles.addButton}
+                  onPress={() =>
+                    props?.navigation.navigate("UpdateWorkProgress", {
+                      project: workData,
+                    })
+                  }
+                >
+                  <FontAwesome5 name="plus-circle" size={15} color="#fff" />
+                  <Text style={styles.addButtonText}>Add Progress</Text>
+                </TouchableOpacity>
+
+                {workData?.name?.length > 60 ? (
+                  <TouchableOpacity
+                    onPress={() => setExpandedTitle(!expandedTitle)}
+                    style={styles.expandButton}
+                  >
+                    <Text style={styles.expandButtonText}>
+                      {expandedTitle ? "Show less" : "Read more"}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+            </View>
+
+            <View style={styles.searchWrap}>
+              <Feather name="search" size={18} color="#64748b" />
               <TextInput
-                placeholder="Search by Component / Stage / Remark"
+                placeholder="Search by component, stage, or remark"
                 placeholderTextColor="#666"
                 style={styles.search}
                 value={search}
                 onChangeText={setSearch}
               />
-            }
-            renderItem={renderCard}
-            showsVerticalScrollIndicator={false}
-            ListEmptyComponent={
-              <Text
-                style={{ textAlign: "center", marginTop: 30, color: "#555" }}
-              >
-                No matching records found.
-              </Text>
-            }
-            contentContainerStyle={{ paddingBottom: "80%" }}
-          />
-        )}
-      </View>
+              {load ? (
+                <ActivityIndicator size="small" color="#0b57a4" />
+              ) : null}
+            </View>
+          </View>
+        }
+        renderItem={renderCard}
+        ListEmptyComponent={
+          load ? (
+            Array.from({ length: 4 }).map((_, index) => (
+              <SubProgressCardSkeleton key={index} />
+            ))
+          ) : (
+            renderEmpty()
+          )
+        }
+      />
     </View>
   );
 };
 
 export default WorkProjectProgressList;
 
-// -----------------------------
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#f4f7fb",
+  },
+  content: {
+    padding: 16,
+    paddingBottom: 28,
+  },
+  headerSection: {
+    gap: 14,
+    marginBottom: 2,
+  },
   projectCard: {
     backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
-    // marginBottom: 12,
+    padding: 16,
+    borderRadius: 18,
     shadowColor: "#00000011",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    elevation: 1,
-    // paddingBottom: 30,
+    elevation: 2,
+  },
+  projectTitleRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "flex-start",
   },
   projectTitle: {
-    fontSize: 13,
-    fontFamily: "Jost-Medium",
-    marginBottom: 8,
-  },
-  container: {
     flex: 1,
-    padding: 12,
-    backgroundColor: "#f3f4f6",
+    fontSize: 15,
+    fontFamily: "Jost-SemiBold",
+    color: "#0f172a",
+    lineHeight: 22,
+  },
+  projectFooter: {
+    marginTop: 14,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 12,
+  },
+  addButton: {
+    alignSelf: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#0b57a4",
+    borderRadius: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 6,
+  },
+  addButtonText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 13,
+    color: "#fff",
+  },
+  expandButton: {
+    paddingVertical: 6,
+  },
+  expandButtonText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 12,
+    color: "#0b57a4",
+  },
+  searchWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#dbe5ef",
+    paddingHorizontal: 14,
+    minHeight: 50,
   },
   search: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#ddd",
-    marginBottom: 12,
+    flex: 1,
+    marginLeft: 10,
     color: "#000",
+    fontFamily: "Jost-Regular",
+    fontSize: 14,
   },
   card: {
     backgroundColor: "#fff",
-    padding: 14,
-    borderRadius: 12,
-    marginBottom: 12,
+    padding: 16,
+    borderRadius: 18,
+    marginTop: 14,
     borderWidth: 1,
     borderColor: "#e5e7eb",
     elevation: 2,
   },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: 10,
+  },
+  componentTag: {
+    borderRadius: 999,
+    backgroundColor: "#eef4ff",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  componentTagText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 11,
+    color: "#0b57a4",
+  },
+  deleteButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#fef2f2",
+  },
   title: {
-    fontSize: 17,
+    fontSize: 16,
     fontFamily: "Jost-Bold",
     color: "#111",
-    marginBottom: 3,
+    marginTop: 12,
   },
-  row: {
-    fontSize: 14,
-    color: "#333",
-    marginBottom: 2,
-    fontFamily: "Jost-Medium",
+  progressRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
   },
-  label: {
+  progressChip: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  progressLabel: {
+    fontFamily: "Jost-Regular",
+    fontSize: 11,
+    color: "#64748b",
+  },
+  progressValue: {
+    marginTop: 4,
     fontFamily: "Jost-SemiBold",
-    color: "#000",
+    fontSize: 13,
+    color: "#0f172a",
+  },
+  infoRow: {
+    marginTop: 12,
+    gap: 4,
+  },
+  infoLabelWrap: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  infoLabel: {
+    fontFamily: "Jost-Regular",
+    fontSize: 11,
+    color: "#64748b",
+  },
+  infoValue: {
+    fontFamily: "Jost-Medium",
+    fontSize: 13,
+    color: "#1e293b",
+    lineHeight: 19,
   },
   separator: {
     height: 1,
     backgroundColor: "#e5e7eb",
-    marginVertical: 8,
+    marginTop: 14,
+  },
+  emptyState: {
+    marginTop: 24,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 22,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    marginTop: 10,
+    fontFamily: "Jost-Bold",
+    fontSize: 16,
+    textAlign: "center",
+    color: "#0f172a",
+  },
+  emptyText: {
+    marginTop: 8,
+    fontFamily: "Jost-Regular",
+    fontSize: 13,
+    color: "#64748b",
+    textAlign: "center",
+    lineHeight: 20,
   },
 });

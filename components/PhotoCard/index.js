@@ -1,14 +1,6 @@
-import {
-  View,
-  Text,
-  ImageBackground,
-  TouchableOpacity,
-  ToastAndroid,
-} from "react-native";
+import { View, Text, ToastAndroid } from "react-native";
 import React, { useEffect, useState } from "react";
 import styles from "./styles";
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 import * as Progress from "react-native-progress";
 import { NetConnected, width } from "@/services/helper";
 import {
@@ -25,8 +17,7 @@ import {
 import { useAuth } from "@/navigation/AuthContext/AuthContext";
 import axios from "axios";
 
-const PhotoCard = ({ navPath }) => {
-  const navigation = useNavigation();
+const PhotoCard = () => {
   const isInternet = NetConnected();
   const { user } = useAuth();
 
@@ -244,28 +235,21 @@ const PhotoCard = ({ navPath }) => {
   return (
     <>
       {images?.length > 0 && (
-        <View
-          style={{
-            alignItems: "center",
-            paddingVertical: "3%",
-            width: width,
-            backgroundColor: "#f1f1f1",
-          }}
-        >
+        <View style={styles.uploadBanner}>
           {uploading ? (
-            <View style={{ alignSelf: "center" }}>
+            <View style={{ alignSelf: "stretch", alignItems: "center" }}>
               <Progress.Bar
                 progress={progress / 100}
                 size={20}
                 width={width * 0.9}
                 color="green"
               />
-              <Text style={{ fontFamily: "Jost-Regular", marginTop: "2%" }}>
+              <Text style={styles.uploadText}>
                 Uploading {uploadIndex} of {images?.length} images...
               </Text>
             </View>
           ) : (
-            <Text style={{ fontFamily: "Jost-Regular", marginTop: "2%" }}>
+            <Text style={styles.uploadText}>
               No images for uploading!!
             </Text>
           )}
