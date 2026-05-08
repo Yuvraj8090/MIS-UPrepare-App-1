@@ -18,7 +18,11 @@ import WorkProgressSkeletonCard from "@/components/SkeletonDesign/WorkProgressCa
 import { useNavigation } from "@react-navigation/native";
 import { convertToCr } from "@/services/helper";
 
-const WorkProgress = (props) => {
+const WorkProgress = ({
+  navigation: stackNavigation,
+  onLayout: _onLayout,
+  ..._restProps
+}) => {
   const [search, setSearch] = useState("");
   const [workProgressData, setWorkProgressData] = useState([]);
   const [load, setLoad] = useState(true);
@@ -159,7 +163,7 @@ const WorkProgress = (props) => {
           <TouchableOpacity
             style={[styles.actionButton, styles.updateBtn]}
             onPress={() =>
-              props?.navigation.navigate("UpdateWorkProgress", {
+              (stackNavigation || navigation).navigate("UpdateWorkProgress", {
                 project: item,
               })
             }
@@ -184,6 +188,20 @@ const WorkProgress = (props) => {
         </View>
       </View>
     );
+  };
+
+  const renderListEmptyComponent = () => {
+    if (load) {
+      return (
+        <View style={styles.loadingList}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <WorkProgressSkeletonCard key={index} />
+          ))}
+        </View>
+      );
+    }
+
+    return renderEmptyState();
   };
 
   return (
@@ -225,17 +243,7 @@ const WorkProgress = (props) => {
             </View>
           </View>
         }
-        ListEmptyComponent={
-          load ? (
-            <>
-              {Array.from({ length: 4 }).map((_, index) => (
-                <WorkProgressSkeletonCard key={index} />
-              ))}
-            </>
-          ) : (
-            renderEmptyState()
-          )
-        }
+        ListEmptyComponent={renderListEmptyComponent}
         renderItem={renderItem}
       />
     </View>
@@ -257,6 +265,9 @@ const styles = StyleSheet.create({
   headerBlock: {
     gap: 14,
     marginBottom: 2,
+  },
+  loadingList: {
+    gap: 12,
   },
   searchWrapper: {
     flexDirection: "row",

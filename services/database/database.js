@@ -138,11 +138,6 @@ export const initDB = async () => {
   // console.log("RESSS DASBB::", res);
   const res11 = await db.runAsync("DELETE FROM milestone_physicalProgress;");
   // console.log("RESSS DASBB::", res11);
-  const res111 = await db.runAsync("DELETE FROM phaseActivitiesImages;");
-  // console.log("RESSS DASBB::", res111);
-
-  const res1 = await db.runAsync("DELETE FROM milestonePhyicalImages");
-  // console.log("RESSS DASBB::", res1);
   const res2 = await db.runAsync("DELETE FROM phaseSubActivities");
   // console.log("RESSS DASBB::", res2);
 
@@ -837,7 +832,10 @@ export const saveSqlPhaseActivitiesImage = async (storeSql) => {
 // Access Phases Activities Images Data
 export const fetchPhasesActivitiesImages = async () => {
   const data = await db.getAllAsync("SELECT * FROM phaseActivitiesImages;");
-  console.log("Fetchhh Phase Activitess Image ::", data);
+
+  if (__DEV__ && data?.length > 0) {
+    console.log(`Loaded ${data.length} queued phase activity image(s).`);
+  }
 
   return data;
 };

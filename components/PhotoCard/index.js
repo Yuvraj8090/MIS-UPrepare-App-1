@@ -25,9 +25,10 @@ const PhotoCard = () => {
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadIndex, setUploadIndex] = useState(0);
+  const [queueMessage, setQueueMessage] = useState("");
 
   useEffect(() => {
-    if (!isInternet || !user?.username) {
+    if (!user?.username) {
       return;
     }
 
@@ -39,21 +40,26 @@ const PhotoCard = () => {
   }, [isInternet, user?.username]);
 
   useEffect(() => {
-    if (!__DEV__) {
-      return;
-    }
-
-    if (!isInternet) {
-      console.log("Photo sync skipped: device is offline.");
-      return;
-    }
-
     if (!user?.username) {
-      console.log("Photo sync skipped: user is not ready yet.");
+      setQueueMessage("");
       return;
     }
 
-    console.log("Pending photo sync count ::", images?.length ?? 0);
+    if (images?.length > 0 && isInternet === false) {
+      setQueueMessage(
+        `${images.length} photo${images.length > 1 ? "s are" : " is"} queued and will upload automatically when you reconnect.`
+      );
+      return;
+    }
+
+    if (images?.length > 0 && isInternet) {
+      setQueueMessage(
+        `${images.length} pending photo${images.length > 1 ? "s" : ""} ready for sync.`
+      );
+      return;
+    }
+
+    setQueueMessage("");
   }, [images?.length, isInternet, user?.username]);
 
   const fetchLocal = async () => {
@@ -223,14 +229,14 @@ const PhotoCard = () => {
   };
 
   useEffect(() => {
-    if (isInternet && images.length > 0) {
+    if (isInternet && images.length > 0 && !uploading) {
       if (user?.username == "PWD3") {
         handlePhysicalUpload();
       } else {
         handleUpload();
       }
     }
-  }, [images, isInternet]);
+  }, [images, isInternet, uploading, user?.username]);
 
   return (
     <>
@@ -250,7 +256,7 @@ const PhotoCard = () => {
             </View>
           ) : (
             <Text style={styles.uploadText}>
-              No images for uploading!!
+              {queueMessage || "Pending images are ready for sync."}
             </Text>
           )}
         </View>
