@@ -126,7 +126,7 @@ const ProjectInfoScreen = (props) => {
                 flex: 1,
               }}
             >
-              <View style={{ marginHorizontal: "3%", marginVertical: "2%" }}>
+              <View style={{ marginHorizontal: 12, marginVertical: 8 }}>
                 <Text style={styles.labelText}>Project Name</Text>
                 <View style={styles.subTextview}>
                   <Text style={styles.subText}>

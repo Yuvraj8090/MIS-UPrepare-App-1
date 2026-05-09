@@ -21,7 +21,7 @@ import {
   saveECPPhycialProgressImage,
   saveFinancialProgress,
 } from "@/services/api/fetch";
-import { width } from "@/services/helper";
+import { formatDate, width } from "@/services/helper";
 import * as DocumentPicker from "expo-document-picker";
 import { FontAwesome } from "@expo/vector-icons";
 
@@ -34,7 +34,7 @@ const FinancialProgress = (props) => {
   const [financeAmount, setFinanceAmount] = useState("");
   const [noOfBills, setNoOfBills] = useState("");
   const [billSerialNo, setBillSerialNo] = useState("");
-  const [submitDate, setSubmitDate] = useState("");
+  const [submitDate, setSubmitDate] = useState(new Date());
   const [images, setImages] = useState([]);
   const [showLoader, setShowLoader] = useState(false);
 
@@ -106,8 +106,7 @@ const FinancialProgress = (props) => {
     formData.append("bill_serial_no", billSerialNo);
 
     // ✅ Convert Date object to string: YYYY-MM-DD
-    const formattedDate = new Date(submitDate).toISOString().split("T")[0];
-    formData.append("submit_date", formattedDate);
+    formData.append("submit_date", formatDate(submitDate));
 
     // ✅ Append each media file properly
     images.forEach((file, index) => {
@@ -167,7 +166,7 @@ const FinancialProgress = (props) => {
     setFinanceAmount("");
     setNoOfBills("");
     setBillSerialNo("");
-    setSubmitDate("");
+    setSubmitDate(new Date());
     setImages([]);
   };
 
@@ -175,7 +174,7 @@ const FinancialProgress = (props) => {
     <View style={styles.mainContainer}>
       <CustomHeader Title={"Add Financial Progress"} GoBack={true} />
 
-      <ScrollView style={{ margin: "3%" }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ margin: 12 }} showsVerticalScrollIndicator={false}>
         <View style={styles.formCard}>
           <View
             style={{
@@ -261,8 +260,8 @@ const FinancialProgress = (props) => {
             <ScrollView
               horizontal
               style={{
-                marginTop: "10%",
-                paddingVertical: "5%",
+                marginTop: 16,
+                paddingVertical: 10,
               }}
             >
               {images.map((file, i) => (
@@ -341,7 +340,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
     alignSelf: "flex-start",
-    marginLeft: "5%",
+    marginLeft: 16,
   },
   rowBetween: {
     flexDirection: "row",
@@ -355,7 +354,7 @@ const styles = StyleSheet.create({
     padding: 10,
     flex: 0.48,
     alignItems: "center",
-    marginHorizontal: "3%",
+    marginHorizontal: 6,
   },
   fileBtnText: {
     fontSize: 13,
@@ -375,7 +374,7 @@ const styles = StyleSheet.create({
   button: {
     // width: width * 0.3,
     padding: 12,
-    margin: "2%",
+    margin: 8,
     borderRadius: 6,
     alignItems: "center",
   },

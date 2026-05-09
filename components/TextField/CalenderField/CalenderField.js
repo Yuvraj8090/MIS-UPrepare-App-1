@@ -18,8 +18,16 @@ export default function CalenderField({
   disabled,
   bigSize,
 }) {
-  const [date, setDate] = useState(new Date());
   const [show, setShow] = useState(false);
+
+  const resolvedDate = (() => {
+    if (!Cdate) {
+      return new Date();
+    }
+
+    const nextDate = Cdate instanceof Date ? Cdate : new Date(Cdate);
+    return Number.isNaN(nextDate.getTime()) ? new Date() : nextDate;
+  })();
 
   const onChange = (event, selectedDate) => {
     if (Platform.OS === "android") {
@@ -33,9 +41,14 @@ export default function CalenderField({
 
   const formatDate = (date) => {
     if (!date) return "";
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    const day = String(date.getDate()).padStart(2, "0");
+    const nextDate = date instanceof Date ? date : new Date(date);
+
+    if (Number.isNaN(nextDate.getTime())) {
+      return "";
+    }
+    const year = nextDate.getFullYear();
+    const month = String(nextDate.getMonth() + 1).padStart(2, "0");
+    const day = String(nextDate.getDate()).padStart(2, "0");
     return `${year}-${month}-${day}`; // format only for UI
   };
   const styles = StyleSheet.create({
@@ -117,7 +130,7 @@ export default function CalenderField({
                 <Text style={{ fontSize: 16, color: "blue" }}>Done</Text>
               </TouchableOpacity>
               <DateTimePicker
-                value={date}
+                value={resolvedDate}
                 mode="date"
                 display="spinner"
                 onChange={onChange}
@@ -131,7 +144,7 @@ export default function CalenderField({
       {/* ✅ Android inline Picker */}
       {Platform.OS === "android" && show && (
         <DateTimePicker
-          value={date}
+          value={resolvedDate}
           mode="date"
           display="calendar"
           onChange={onChange}

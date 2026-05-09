@@ -53,7 +53,11 @@ const InfoRow = ({ icon, label, value }) => (
 );
 
 const WorkProjectProgressList = (props) => {
-  const { workData } = props?.route?.params;
+  const routeParams = props?.route?.params || {};
+  const incomingWorkData = routeParams?.workData ?? routeParams?.project ?? null;
+  const workData = Array.isArray(incomingWorkData)
+    ? incomingWorkData[0] || null
+    : incomingWorkData;
   const [search, setSearch] = useState("");
   const [workProgressData, setWorkProgressData] = useState([]);
   const [load, setLoad] = useState(true);
@@ -63,9 +67,17 @@ const WorkProjectProgressList = (props) => {
 
   useEffect(() => {
     getWorkProgress();
-  }, []);
+  }, [workData?.id]);
 
   const getWorkProgress = async ({ isRefresh = false } = {}) => {
+    if (!workData?.id) {
+      setErrorMessage("Project details are missing. Please reopen this progress screen.");
+      setWorkProgressData([]);
+      setLoad(false);
+      setRefreshing(false);
+      return;
+    }
+
     const authToken = await getFromSS("authToken");
     if (isRefresh) {
       setRefreshing(true);
@@ -214,6 +226,14 @@ const WorkProjectProgressList = (props) => {
     </View>
   );
 
+  const renderLoadingSkeleton = () => (
+    <View style={styles.skeletonWrap}>
+      {Array.from({ length: 4 }).map((_, index) => (
+        <SubProgressCardSkeleton key={index} />
+      ))}
+    </View>
+  );
+
   return (
     <View style={styles.screen}>
       <CustomHeader GoBack={true} Title={"Project Progress Details"} />
@@ -285,15 +305,7 @@ const WorkProjectProgressList = (props) => {
           </View>
         }
         renderItem={renderCard}
-        ListEmptyComponent={
-          load ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <SubProgressCardSkeleton key={index} />
-            ))
-          ) : (
-            renderEmpty()
-          )
-        }
+        ListEmptyComponent={load ? renderLoadingSkeleton : renderEmpty}
       />
     </View>
   );
@@ -313,6 +325,9 @@ const styles = StyleSheet.create({
   headerSection: {
     gap: 14,
     marginBottom: 2,
+  },
+  skeletonWrap: {
+    gap: 12,
   },
   projectCard: {
     backgroundColor: "#fff",

@@ -340,7 +340,7 @@ const PhotoGallery = (props) => {
                     width: 32,
                     height: 32,
                     borderRadius: 20,
-                    padding: "1%",
+                    padding: 6,
                     alignItems: "center",
                     // justifyContent: "center",
                     elevation: 5,
@@ -359,7 +359,7 @@ const PhotoGallery = (props) => {
                     backgroundColor: "rgba(0, 0, 0, 0.3)",
                     position: "absolute",
                     bottom: 0,
-                    padding: "2%",
+                    padding: 10,
                   }}
                 >
                   <Text style={{ color: "#fff", fontFamily: "Jost-Medium" }}>
@@ -390,8 +390,8 @@ const PhotoGallery = (props) => {
                   elevation: 2,
                   backgroundColor: "#fff",
                   alignSelf: "center",
-                  padding: "2%",
-                  marginVertical: "5%",
+                  padding: 10,
+                  marginVertical: 16,
                 }}
               >
                 <MaterialCommunityIcons
