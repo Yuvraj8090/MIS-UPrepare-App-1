@@ -25,14 +25,36 @@ import {
 import { getFromSS } from "@/services/storage/SecureStore";
 import { formatDate } from "@/services/helper";
 
+const toSafeString = (value) => {
+  if (value === null || value === undefined) {
+    return "";
+  }
+
+  return typeof value === "string" ? value : String(value);
+};
+
+const toSafeNumber = (value, fallback = 0) => {
+  const nextValue = Number(value);
+  return Number.isFinite(nextValue) ? nextValue : fallback;
+};
+
+const toSafeDate = (value) => {
+  if (!value) {
+    return new Date();
+  }
+
+  const nextDate = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(nextDate.getTime()) ? new Date() : nextDate;
+};
+
 const makeDraftFromEntry = (entry) => ({
   progress_percentage:
     entry?.progress_percentage !== undefined && entry?.progress_percentage !== null
-      ? String(entry.progress_percentage)
+      ? toSafeString(entry.progress_percentage)
       : "",
   qty_length:
     entry?.qty_length !== undefined && entry?.qty_length !== null
-      ? String(entry.qty_length)
+      ? toSafeString(entry.qty_length)
       : "",
   current_stage: entry?.current_stage ?? "",
   remarks: entry?.remarks ?? "",
@@ -121,7 +143,7 @@ const UpdateWorkProgressScreen = ({ route, navigation }) => {
     Object.entries(draftState).forEach(([workComponentId, draft]) => {
       const existing = existingEntry?.[workComponentId]?.last_entry;
       const initialDraft = initialState?.[workComponentId] || makeDraftFromEntry();
-      const progressValue = Number(draft?.progress_percentage);
+      const progressValue = toSafeNumber(draft?.progress_percentage, NaN);
 
       if (!draft?.progress_percentage || Number.isNaN(progressValue)) {
         return;
@@ -129,7 +151,9 @@ const UpdateWorkProgressScreen = ({ route, navigation }) => {
 
       const basePayload = {
         progress_percentage: progressValue,
-        qty_length: draft?.qty_length ? String(draft.qty_length) : null,
+        qty_length: draft?.qty_length
+          ? toSafeNumber(draft.qty_length, 0)
+          : null,
         current_stage: draft?.current_stage?.trim() || "",
         remarks: draft?.remarks?.trim() || "",
         date_of_entry: formatDate(draft?.date_of_entry),
@@ -243,8 +267,8 @@ const UpdateWorkProgressScreen = ({ route, navigation }) => {
     const existing = existingEntry?.[item.id];
     const draft = draftState?.[item.id] || makeDraftFromEntry();
     const lastEntry = existing?.last_entry;
-    const totalProgress = Number(existing?.total_progress || 0);
-    const oldProgress = Number(lastEntry?.progress_percentage || 0);
+    const totalProgress = toSafeNumber(existing?.total_progress, 0);
+    const oldProgress = toSafeNumber(lastEntry?.progress_percentage, 0);
     const isCompleted = totalProgress >= 100;
     const maxAllowedProgress = Math.max(0, 100 - (totalProgress - oldProgress));
 
@@ -328,9 +352,7 @@ const UpdateWorkProgressScreen = ({ route, navigation }) => {
                 <Text style={styles.fieldLabel}>Date of Entry</Text>
                 <CalenderField
                   placeholder="Select date"
-                  Cdate={
-                    draft?.date_of_entry ? new Date(draft.date_of_entry) : new Date()
-                  }
+                  Cdate={toSafeDate(draft?.date_of_entry)}
                   setCDate={(date) =>
                     handleInput(item.id, "date_of_entry", formatDate(date))
                   }
@@ -344,10 +366,10 @@ const UpdateWorkProgressScreen = ({ route, navigation }) => {
                   keyboardType="numeric"
                   maxLength={3}
                   style={styles.input}
-                  value={draft?.progress_percentage ?? ""}
+                  value={toSafeString(draft?.progress_percentage)}
                   onChangeText={(value) => {
                     const cleaned = value.replace(/[^0-9]/g, "");
-                    const numericValue = Number(cleaned || 0);
+                    const numericValue = toSafeNumber(cleaned, 0);
 
                     if (cleaned && numericValue > maxAllowedProgress) {
                       Alert.alert(
@@ -367,7 +389,7 @@ const UpdateWorkProgressScreen = ({ route, navigation }) => {
             <TextInput
               placeholder="Enter quantity or length"
               style={styles.input}
-              value={draft?.qty_length ?? ""}
+              value={toSafeString(draft?.qty_length)}
               onChangeText={(value) => handleInput(item.id, "qty_length", value)}
             />
 
@@ -375,7 +397,7 @@ const UpdateWorkProgressScreen = ({ route, navigation }) => {
             <TextInput
               placeholder="Enter current stage"
               style={styles.input}
-              value={draft?.current_stage ?? ""}
+              value={toSafeString(draft?.current_stage)}
               onChangeText={(value) => handleInput(item.id, "current_stage", value)}
             />
 
@@ -385,7 +407,7 @@ const UpdateWorkProgressScreen = ({ route, navigation }) => {
               style={[styles.input, styles.remarksInput]}
               multiline
               textAlignVertical="top"
-              value={draft?.remarks ?? ""}
+              value={toSafeString(draft?.remarks)}
               onChangeText={(value) => handleInput(item.id, "remarks", value)}
             />
           </>
