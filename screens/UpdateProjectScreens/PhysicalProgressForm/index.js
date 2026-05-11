@@ -1,213 +1,148 @@
-import { View, Text, TouchableOpacity, Alert, StyleSheet } from "react-native";
-import React, { useMemo, useState } from "react";
-
+import { View, Text, TouchableOpacity, ToastAndroid } from "react-native";
+import React, { useState } from "react";
 import TextField from "../../../components/TextField/TextField";
 import styles from "./styles";
 import CustomHeader from "../../../components/AppHeader/CustomHeader";
+import { width } from "../../../services/helper";
 import CalenderField from "../../../components/TextField/CalenderField/CalenderField";
-import { formatDate } from "@/services/helper";
-import { colors, radius, shadows, spacing } from "@/constants/theme";
+import { updatePhysicalProgress } from "../../../services/api/fetch";
+import { getFromSS } from "../../../services/storage/SecureStore";
+import { useNavigation } from "@react-navigation/native";
+import LoaderCard from "../../../components/LoaderCard";
 
 const PhysicalProgressForm = (props) => {
-  const { milestone, project, remainProgress } = props?.route?.params;
+  const { data, remainProgress } = props?.route?.params;
+  console.log("PROSOSPS DATAT ::", data);
+  console.log("PROSOSPS DATAT ::", remainProgress);
+
+  const navigation = useNavigation();
 
   const [date, setDate] = useState(new Date());
   const [progress, setProgress] = useState("");
+  const [showLCard, setShowLCard] = useState(false);
 
-  const remainingValue = useMemo(
-    () => Number(remainProgress ?? 0),
-    [remainProgress]
-  );
+  const dateObj = new Date();
+
+  const year = dateObj?.getFullYear();
+  const month = ("0" + (dateObj?.getMonth() + 1)).slice(-2); // Adding 1 to month because it's zero-indexed
+  const day = ("0" + dateObj?.getDate()).slice(-2);
+
+  const formattedDate = `${year}-${month}-${day}`;
+  // Split the string by hyphens
+  const parts = formattedDate?.split("-");
+
+  // Reverse the array
+  const reversedParts = parts?.reverse();
+
+  // Join the reversed array into a string
+  const reversedDate = reversedParts?.join("-");
 
   const handleSubmit = async () => {
-    const numericProgress = Number(progress);
+    setShowLCard(true);
+    const authToken = await getFromSS("authToken");
 
-    if (!progress || Number.isNaN(numericProgress) || numericProgress <= 0) {
-      Alert.alert("Invalid progress", "Enter a valid progress percentage.");
-      return;
+    var formData = {
+      milestone_id: data?.milestone?.id,
+      progress: progress,
+      date: formattedDate,
+    };
+
+    try {
+      const res = await updatePhysicalProgress(formData, authToken);
+      // console.log("RESSSS ::", res);
+      if (res?.data?.ok) {
+        ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+        setTimeout(() => {
+          navigation.goBack();
+        }, 2000);
+      } else {
+        ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+      }
+    } catch (error) {
+      console.log("Error ::", error);
+    } finally {
+      setShowLCard(false);
     }
-
-    if (numericProgress > remainingValue) {
-      Alert.alert(
-        "Progress exceeds remaining value",
-        `You can only add up to ${remainingValue}% for this milestone.`
-      );
-      return;
-    }
-
-    props.navigation.replace("UpdateProgressStatus", {
-      project,
-      milestone,
-      remainingProgress: Math.max(0, remainingValue - numericProgress),
-      payload: {
-        milestone_id: milestone?.id,
-        progress: numericProgress,
-        date: formatDate(date),
-      },
-    });
   };
 
   const handleReset = () => {
-    setDate(new Date());
-    setProgress("");
+    setDate("");
+    setProgress(0);
   };
 
   return (
     <View style={styles.mainConatiner}>
       <CustomHeader Title={"Update Physical Progress"} GoBack={true} />
-      <View style={screenStyles.content}>
-        <View style={screenStyles.heroCard}>
-          <Text style={screenStyles.title}>Update milestone progress</Text>
-          <Text style={screenStyles.subtitle}>
-            {milestone?.name || "Selected milestone"}
-          </Text>
-
-          <View style={screenStyles.summaryChip}>
-            <Text style={screenStyles.summaryLabel}>Remaining Progress</Text>
-            <Text style={screenStyles.summaryValue}>{remainingValue}%</Text>
+      <View style={{ margin: "2%" }}>
+        <Text style={styles.headerTitle}>
+          Update Physical Progress of Milestone : {data?.milestone?.name}
+        </Text>
+        <View style={styles.container}>
+          <Text style={styles.labelText}>Milestone Name :</Text>
+          <View style={styles.nameView}>
+            <Text style={styles.labelText}>{data?.milestone?.name}</Text>
           </View>
-        </View>
-
-        <View style={screenStyles.formCard}>
-          <Text style={screenStyles.fieldLabel}>Milestone Name</Text>
-          <View style={screenStyles.readonlyField}>
-            <Text style={screenStyles.readonlyValue}>
-              {milestone?.name || "Milestone"}
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <Text style={styles.labelText}>Physical Progress (in %) : </Text>
+            <Text
+              style={[
+                styles.labelText,
+                { color: "green", fontSize: 13, marginRight: "2%" },
+              ]}
+            >
+              Remaining : {remainProgress}%
             </Text>
           </View>
-
-          <Text style={screenStyles.fieldLabel}>Physical Progress (in %)</Text>
           <TextField
-            placeholder={"Enter physical progress"}
+            placeholder={"Physical Progress"}
             setData={setProgress}
             value={progress}
             number={3}
-            iconName="chart-line"
           />
-
-          <Text style={screenStyles.fieldLabel}>Submit Date</Text>
-          <CalenderField
-            placeholder={"Select submit date"}
-            setCDate={setDate}
-            Cdate={date}
-          />
-
-          <View style={screenStyles.buttonRow}>
+          <View>
+            <Text style={styles.labelText}>Submit Date :</Text>
+            {/* <TextField placeholder={"Enter Submit Date"} /> */}
+            <CalenderField
+              placeholder={"Enter Submit Date"}
+              setCDate={setDate}
+              Cdate={date}
+              // Cdate={date ? date : reversedDate}
+            />
+          </View>
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+              marginTop: "8%",
+            }}
+          >
             <TouchableOpacity
-              activeOpacity={0.85}
+              activeOpacity={0.8}
               onPress={handleReset}
-              style={[screenStyles.button, screenStyles.resetButton]}
+              style={[styles.buttonView, { backgroundColor: "#777" }]}
             >
-              <Text style={screenStyles.buttonText}>Reset</Text>
+              <Text style={[styles.labelText, { color: "#fff" }]}>Reset</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              activeOpacity={0.85}
+              activeOpacity={0.8}
               onPress={handleSubmit}
-              style={[screenStyles.button, screenStyles.submitButton]}
+              style={[styles.buttonView, { backgroundColor: "green" }]}
             >
-              <Text style={screenStyles.buttonText}>Continue Update</Text>
+              <Text style={[styles.labelText, { color: "#fff" }]}>Submit</Text>
             </TouchableOpacity>
           </View>
         </View>
       </View>
+      <LoaderCard show={showLCard} text={"Updating Progress..."} />
     </View>
   );
 };
 
 export default PhysicalProgressForm;
-
-const screenStyles = StyleSheet.create({
-  content: {
-    flex: 1,
-    padding: spacing.md,
-    gap: spacing.md,
-  },
-  heroCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    ...shadows.card,
-  },
-  title: {
-    fontFamily: "Jost-Bold",
-    fontSize: 24,
-    color: colors.text,
-  },
-  subtitle: {
-    marginTop: 6,
-    fontFamily: "Jost-Regular",
-    fontSize: 14,
-    lineHeight: 20,
-    color: colors.textMuted,
-  },
-  summaryChip: {
-    marginTop: spacing.md,
-    alignSelf: "flex-start",
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-  },
-  summaryLabel: {
-    fontFamily: "Jost-Regular",
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  summaryValue: {
-    marginTop: 4,
-    fontFamily: "Jost-Bold",
-    fontSize: 18,
-    color: colors.primary,
-  },
-  formCard: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    padding: spacing.lg,
-    ...shadows.soft,
-  },
-  fieldLabel: {
-    marginBottom: 8,
-    fontFamily: "Jost-SemiBold",
-    fontSize: 13,
-    color: colors.text,
-  },
-  readonlyField: {
-    minHeight: 48,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceMuted,
-    borderWidth: 1,
-    borderColor: colors.border,
-    justifyContent: "center",
-    paddingHorizontal: 14,
-    marginBottom: spacing.md,
-  },
-  readonlyValue: {
-    fontFamily: "Jost-Medium",
-    fontSize: 14,
-    color: colors.text,
-  },
-  buttonRow: {
-    flexDirection: "row",
-    gap: spacing.sm,
-    marginTop: spacing.lg,
-  },
-  button: {
-    flex: 1,
-    minHeight: 50,
-    borderRadius: radius.md,
-    alignItems: "center",
-    justifyContent: "center",
-    ...shadows.soft,
-  },
-  resetButton: {
-    backgroundColor: "#64748b",
-  },
-  submitButton: {
-    backgroundColor: colors.success,
-  },
-  buttonText: {
-    fontFamily: "Jost-SemiBold",
-    fontSize: 14,
-    color: "#fff",
-  },
-});

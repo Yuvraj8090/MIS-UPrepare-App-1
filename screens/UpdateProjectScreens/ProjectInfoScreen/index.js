@@ -24,7 +24,6 @@ import {
   fetchProjectDetailsData,
   saveSqlProjectDetails,
 } from "@/services/database/database";
-import { UPDATE_REFRESH_KEYS, useUpdateFlow } from "@/navigation/UpdateFlowContext";
 
 const ProjectInfoScreen = (props) => {
   const { data } = props?.route?.params;
@@ -37,13 +36,11 @@ const ProjectInfoScreen = (props) => {
   const navigation = useNavigation();
   const isInternet = NetConnected();
   const { user } = useAuth();
-  const { refreshMap } = useUpdateFlow();
-  const refreshVersion = refreshMap[UPDATE_REFRESH_KEYS.projectInfo] || 0;
 
   useEffect(() => {
     // getProjectsDataByPID(data?.project_id);
     fetchDataBasedOnConnectivity(data?.project_id);
-  }, [data, isInternet, refreshVersion]);
+  }, [data, isInternet]);
 
   const fetchDataBasedOnConnectivity = async (PID) => {
     setLoad(true);
@@ -126,7 +123,7 @@ const ProjectInfoScreen = (props) => {
                 flex: 1,
               }}
             >
-              <View style={{ marginHorizontal: 12, marginVertical: 8 }}>
+              <View style={{ marginHorizontal: "3%", marginVertical: "2%" }}>
                 <Text style={styles.labelText}>Project Name</Text>
                 <View style={styles.subTextview}>
                   <Text style={styles.subText}>

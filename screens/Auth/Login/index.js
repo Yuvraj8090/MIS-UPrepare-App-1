@@ -81,7 +81,7 @@ const FieldShell = ({
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const { setUser, setUserToken, setLoading, runApiValidation } = useAuth();
+  const { setUser, setUserToken, setLoading } = useAuth();
   const netInfo = NetInfo.useNetInfo();
 
   const [userName, setUserName] = useState("");
@@ -205,18 +205,6 @@ const LoginScreen = () => {
           : "We couldn't sign you in. Please try again.");
 
       if (isSuccess && token && user) {
-        const apiStatus = await runApiValidation(token);
-
-        if (!apiStatus.ok) {
-          setFeedback({
-            type: "error",
-            message:
-              apiStatus.message ||
-              "The API is unreachable, so protected screens are blocked.",
-          });
-          return;
-        }
-
         await saveAuthSession(responseData);
         setUserToken(token);
         setUser(user);

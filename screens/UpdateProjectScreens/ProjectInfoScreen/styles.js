@@ -8,12 +8,12 @@ const styles = StyleSheet.create({
   },
   container: {
     // marginVertical: "3%",
-    paddingVertical: 8,
+    paddingVertical: "2%",
     elevation: 2,
     backgroundColor: "#fff",
   },
   subContainer: {
-    margin: 4,
+    margin: "1%",
     width: width * 0.93,
     // backgroundColor: "green",
     flexDirection: "row",
@@ -35,11 +35,11 @@ const styles = StyleSheet.create({
 
   subTextview: {
     backgroundColor: "#F1f1f1",
-    padding: 8,
+    padding: "2%",
     borderRadius: 4,
-    marginVertical: 8,
+    marginVertical: "2%",
   },
-  subText: { fontFamily: "Jost-Regular", fontSize: 15, marginHorizontal: 8 },
+  subText: { fontFamily: "Jost-Regular", fontSize: 15, marginHorizontal: "2%" },
 });
 
 export default styles;

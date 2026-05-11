@@ -17,7 +17,6 @@ import {
   saveSqlProjectMilestone,
 } from "@/services/database/database";
 import { NetConnected } from "@/services/helper";
-import { UPDATE_REFRESH_KEYS, useUpdateFlow } from "@/navigation/UpdateFlowContext";
 
 const ProjectMilestones = (props) => {
   const { data } = props?.route?.params;
@@ -30,8 +29,6 @@ const ProjectMilestones = (props) => {
   const { user } = useAuth();
   const IsFocused = useIsFocused();
   const isInternet = NetConnected();
-  const { refreshMap } = useUpdateFlow();
-  const refreshVersion = refreshMap[UPDATE_REFRESH_KEYS.projectMilestones] || 0;
 
   const fetchProjectData = useCallback(async () => {
     setLoad(true);
@@ -61,7 +58,7 @@ const ProjectMilestones = (props) => {
     } finally {
       setLoad(false);
     }
-  }, [data, isInternet, user, IsFocused, refreshVersion]);
+  }, [data, isInternet, user, IsFocused]);
 
   useEffect(() => {
     fetchProjectData();
@@ -167,7 +164,6 @@ const ProjectMilestones = (props) => {
         <>
           <View>
             <ProjectActivitiesMilestone
-              project={data}
               data={
                 user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
                 user?.role?.department == "FIELD-PWD-SOCIAL" ||
@@ -176,8 +172,8 @@ const ProjectMilestones = (props) => {
                   ? projectPhasesData
                   : projectMilestonesData
               }
-              refreshing={load}
-              onRefresh={fetchProjectData}
+              load={load}
+              setLoad={setLoad}
             />
           </View>
         </>

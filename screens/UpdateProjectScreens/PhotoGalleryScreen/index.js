@@ -3,6 +3,7 @@ import {
   Text,
   TouchableOpacity,
   Image,
+  ToastAndroid,
   ScrollView,
   ActivityIndicator,
 } from "react-native";
@@ -19,6 +20,7 @@ import {
   fetchMilestoneImage,
   uploadMilestoneImage,
 } from "../../../services/api/fetch";
+import ImageView from "react-native-image-viewing";
 import { getFromSS } from "../../../services/storage/SecureStore";
 import LoaderCard from "../../../components/LoaderCard";
 import BottomButton from "../../../components/Button/BottomButton";
@@ -29,7 +31,6 @@ import { storeImage } from "@/services/storage/AsyncStorage";
 import UploadProgress from "../../../components/UploadProgress";
 import axios from "axios";
 import { saveSqlMilestonePhyicalImage } from "@/services/database/database";
-import { showFeedback } from "@/services/platform/feedback";
 
 const dummyImages = [
   {
@@ -153,7 +154,7 @@ const PhotoGallery = (props) => {
         // ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
         setAddress(res?.data?.features[0].properties);
       } else {
-        showFeedback(res?.data?.msg);
+        ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
       }
     } catch (error) {
       console.log("Error ::", error);
@@ -167,7 +168,7 @@ const PhotoGallery = (props) => {
 
     if (cameraPermission.granted && mediaLibraryPermission.granted) {
       let result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ["images"],
+        mediaTypes: [ImagePicker.MediaType.image],
         // mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
         // aspect: [4, 3],
@@ -176,7 +177,7 @@ const PhotoGallery = (props) => {
         cameraType:ImagePicker.CameraType.back
       });
 
-      if (!result.canceled) {
+      if (!result.cancelled) {
         // console.log("Captured Image Result:", result?.assets[0]?.uri);
         // console.log("Captured Image Result:", result);
         // console.log("Location Data:", location);
@@ -216,7 +217,10 @@ const PhotoGallery = (props) => {
         }
       }
     } else {
-      showFeedback("Permissions not granted to access camera or media library.");
+      ToastAndroid.show(
+        "Permissions not granted to access camera or media library.",
+        ToastAndroid.LONG
+      );
     }
   };
 
@@ -275,10 +279,10 @@ const PhotoGallery = (props) => {
       if (NetConnected?.isConnected) {
         const res = await uploadMilestoneImage(formData, config);
         if (res?.data?.ok) {
-          showFeedback("Photo Uploaded Successfully!");
+          ToastAndroid.show("Photo Uploaded Successfully!", ToastAndroid.LONG);
           setShowLoad(false);
         } else {
-          showFeedback(res?.data?.msg);
+          ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
         }
       } else {
         const storeSql = {
@@ -288,8 +292,9 @@ const PhotoGallery = (props) => {
         const res = await saveSqlMilestonePhyicalImage(storeSql);
         console.log("SQL IMAGEE RESSS ::", res);
         if (res?.changes) {
-          showFeedback(
-            "Save images locally; they'll upload automatically when you're online."
+          ToastAndroid.show(
+            "Save images locally; they'll upload automatically when you're online.",
+            ToastAndroid.LONG
           );
           setSaveLocally(true);
         }
@@ -335,7 +340,7 @@ const PhotoGallery = (props) => {
                     width: 32,
                     height: 32,
                     borderRadius: 20,
-                    padding: 6,
+                    padding: "1%",
                     alignItems: "center",
                     // justifyContent: "center",
                     elevation: 5,
@@ -354,7 +359,7 @@ const PhotoGallery = (props) => {
                     backgroundColor: "rgba(0, 0, 0, 0.3)",
                     position: "absolute",
                     bottom: 0,
-                    padding: 10,
+                    padding: "2%",
                   }}
                 >
                   <Text style={{ color: "#fff", fontFamily: "Jost-Medium" }}>
@@ -385,8 +390,8 @@ const PhotoGallery = (props) => {
                   elevation: 2,
                   backgroundColor: "#fff",
                   alignSelf: "center",
-                  padding: 10,
-                  marginVertical: 16,
+                  padding: "2%",
+                  marginVertical: "5%",
                 }}
               >
                 <MaterialCommunityIcons

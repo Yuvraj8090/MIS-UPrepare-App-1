@@ -17,7 +17,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     borderRadius: 10,
     overflow: "hidden",
-    margin: 16,
+    margin: "4%",
   },
   image: {
     width: "100%",
@@ -25,13 +25,13 @@ const styles = StyleSheet.create({
   },
 
   uplodedContainer: {
-    padding: 20,
+    padding: "5%",
   },
   subView: {
     width: width * 0.3,
     height: height * 0.15,
     borderRadius: 5,
-    margin: 6,
+    margin: "1.5%",
     overflow: "hidden",
     borderColor: "#cccc",
     borderWidth: 0.5,

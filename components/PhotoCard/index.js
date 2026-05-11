@@ -1,6 +1,14 @@
-import { View, Text } from "react-native";
+import {
+  View,
+  Text,
+  ImageBackground,
+  TouchableOpacity,
+  ToastAndroid,
+} from "react-native";
 import React, { useEffect, useState } from "react";
 import styles from "./styles";
+import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 import * as Progress from "react-native-progress";
 import { NetConnected, width } from "@/services/helper";
 import {
@@ -16,60 +24,40 @@ import {
 } from "@/services/api/fetch";
 import { useAuth } from "@/navigation/AuthContext/AuthContext";
 import axios from "axios";
-import { showFeedback } from "@/services/platform/feedback";
 
-const PhotoCard = () => {
+const PhotoCard = ({ navPath }) => {
+  const navigation = useNavigation();
   const isInternet = NetConnected();
   const { user } = useAuth();
+
+  console.log("USERR :", user?.username);
 
   const [images, setImages] = useState([]);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadIndex, setUploadIndex] = useState(0);
-  const [queueMessage, setQueueMessage] = useState("");
+  console.log("IMGEE LENGTHH :", images?.length);
 
   useEffect(() => {
-    if (!user?.username) {
-      return;
-    }
-
-    if (user?.username == "PWD3") {
-      fetchPhysicalImageLocal();
-    } else {
-      fetchLocal();
-    }
-  }, [isInternet, user?.username]);
-
-  useEffect(() => {
-    if (!user?.username) {
-      setQueueMessage("");
-      return;
-    }
-
-    if (images?.length > 0 && isInternet === false) {
-      setQueueMessage(
-        `${images.length} photo${images.length > 1 ? "s are" : " is"} queued and will upload automatically when you reconnect.`
-      );
-      return;
-    }
-
-    if (images?.length > 0 && isInternet) {
-      setQueueMessage(
-        `${images.length} pending photo${images.length > 1 ? "s" : ""} ready for sync.`
-      );
-      return;
-    }
-
-    setQueueMessage("");
-  }, [images?.length, isInternet, user?.username]);
+    if (isInternet)
+      if (user?.username == "PWD3") {
+        fetchPhysicalImageLocal();
+      } else {
+        fetchLocal();
+      }
+  }, [isInternet]);
 
   const fetchLocal = async () => {
     const imagesData = await fetchPhasesActivitiesImages();
+    console.log("IMAGEEE DATATA ::", imagesData);
     setImages(imagesData);
+    console.log("Phiycalal Imagee");
   };
 
   const fetchPhysicalImageLocal = async () => {
+    console.log("Phiycalal Imagee");
     const imagesData = await fetchMilestonePhyicalImages();
+    console.log("IMAGEEE DATATA ::", imagesData);
     setImages(imagesData);
   };
 
@@ -95,7 +83,10 @@ const PhotoCard = () => {
         fileName: phyImageName,
       });
 
+      console.log("FORMDATAAA :::", formData);
+
       const AuthStr = `Bearer ${authToken}`;
+      console.log("AuthTOKENN :::", AuthStr);
 
       const config = {
         headers: {
@@ -115,11 +106,15 @@ const PhotoCard = () => {
       try {
         if (isInternet) {
           const res = await uploadActivitiesImage(formData, config);
+          console.log("RESSS ::", res);
           if (res?.data?.ok) {
-            showFeedback("Photo Uploaded Successfully!");
+            ToastAndroid.show(
+              "Photo Uploaded Successfully!",
+              ToastAndroid.LONG
+            );
             setProgress(0);
           } else {
-            showFeedback(res?.data?.msg);
+            ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
           }
         } else {
           // const storeSql = {
@@ -169,7 +164,10 @@ const PhotoCard = () => {
         fileName: phyImageName,
       });
 
+      console.log("FORMDATAAA :::", formData);
+
       const AuthStr = `Bearer ${authToken}`;
+      console.log("AuthTOKENN :::", AuthStr);
 
       const config = {
         headers: {
@@ -189,11 +187,15 @@ const PhotoCard = () => {
       try {
         if (isInternet) {
           const res = await uploadMilestoneImage(formData, config);
+          console.log("RESSS ::", res);
           if (res?.data?.ok) {
-            showFeedback("Photo Physical Uploaded Successfully!");
+            ToastAndroid.show(
+              "Photo Physical Uploaded Successfully!",
+              ToastAndroid.LONG
+            );
             setProgress(0);
           } else {
-            showFeedback(res?.data?.msg);
+            ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
           }
         } else {
           // const storeSql = {
@@ -224,34 +226,41 @@ const PhotoCard = () => {
   };
 
   useEffect(() => {
-    if (isInternet && images.length > 0 && !uploading) {
+    if (isInternet && images.length > 0) {
       if (user?.username == "PWD3") {
         handlePhysicalUpload();
       } else {
         handleUpload();
       }
     }
-  }, [images, isInternet, uploading, user?.username]);
+  }, [images, isInternet]);
 
   return (
     <>
       {images?.length > 0 && (
-        <View style={styles.uploadBanner}>
+        <View
+          style={{
+            alignItems: "center",
+            paddingVertical: "3%",
+            width: width,
+            backgroundColor: "#f1f1f1",
+          }}
+        >
           {uploading ? (
-            <View style={{ alignSelf: "stretch", alignItems: "center" }}>
+            <View style={{ alignSelf: "center" }}>
               <Progress.Bar
                 progress={progress / 100}
                 size={20}
                 width={width * 0.9}
                 color="green"
               />
-              <Text style={styles.uploadText}>
+              <Text style={{ fontFamily: "Jost-Regular", marginTop: "2%" }}>
                 Uploading {uploadIndex} of {images?.length} images...
               </Text>
             </View>
           ) : (
-            <Text style={styles.uploadText}>
-              {queueMessage || "Pending images are ready for sync."}
+            <Text style={{ fontFamily: "Jost-Regular", marginTop: "2%" }}>
+              No images for uploading!!
             </Text>
           )}
         </View>

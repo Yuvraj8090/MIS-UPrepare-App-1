@@ -1,23 +1,39 @@
+// Charts.js
 import React from "react";
-import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
-import { LineChart } from "react-native-chart-kit";
+import {
+  View,
+  Text,
+  Dimensions,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
+import { PieChart } from "react-native-chart-kit";
 
-import SectionCard from "@/components/UI/SectionCard";
+import { width } from "@/services/helper";
 
 const screenWidth = Dimensions.get("window").width;
-const chartWidth = Math.min(screenWidth - 56, 360);
 
-const safeNum = (value) => {
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : 0;
+// small helpers
+const safeNum = (v) => {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : 0;
 };
+const toFixedStr = (v, dp = 2) => safeNum(v).toFixed(dp);
+const formatCR = (v) => `${toFixedStr(v, 2)} CR`;
 
 const DepartmentPhysicalCharts = ({ data }) => {
   if (!data) {
-    return null;
+    return (
+      <View style={styles.center}>
+        <Text>Loading...</Text>
+      </View>
+    );
   }
 
-  const departmentRows = data?.department_wise_physical_progress || [];
+  const deptList = data.department_wise_physical_progress || [];
+
+  // dynamic colors
   const colors = [
     "#2980B9",
     "#27AE60",
@@ -29,185 +45,254 @@ const DepartmentPhysicalCharts = ({ data }) => {
     "#D35400",
   ];
 
-  const chartData = departmentRows.map((item, index) => ({
-    name: item?.name || "-",
-    population: safeNum(item?.avg_progress),
+  // convert API data → PieChart format
+  const physicalData = deptList.map((item, index) => ({
+    name: item.name,
+    value: safeNum(item.avg_progress),
     color: colors[index % colors.length],
+    legendFontColor: "#000",
+    legendFontSize: 12,
   }));
 
   return (
-    <SectionCard title="Department-wise Physical Progress">
-      <View style={styles.chartBlock}>
-        <View style={styles.chartStage}>
-          <LineChart
-            data={{
-              labels: chartData.map((item) => item.name),
-              datasets: [
-                {
-                  data: chartData.map((item) => safeNum(item.population)),
-                  color: () => "#16a34a",
-                  strokeWidth: 3,
-                },
-              ],
-            }}
-            width={chartWidth}
-            height={240}
-            fromZero
-            bezier
-            withInnerLines={false}
-            chartConfig={{
-              backgroundColor: "#fff",
-              backgroundGradientFrom: "#fff",
-              backgroundGradientTo: "#fff",
-              decimalPlaces: 1,
-              color: (opacity = 1) => `rgba(22, 163, 74, ${opacity})`,
-              labelColor: (opacity = 1) => `rgba(51, 65, 85, ${opacity})`,
-              propsForDots: {
-                r: "4",
-                strokeWidth: "2",
-                stroke: "#16a34a",
-                fill: "#ffffff",
-              },
-              propsForBackgroundLines: {
-                stroke: "#e2e8f0",
-              },
-              propsForLabels: {
-                fontSize: 11,
-              },
-            }}
-            style={styles.chartCanvas}
-          />
-        </View>
+    <View style={styles.container}>
+      <View style={styles.topCard}>
+        <Text style={styles.topTitle}>Department-wise Physical Progress</Text>
 
-        <View style={styles.legendList}>
-          {chartData.map((item) => (
-            <View key={item.name} style={styles.legendItem}>
-              <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-              <Text style={styles.legendText}>
-                {item.name}: {safeNum(item.population).toFixed(2)}%
-              </Text>
-            </View>
-          ))}
-        </View>
-      </View>
-
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        <View style={styles.table}>
-          <View style={styles.tableHeader}>
-            <Text style={[styles.tableHeadCell, styles.departmentColumn]}>
-              Department
-            </Text>
-            <Text style={styles.tableHeadCell}>Avg Physical Progress %</Text>
+        <View style={styles.topContent}>
+          {/* Pie Chart */}
+          <View style={{ flex: 1 }}>
+            <PieChart
+              data={physicalData.map((d) => ({
+                name: d.name,
+                population: d.value,
+                color: d.color,
+                legendFontColor: "#000",
+                legendFontSize: 12,
+              }))}
+              width={screenWidth - 40}
+              height={260}
+              chartConfig={{
+                backgroundColor: "#fff",
+                backgroundGradientFrom: "#fff",
+                backgroundGradientTo: "#fff",
+                color: (opacity = 1) => `rgba(0,0,0,${opacity})`,
+              }}
+              accessor="population"
+              backgroundColor="transparent"
+              paddingLeft="15"
+            />
           </View>
 
-          {chartData.map((row, index) => (
-            <View
-              key={`${row.name}-${index}`}
-              style={[
-                styles.tableRow,
-                index % 2 === 0 ? styles.rowEven : styles.rowOdd,
-              ]}
-            >
-              <Text style={[styles.tableCell, styles.departmentColumn, styles.departmentText]}>
-                {row.name}
-              </Text>
-              <Text style={styles.tableCell}>{safeNum(row.population).toFixed(2)}%</Text>
-            </View>
-          ))}
+          {/* Right side stats */}
+          <View style={styles.topRight}>
+            {physicalData.map((item, i) => (
+              <View style={styles.statRow} key={i}>
+                <View
+                  style={[styles.colorDot, { backgroundColor: item.color }]}
+                />
+                <Text style={styles.statText}>
+                  {item.name}: {item.value.toFixed(2)}%
+                </Text>
+              </View>
+            ))}
+          </View>
         </View>
-      </ScrollView>
-    </SectionCard>
+
+        {/* Table */}
+        <ScrollView horizontal>
+          <View style={styles.bigTable}>
+            <View style={styles.bigThead}>
+              <Text style={[styles.bigTh, { flex: 2 }]}>Department</Text>
+              <Text style={styles.bigTh}>Avg Physical Progress %</Text>
+            </View>
+
+            {physicalData.map((r, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.bigTrow,
+                  i % 2 === 0 ? styles.rowEven : styles.rowOdd,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.bigTd,
+                    { flex: 2, color: "#10621E", fontWeight: "700" },
+                  ]}
+                >
+                  {r.name}
+                </Text>
+
+                <Text style={styles.bigTd}>{r.value.toFixed(2)}%</Text>
+              </View>
+            ))}
+          </View>
+        </ScrollView>
+      </View>
+    </View>
   );
 };
 
+export default DepartmentPhysicalCharts;
+
 const styles = StyleSheet.create({
-  chartBlock: {
-    alignItems: "center",
-    gap: 8,
-  },
-  chartStage: {
-    width: "100%",
-    minHeight: 248,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  chartCanvas: {
-    borderRadius: 12,
-  },
-  legendList: {
-    width: "100%",
-    gap: 10,
-    marginTop: -8,
-    marginBottom: 8,
-  },
-  legendItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 10,
-  },
-  legendDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 999,
-    marginTop: 4,
-  },
-  legendText: {
-    flex: 1,
-    fontFamily: "Jost-SemiBold",
-    fontSize: 14,
-    lineHeight: 20,
-    color: "#334155",
-  },
-  table: {
-    minWidth: 420,
-    borderWidth: 1,
-    borderColor: "#dbe7da",
-    borderRadius: 14,
+  container: { flex: 1, backgroundColor: "#eef1f4" },
+  center: { flex: 1, justifyContent: "center", alignItems: "center" },
+
+  // top big contract overview card
+  topCard: {
+    margin: 10,
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    // padding: 12,
+    elevation: 4,
     overflow: "hidden",
-    marginTop: 4,
   },
-  tableHeader: {
+  topTitle: {
+    fontSize: 16,
+    fontFamily: "Jost-Bold",
+    color: "#fff",
+    backgroundColor: "#28A745",
+    padding: 12,
+    // borderRadius: 4,
+    alignSelf: "stretch",
+  },
+  topContent: {
+    flexDirection: "row",
+    marginTop: 12,
+    padding: 10,
+    // alignItems: "center",
+    // justifyContent: "space-between",
+  },
+  topRight: {
+    width: 150,
+    // marginLeft: 10,
+    // justifyContent: "center",
+    position: "relative",
+    top: 10,
+  },
+  statRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
+  statText: {
+    marginLeft: 8,
+    fontFamily: "Jost-SemiBold",
+    color: "#333",
+    fontSize: 14,
+  },
+
+  // big table styles
+  bigTable: {
+    // minWidth: width,
+    marginTop: 14,
+    borderWidth: 1,
+    borderColor: "#dfe7de",
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  bigThead: {
     flexDirection: "row",
     backgroundColor: "#28A745",
+    paddingVertical: 10,
+    // justifyContent: "space-between",
+    // paddingHorizontal: 8,
+    // minWidth: width,
   },
-  tableHeadCell: {
-    width: 160,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
+  bigTh: {
+    // flex: 1,
     color: "#fff",
     textAlign: "center",
     fontFamily: "Jost-Bold",
     fontSize: 13,
+    width: width * 0.45,
+    marginHorizontal: 2,
     borderRightWidth: 1,
-    borderRightColor: "rgba(255,255,255,0.2)",
+    borderColor: "#eef6ee",
   },
-  departmentColumn: {
-    width: 260,
-  },
-  tableRow: {
+  bigTrow: {
     flexDirection: "row",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderColor: "#eef6ee",
+    alignItems: "center",
+    // width: width * 0.2,
+  },
+  bigTd: {
+    width: width * 0.45,
+    textAlign: "center",
+    color: "#0b3b12",
+  },
+  smallPct: { fontSize: 12, color: "#6b6b6b" },
+
+  // mini chart card
+  card: {
+    backgroundColor: "#fff",
+    margin: 10,
+    borderRadius: 8,
+    elevation: 3,
+    overflow: "hidden",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    backgroundColor: "#28A745",
+    padding: 10,
     alignItems: "center",
   },
-  rowEven: {
-    backgroundColor: "#f6fbf6",
-  },
-  rowOdd: {
-    backgroundColor: "#fff",
-  },
-  tableCell: {
-    width: 160,
-    paddingHorizontal: 12,
-    paddingVertical: 14,
-    textAlign: "center",
-    color: "#0f172a",
-    fontFamily: "Jost-Regular",
-    fontSize: 13,
-  },
-  departmentText: {
-    color: "#10621E",
-    fontFamily: "Jost-SemiBold",
-    textAlign: "left",
-  },
-});
+  headerText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 
-export default DepartmentPhysicalCharts;
+  dropdownBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    height: 36,
+    paddingHorizontal: 8,
+    backgroundColor: "#fff",
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: "#ccc",
+  },
+  dropdownBtnText: { fontSize: 13, color: "#000" },
+  dropdownMenu: { borderRadius: 6, elevation: 4 },
+
+  chartWrap: { padding: 10, alignItems: "center" },
+
+  pieRow: { width: "100%", alignItems: "center", justifyContent: "center" },
+  percentOverlay: {
+    position: "absolute",
+    right: 18,
+    top: 60,
+    backgroundColor: "transparent",
+    padding: 6,
+    borderRadius: 6,
+  },
+  percentItem: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
+  percentText: { marginLeft: 6, color: "#222", fontSize: 12 },
+  colorDot: { width: 10, height: 10, borderRadius: 4 },
+
+  // small table inside card
+  table: {
+    margin: 10,
+    borderWidth: 1,
+    borderColor: "#e6e6e6",
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  tHead: {
+    flexDirection: "row",
+    backgroundColor: "#28A745",
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+  },
+  th: { flex: 1, color: "#fff", textAlign: "center", fontWeight: "700" },
+  leftTh: { textAlign: "left", paddingLeft: 10 },
+
+  tRow: { flexDirection: "row", paddingVertical: 10, paddingHorizontal: 6 },
+  tCell: { flex: 1, textAlign: "center", color: "#333" },
+  leftCell: { textAlign: "left", paddingLeft: 10 },
+
+  rowEven: { backgroundColor: "#f7fff7" },
+  rowOdd: { backgroundColor: "#fff" },
+
+  // small helpers
+  verticalCenter: { alignItems: "center" },
+});

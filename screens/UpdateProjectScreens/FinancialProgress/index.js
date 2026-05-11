@@ -4,6 +4,7 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
+  ToastAndroid,
   Image,
   ScrollView,
   Platform,
@@ -20,10 +21,9 @@ import {
   saveECPPhycialProgressImage,
   saveFinancialProgress,
 } from "@/services/api/fetch";
-import { formatDate, width } from "@/services/helper";
+import { width } from "@/services/helper";
 import * as DocumentPicker from "expo-document-picker";
 import { FontAwesome } from "@expo/vector-icons";
-import { showFeedback } from "@/services/platform/feedback";
 
 const FinancialProgress = (props) => {
   const { data } = props?.route?.params;
@@ -34,7 +34,7 @@ const FinancialProgress = (props) => {
   const [financeAmount, setFinanceAmount] = useState("");
   const [noOfBills, setNoOfBills] = useState("");
   const [billSerialNo, setBillSerialNo] = useState("");
-  const [submitDate, setSubmitDate] = useState(new Date());
+  const [submitDate, setSubmitDate] = useState("");
   const [images, setImages] = useState([]);
   const [showLoader, setShowLoader] = useState(false);
 
@@ -106,7 +106,8 @@ const FinancialProgress = (props) => {
     formData.append("bill_serial_no", billSerialNo);
 
     // ✅ Convert Date object to string: YYYY-MM-DD
-    formData.append("submit_date", formatDate(submitDate));
+    const formattedDate = new Date(submitDate).toISOString().split("T")[0];
+    formData.append("submit_date", formattedDate);
 
     // ✅ Append each media file properly
     images.forEach((file, index) => {
@@ -146,7 +147,9 @@ const FinancialProgress = (props) => {
     try {
       const res = await saveFinancialProgress(authToken, formData);
       if (res?.status) {
-        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
+        Platform.OS === "ios"
+          ? Alert.alert(res?.message)
+          : ToastAndroid.show(res?.message, ToastAndroid.LONG);
         setTimeout(() => navigation.goBack(), 2000);
       } else {
         Alert.alert(res?.message || "Submission failed");
@@ -164,7 +167,7 @@ const FinancialProgress = (props) => {
     setFinanceAmount("");
     setNoOfBills("");
     setBillSerialNo("");
-    setSubmitDate(new Date());
+    setSubmitDate("");
     setImages([]);
   };
 
@@ -172,7 +175,7 @@ const FinancialProgress = (props) => {
     <View style={styles.mainContainer}>
       <CustomHeader Title={"Add Financial Progress"} GoBack={true} />
 
-      <ScrollView style={{ margin: 12 }} showsVerticalScrollIndicator={false}>
+      <ScrollView style={{ margin: "3%" }} showsVerticalScrollIndicator={false}>
         <View style={styles.formCard}>
           <View
             style={{
@@ -258,8 +261,8 @@ const FinancialProgress = (props) => {
             <ScrollView
               horizontal
               style={{
-                marginTop: 16,
-                paddingVertical: 10,
+                marginTop: "10%",
+                paddingVertical: "5%",
               }}
             >
               {images.map((file, i) => (
@@ -338,7 +341,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginBottom: 4,
     alignSelf: "flex-start",
-    marginLeft: 16,
+    marginLeft: "5%",
   },
   rowBetween: {
     flexDirection: "row",
@@ -352,7 +355,7 @@ const styles = StyleSheet.create({
     padding: 10,
     flex: 0.48,
     alignItems: "center",
-    marginHorizontal: 6,
+    marginHorizontal: "3%",
   },
   fileBtnText: {
     fontSize: 13,
@@ -372,7 +375,7 @@ const styles = StyleSheet.create({
   button: {
     // width: width * 0.3,
     padding: 12,
-    margin: 8,
+    margin: "2%",
     borderRadius: 6,
     alignItems: "center",
   },
