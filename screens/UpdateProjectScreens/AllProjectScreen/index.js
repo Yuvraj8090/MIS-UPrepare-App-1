@@ -110,7 +110,7 @@ const AllProjectScreen = () => {
         </>
       ) : (
         <> */}
-      <View>
+      <View style={{ flex: 1 }}>
         <AllprojectTable
           refresh={refresh}
           handleRefresh={handleRefresh}

@@ -11,6 +11,7 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import React, { useState, useEffect, useMemo } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   View,
   Text,
@@ -62,6 +63,7 @@ const WorkProjectProgressList = (props) => {
   const [workProgressData, setWorkProgressData] = useState([]);
   const [load, setLoad] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const insets = useSafeAreaInsets();
   const [expandedTitle, setExpandedTitle] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
@@ -244,7 +246,7 @@ const WorkProjectProgressList = (props) => {
         refreshing={refreshing}
         onRefresh={() => getWorkProgress({ isRefresh: true })}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: Math.max(insets.bottom, 28) }]}
         ListHeaderComponent={
           <View style={styles.headerSection}>
             <View style={styles.projectCard}>

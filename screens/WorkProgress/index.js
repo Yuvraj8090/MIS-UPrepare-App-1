@@ -17,6 +17,7 @@ import { fetchWorkProgress } from "@/services/api/fetch";
 import WorkProgressSkeletonCard from "@/components/SkeletonDesign/WorkProgressCard";
 import { useNavigation } from "@react-navigation/native";
 import { convertToCr } from "@/services/helper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const WorkProgress = ({
   navigation: stackNavigation,
@@ -24,6 +25,7 @@ const WorkProgress = ({
   ..._restProps
 }) => {
   const [search, setSearch] = useState("");
+  const insets = useSafeAreaInsets();
   const [workProgressData, setWorkProgressData] = useState([]);
   const [load, setLoad] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -211,7 +213,7 @@ const WorkProgress = ({
       <FlatList
         data={load ? [] : filteredData}
         keyExtractor={(item) => String(item?.id || item?.project_id)}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom, 28) }]}
         showsVerticalScrollIndicator={false}
         refreshing={refreshing}
         onRefresh={() => getWorkProgress({ isRefresh: true })}

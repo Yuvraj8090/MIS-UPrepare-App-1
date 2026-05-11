@@ -25,6 +25,7 @@ import DepartmentFinanicalProgress from "../../components/DashBoardComponent/Cha
 import ExecutiveSummary from "../../components/DashBoardComponent/ExecutiveSummary";
 import DepartmentPortfolioBoard from "../../components/DashBoardComponent/DepartmentPortfolioBoard";
 import { colors, radius, shadows, spacing } from "@/constants/theme";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const DashboardScreen = () => {
   const [dashboardData, setDashboardData] = useState(null);
@@ -32,6 +33,7 @@ const DashboardScreen = () => {
   const [refreshing, setRefreshing] = useState(false);
 
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const isInternet = NetConnected();
 
   const getDashboardData = useCallback(async (refresh = false) => {
@@ -99,7 +101,7 @@ const DashboardScreen = () => {
       ) : (
         <ScrollView
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: Math.max(insets.bottom + 16, 32) }]}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
           }

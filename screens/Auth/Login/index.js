@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import NetInfo from "@react-native-community/netinfo";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -265,6 +266,7 @@ const LoginScreen = () => {
       imageStyle={loginStyles.backgroundImage}
     >
       <View style={loginStyles.overlay} />
+      <SafeAreaView style={loginStyles.flex} edges={["top", "bottom"]}>
       <KeyboardAwareScrollView
         style={loginStyles.flex}
         contentContainerStyle={loginStyles.scrollContent}
@@ -433,6 +435,7 @@ const LoginScreen = () => {
           </AnimatedPressable>
         </View>
       </KeyboardAwareScrollView>
+      </SafeAreaView>
 
       <LoaderCard
         visible={loading}
