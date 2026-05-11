@@ -1,424 +1,438 @@
 import {
   View,
   Text,
-  StyleSheet,
   FlatList,
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
+  StyleSheet,
 } from "react-native";
-import React, { useEffect, useState, useCallback } from "react";
-import * as Progress from "react-native-progress";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
+import { Feather, MaterialCommunityIcons } from "@expo/vector-icons";
 import styles from "./styles";
 import CustomHeader from "../../../components/AppHeader/CustomHeader";
-import { NetConnected, width } from "../../../services/helper";
-import {
-  fetchPhysicalProgressByMId,
-  fetchProjectsMilestonesByPId,
-} from "../../../services/api/fetch";
+import { NetConnected } from "../../../services/helper";
+import { fetchPhysicalProgressByMId } from "../../../services/api/fetch";
 import { getFromSS } from "../../../services/storage/SecureStore";
 import { useNavigation } from "@react-navigation/native";
 import { useIsFocused } from "@react-navigation/native";
-import BottomButton from "@/components/Button/BottomButton";
 import {
   fetchMilestonePhysicalProgressData,
   saveSqlMilestonePhysicalProgress,
 } from "@/services/database/database";
+import { colors, radius, shadows, spacing } from "@/constants/theme";
+import { UPDATE_REFRESH_KEYS, useUpdateFlow } from "@/navigation/UpdateFlowContext";
 
-const milestonesDummyData = [
-  {
-    id: 1,
-    name: "Building Construction Progress",
-    percentage: "20%",
-    date: "2025-08-01",
-  },
-  {
-    id: 2,
-    name: "Building Construction Progress",
-    percentage: "40%",
-    date: "2025-08-10",
-  },
-  {
-    id: 3,
-    name: "Building Construction Progress",
-    percentage: "60%",
-    date: "2025-08-18",
-  },
-  {
-    id: 4,
-    name: "Building Construction Progress",
-    percentage: "80%",
-    date: "2025-08-25",
-  },
-  {
-    id: 5,
-    name: "Building Construction Progress",
-    percentage: "100%",
-    date: null, // Not Mentioned
-  },
-];
+const formatDateLabel = (date) => {
+  if (!date) {
+    return "Not Mentioned";
+  }
+
+  const nextDate = new Date(date);
+
+  if (Number.isNaN(nextDate.getTime())) {
+    return date;
+  }
+
+  return nextDate.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+};
 
 const PhysicalProgressMilestone = (props) => {
-  const { milestone_id } = props?.route?.params;
-  console.log("MIDD ::", milestone_id);
+  const { milestone_id, milestone, project, highlightUpdated } = props?.route?.params;
   const [milestonesData, setMilestonesData] = useState([]);
   const [load, setLoad] = useState(true);
   const [refresh, setRefresh] = useState(false);
-  const [totalPer, setTotalPer] = useState("");
-  const [remainingPer, setremainingPer] = useState("");
+  const [totalPer, setTotalPer] = useState(0);
+  const [remainingPer, setRemainingPer] = useState(100);
 
   const navigation = useNavigation();
-  const IsFocused = useIsFocused();
+  const isFocused = useIsFocused();
   const isInternet = NetConnected();
+  const { refreshMap, lastUpdateSummary } = useUpdateFlow();
+  const refreshVersion =
+    refreshMap[UPDATE_REFRESH_KEYS.physicalProgressMilestone] || 0;
+
+  const records = useMemo(() => {
+    if (isInternet) {
+      return milestonesData?.milestone?.records || [];
+    }
+
+    return Array.isArray(milestonesData) ? milestonesData : [];
+  }, [isInternet, milestonesData]);
+
+  const milestoneName = useMemo(() => {
+    if (isInternet) {
+      return milestonesData?.milestone?.name || milestone?.name || "Milestone";
+    }
+
+    return milestonesData?.[0]?.name || milestone?.name || "Milestone";
+  }, [isInternet, milestonesData, milestone?.name]);
+
+  const checkAvailableMilestone = (data) => {
+    const totalPercentage = (data || []).reduce(
+      (total, item) => total + Number(item?.percentage || 0),
+      0
+    );
+
+    const remainingPercentage = Math.max(0, 100 - totalPercentage);
+    setTotalPer(totalPercentage);
+    setRemainingPer(remainingPercentage);
+  };
+
+  const getMilestonePhysicalProgressSql = async (mid) => {
+    try {
+      const res = await fetchMilestonePhysicalProgressData(mid);
+      setMilestonesData(res);
+      checkAvailableMilestone(res);
+    } catch (error) {
+      console.error("Error fetching data from SQL:", error);
+    }
+  };
+
+  const getPhysicalProgressByMID = async (mid) => {
+    const authToken = await getFromSS("authToken");
+
+    try {
+      const formData = { milestone_id: mid };
+      const res = await fetchPhysicalProgressByMId(formData, authToken);
+
+      if (res?.data?.milestone) {
+        setMilestonesData(res?.data);
+        checkAvailableMilestone(res?.data?.milestone?.records);
+        await saveSqlMilestonePhysicalProgress(res?.data?.milestone);
+      } else {
+        setMilestonesData([]);
+        checkAvailableMilestone([]);
+      }
+    } catch (error) {
+      console.error("Error fetching physical progress by MID:", error);
+    }
+  };
 
   const fetchDataBasedOnConnectivity = useCallback(
-    async (MID) => {
+    async (mid) => {
       setLoad(true);
-      console.log("MIDD INDSIDEE::", MID);
       try {
         if (isInternet) {
-          console.log("Fetching data from the server...");
-          await getPhysicalProgressByMID(MID);
+          await getPhysicalProgressByMID(mid);
         } else {
-          console.log("Fetching data from local storage...");
-          await getMilestonePhysicalProgressSql(MID);
+          await getMilestonePhysicalProgressSql(mid);
         }
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
-        setTimeout(() => {
-          setLoad(false);
-        }, 3000);
+        setLoad(false);
+        setRefresh(false);
       }
     },
     [isInternet]
   );
 
   useEffect(() => {
-    fetchDataBasedOnConnectivity(milestone_id);
-  }, [milestone_id, IsFocused, fetchDataBasedOnConnectivity]);
-
-  const getMilestonePhysicalProgressSql = async (MID) => {
-    try {
-      const res = await fetchMilestonePhysicalProgressData(MID);
-      console.log("Fetched Milestone Physical Progress from SQL:", res);
-      setMilestonesData(res);
-      CheckAvailabileMilestone(res);
-    } catch (error) {
-      console.error("Error fetching data from SQL:", error);
+    if (milestone_id) {
+      fetchDataBasedOnConnectivity(milestone_id);
     }
-  };
-
-  const getPhysicalProgressByMID = async (MID) => {
-    setLoad(true);
-    const authToken = await getFromSS("authToken");
-
-    try {
-      const formData = { milestone_id: MID };
-      const res = await fetchPhysicalProgressByMId(formData, authToken);
-      console.log("Fetched Physical Progress by MID:", res);
-
-      if (res?.data) {
-        setMilestonesData(res?.data);
-        CheckAvailabileMilestone(res?.data?.milestone?.records);
-        await saveSqlMilestonePhysicalProgress(res?.data?.milestone);
-      }
-    } catch (error) {
-      console.error("Error fetching physical progress by MID:", error);
-    } finally {
-      setLoad(false);
-    }
-  };
-
-  const CheckAvailabileMilestone = (data) => {
-    const totalPercentage = data?.reduce(
-      (total, item) => total + item?.percentage,
-      0
-    );
-
-    const remainingPercentage = 100 - totalPercentage;
-    // console.log("PERMMENEtt", totalPercentage);
-    setTotalPer(totalPercentage);
-    setremainingPer(remainingPercentage);
-  };
+  }, [milestone_id, isFocused, fetchDataBasedOnConnectivity, refreshVersion]);
 
   const handleRefresh = () => {
     setRefresh(true);
-    // Simulate fetching new data
-    // getPhysicalProgressByMID(milestone_id);
     fetchDataBasedOnConnectivity(milestone_id);
-    setTimeout(() => setRefresh(false), 1000); // Simulating async refresh
   };
 
   const handleNext = () => {
     navigation.navigate("PhysicalProgressForm", {
-      data: milestonesData,
+      milestone: isInternet ? milestonesData?.milestone : { id: milestone_id, name: milestoneName },
+      project,
       remainProgress: remainingPer,
     });
   };
 
-  return (
-    <View style={styles.mainContainer}>
-      <View>
-        <CustomHeader Title={"Physical Progress of Milestones"} GoBack={true} />
-        {/* <Text>ProjectMilestones</Text> */}
-
-        {load ? (
-          <>
-            <ActivityIndicator size="small" color="#000" />
-          </>
-        ) : (
-          <>
-            <View>
-              <View style={TableStyles.table}>
-                {milestonesData?.milestone?.records?.length > 0 ||
-                milestonesData?.length > 0 ||
-                milestonesDummyData?.length > 0 ? (
-                  <>
-                    <FlatList
-                      // data={
-                      //   isInternet
-                      //     ? milestonesData?.milestone?.records
-                      //     : milestonesData
-                      // }
-                      data={milestonesDummyData}
-                      showsVerticalScrollIndicator={false}
-                      keyExtractor={(item, index) => index.toString()}
-                      refreshControl={
-                        <RefreshControl
-                          refreshing={refresh}
-                          onRefresh={handleRefresh}
-                        />
-                      }
-                      ListHeaderComponent={
-                        <>
-                          <View>
-                            <Text
-                              style={{
-                                fontFamily: "Jost-Medium",
-                                fontSize: 16,
-                                margin: "2%",
-                                color: "#777",
-                              }}
-                            >
-                              {/* {isInternet
-                                ? milestonesData?.milestone?.name
-                                : milestonesData[0]?.name} */}
-                                Building Construction Progress
-                            </Text>
-                          </View>
-
-                          <View style={TableStyles.row}>
-                            <Text style={TableStyles.headerSnoCell}>S.No.</Text>
-                            <Text style={TableStyles.headerCell}>
-                              Progress (in %)
-                            </Text>
-                            <Text style={TableStyles.headerCell}>Date</Text>
-                            <Text style={TableStyles.headerCell}>
-                              Add Image
-                            </Text>
-                          </View>
-                        </>
-                      }
-                      renderItem={({ item, index }) => {
-                        return (
-                          <View style={TableStyles.row}>
-                            <View style={TableStyles.snocellView}>
-                              <Text style={TableStyles.snocell}>
-                                {index + 1}
-                              </Text>
-                            </View>
-
-                            <View style={TableStyles.cellView}>
-                              <Text style={[TableStyles.cell]}>
-                                {item?.percentage}
-                              </Text>
-                            </View>
-                            <View style={TableStyles.cellView}>
-                              <Text style={TableStyles.cell}>
-                                {item?.date != null
-                                  ? item?.date
-                                  : "Not Mentioned"}
-                              </Text>
-                            </View>
-
-                            <View style={TableStyles.cellView}>
-                              <View
-                                style={TableStyles.buttinView}
-                                onTouchEnd={() =>
-                                  navigation.navigate("PhotoGalleryScreen", {
-                                    mppr_id: item?.id,
-                                  })
-                                }
-                              >
-                                <Text
-                                  style={{
-                                    fontFamily: "Jost-Medium",
-                                    color: "#fff",
-                                    fontSize: 12,
-                                  }}
-                                >
-                                  Add Image
-                                </Text>
-                              </View>
-                              <View
-                                style={[
-                                  TableStyles.buttinView,
-                                  {
-                                    backgroundColor: "#68f168",
-                                    marginVertical: "4%",
-                                  },
-                                ]}
-                                onTouchEnd={() =>
-                                  navigation.navigate("PhotoGalleryScreen", {
-                                    mppr_id: item?.id,
-                                  })
-                                }
-                              >
-                                <Text
-                                  style={{
-                                    fontFamily: "Jost-Medium",
-                                    fontSize: 12,
-                                  }}
-                                >
-                                  View Image
-                                </Text>
-                              </View>
-                            </View>
-                          </View>
-                        );
-                      }}
-                      ListEmptyComponent={
-                        milestonesData?.milestone?.records?.length == 0 ||
-                        (milestonesData.length == 0 && (
-                          <View
-                            style={{
-                              alignSelf: "center",
-                              margin: "5%",
-                            }}
-                          >
-                            <Text
-                              style={{
-                                fontFamily: "Jost-Medium",
-                                fontSize: 15,
-                              }}
-                            >
-                              No Milestone Available Now!!
-                            </Text>
-                          </View>
-                        ))
-                      }
-                      ListFooterComponent={
-                        <View style={{ marginBottom: "50%" }} />
-                      }
-                    />
-                  </>
-                ) : (
-                  <>
-                    <View
-                      style={{
-                        alignSelf: "center",
-                        margin: "5%",
-                      }}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "Jost-Medium",
-                          fontSize: 15,
-                        }}
-                      >
-                        No Milestone Available Now!!
-                      </Text>
-                    </View>
-                  </>
-                )}
-              </View>
-            </View>
-          </>
-        )}
+  const renderRecord = ({ item, index }) => (
+    <View style={screenStyles.recordCard}>
+      <View style={screenStyles.recordHeader}>
+        <View style={screenStyles.recordBadge}>
+          <Text style={screenStyles.recordBadgeText}>Entry #{index + 1}</Text>
+        </View>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          style={screenStyles.imageButton}
+          onPress={() =>
+            navigation.navigate("PhotoGalleryScreen", {
+              mppr_id: item?.record_id || item?.id,
+            })
+          }
+        >
+          <Feather name="image" size={14} color="#fff" />
+          <Text style={screenStyles.imageButtonText}>Images</Text>
+        </TouchableOpacity>
       </View>
 
-      {!load && (
-        <BottomButton
-          active={totalPer > 100 || totalPer == 100 ? false : true}
-          Title={
-            totalPer > 100 || totalPer > 100 || totalPer == 100
-              ? "Completed Milestone Progress"
-              : "Update Progress"
+      <View style={screenStyles.metricRow}>
+        <View style={screenStyles.metricCard}>
+          <Text style={screenStyles.metricLabel}>Progress</Text>
+          <Text style={screenStyles.metricValue}>{item?.percentage || 0}%</Text>
+        </View>
+        <View style={screenStyles.metricCard}>
+          <Text style={screenStyles.metricLabel}>Date</Text>
+          <Text style={screenStyles.metricValue}>{formatDateLabel(item?.date)}</Text>
+        </View>
+      </View>
+    </View>
+  );
+
+  return (
+    <View style={styles.mainContainer}>
+      <CustomHeader Title={"Physical Progress of Milestones"} GoBack={true} />
+
+      {load ? (
+        <View style={screenStyles.loaderWrap}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={screenStyles.loaderText}>Loading progress records...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={records}
+          showsVerticalScrollIndicator={false}
+          keyExtractor={(item, index) =>
+            String(item?.record_id || item?.id || index)
           }
-          onPress={totalPer < 100 && handleNext}
+          refreshControl={
+            <RefreshControl refreshing={refresh} onRefresh={handleRefresh} />
+          }
+          contentContainerStyle={screenStyles.listContent}
+          ListHeaderComponent={
+            <View style={screenStyles.heroCard}>
+              <Text style={screenStyles.heroTitle}>{milestoneName}</Text>
+              <Text style={screenStyles.heroSubtext}>
+                Review the current progress history and add the next update only
+                after the remaining percentage is confirmed.
+              </Text>
+
+              <View style={screenStyles.summaryRow}>
+                <View style={screenStyles.summaryChip}>
+                  <Text style={screenStyles.summaryValue}>{totalPer}%</Text>
+                  <Text style={screenStyles.summaryLabel}>Completed</Text>
+                </View>
+                <View style={screenStyles.summaryChip}>
+                  <Text style={screenStyles.summaryValue}>{remainingPer}%</Text>
+                  <Text style={screenStyles.summaryLabel}>Remaining</Text>
+                </View>
+              </View>
+
+              {highlightUpdated && lastUpdateSummary?.milestoneId === milestone_id ? (
+                <View style={screenStyles.successBanner}>
+                  <MaterialCommunityIcons
+                    name="check-circle-outline"
+                    size={18}
+                    color={colors.success}
+                  />
+                  <Text style={screenStyles.successText}>
+                    Progress updated successfully. The latest data is now in sync.
+                  </Text>
+                </View>
+              ) : null}
+            </View>
+          }
+          renderItem={renderRecord}
+          ListEmptyComponent={
+            <View style={screenStyles.emptyState}>
+              <Text style={screenStyles.emptyTitle}>No progress records yet</Text>
+              <Text style={screenStyles.emptyText}>
+                This milestone has no saved progress entries right now.
+              </Text>
+            </View>
+          }
+          ListFooterComponent={
+            <TouchableOpacity
+              activeOpacity={0.88}
+              onPress={handleNext}
+              style={screenStyles.addButton}
+            >
+              <Feather name="plus-circle" size={18} color="#fff" />
+              <Text style={screenStyles.addButtonText}>Add Physical Progress</Text>
+            </TouchableOpacity>
+          }
         />
       )}
     </View>
   );
 };
 
-const TableStyles = StyleSheet.create({
-  table: {
-    flexDirection: "column",
-    borderWidth: 1.5,
-    borderColor: "#000",
-    marginHorizontal: "0.5%",
-    borderRadius: 2,
-  },
-  row: {
-    flexDirection: "row",
-  },
-  headerSnoCell: {
-    width: width * 0.15,
-    // flex: 1,
-    paddingHorizontal: "1%",
-    paddingVertical: "3%",
-    fontFamily: "Jost-SemiBold",
-    backgroundColor: "#f0f0f0",
-    textAlign: "center",
-  },
-  headerCell: {
-    // width: width * 0.26,
+export default PhysicalProgressMilestone;
+
+const screenStyles = StyleSheet.create({
+  loaderWrap: {
     flex: 1,
-    paddingHorizontal: "1%",
-    paddingVertical: "3%",
-    fontFamily: "Jost-SemiBold",
-    backgroundColor: "#f0f0f0",
-    textAlign: "center",
-    fontSize: 13,
-  },
-  snocellView: {
-    width: width * 0.15,
-    paddingHorizontal: "1%",
-    paddingVertical: "3%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
     alignItems: "center",
     justifyContent: "center",
+    paddingHorizontal: 24,
   },
-  snocell: {
-    textAlign: "center",
+  loaderText: {
+    marginTop: 10,
+    color: colors.textMuted,
     fontFamily: "Jost-Medium",
   },
-  cellView: {
-    width: width * 0.28,
-    // flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: "1%",
-    paddingVertical: "2%",
-    borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
-    // backgroundColor: "green",
+  listContent: {
+    padding: spacing.md,
+    paddingBottom: 28,
   },
-  cell: {
-    textAlign: "center",
+  heroCard: {
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    ...shadows.card,
+  },
+  heroTitle: {
+    fontFamily: "Jost-Bold",
+    fontSize: 22,
+    color: colors.text,
+  },
+  heroSubtext: {
+    marginTop: 6,
     fontFamily: "Jost-Regular",
     fontSize: 13,
+    lineHeight: 20,
+    color: colors.textMuted,
   },
-  buttinView: {
-    width: width * 0.2,
+  summaryRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  summaryChip: {
+    flex: 1,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  summaryValue: {
+    fontFamily: "Jost-Bold",
+    fontSize: 18,
+    color: colors.primary,
+  },
+  summaryLabel: {
+    marginTop: 4,
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    color: colors.textMuted,
+  },
+  successBanner: {
+    marginTop: spacing.md,
+    borderRadius: radius.md,
+    backgroundColor: colors.successSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  successText: {
+    flex: 1,
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.success,
+  },
+  recordCard: {
+    marginTop: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    padding: spacing.md,
+    ...shadows.soft,
+  },
+  recordHeader: {
+    flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#007bff",
-    padding: "5%",
-    borderRadius: 4,
+    justifyContent: "space-between",
+    gap: spacing.sm,
+  },
+  recordBadge: {
+    borderRadius: radius.pill,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  recordBadgeText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 11,
+    color: colors.primary,
+  },
+  imageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  imageButtonText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 12,
+    color: "#fff",
+  },
+  metricRow: {
+    flexDirection: "row",
+    gap: spacing.sm,
+    marginTop: spacing.md,
+  },
+  metricCard: {
+    flex: 1,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  metricLabel: {
+    fontFamily: "Jost-Regular",
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  metricValue: {
+    marginTop: 4,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 13,
+    color: colors.text,
+  },
+  emptyState: {
+    marginTop: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    fontFamily: "Jost-Bold",
+    fontSize: 16,
+    color: colors.text,
+  },
+  emptyText: {
+    marginTop: 6,
+    fontFamily: "Jost-Regular",
+    fontSize: 13,
+    lineHeight: 20,
+    color: colors.textMuted,
+    textAlign: "center",
+  },
+  addButton: {
+    marginTop: spacing.lg,
+    minHeight: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.success,
+    alignItems: "center",
+    justifyContent: "center",
+    flexDirection: "row",
+    gap: 8,
+    ...shadows.soft,
+  },
+  addButtonText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+    color: "#fff",
   },
 });
-
-export default PhysicalProgressMilestone;

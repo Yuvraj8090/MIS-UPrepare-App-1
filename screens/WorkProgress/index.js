@@ -4,196 +4,250 @@ import {
   TextInput,
   StyleSheet,
   TouchableOpacity,
-  ScrollView,
+  FlatList,
+  ActivityIndicator,
 } from "react-native";
-import React, { use, useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import CustomHeader from "@/components/AppHeader/CustomHeader";
 import Feather from "@expo/vector-icons/Feather";
 import Entypo from "@expo/vector-icons/Entypo";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import { getFromSS } from "@/services/storage/SecureStore";
 import { fetchWorkProgress } from "@/services/api/fetch";
 import WorkProgressSkeletonCard from "@/components/SkeletonDesign/WorkProgressCard";
 import { useNavigation } from "@react-navigation/native";
+import { convertToCr } from "@/services/helper";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const dummyData = [
-  {
-    id: 1,
-    project_id: 101,
-    name: "River Bridge Construction - Phase 1",
-    contract_value: "45000000.00",
-    work_progress_data: [
-      {
-        id: 1,
-        current_stage: "Borehole completed",
-        progress_percentage: "100",
-        work_component: { work_component: "Preliminary Works" },
-      },
-      {
-        id: 2,
-        current_stage: "A1/A2 side complete",
-        progress_percentage: "80",
-        work_component: { work_component: "Foundation" },
-      },
-    ],
-  },
-  {
-    id: 2,
-    project_id: 102,
-    name: "Hill Road Development Project",
-    contract_value: "22000000.00",
-    work_progress_data: [
-      {
-        id: 1,
-        current_stage: "Cutting work started",
-        progress_percentage: "40",
-        work_component: { work_component: "Approach Road" },
-      },
-    ],
-  },
-  {
-    id: 3,
-    project_id: 103,
-    name: "City Flyover Expansion",
-    contract_value: "82000000.00",
-    work_progress_data: [
-      {
-        id: 1,
-        current_stage: "Pillar reinforcement",
-        progress_percentage: "55",
-        work_component: { work_component: "Substructure" },
-      },
-      {
-        id: 2,
-        current_stage: "Deck casting started",
-        progress_percentage: "20",
-        work_component: { work_component: "Superstructure" },
-      },
-      {
-        id: 3,
-        current_stage: "Initial excavation",
-        progress_percentage: "10",
-        work_component: { work_component: "Approach Road (A1)" },
-      },
-    ],
-  },
-];
-
-const WorkProgress = (props) => {
+const WorkProgress = ({
+  navigation: stackNavigation,
+  onLayout: _onLayout,
+  ..._restProps
+}) => {
   const [search, setSearch] = useState("");
-  const [WorkProgressData, setWorkProgressData] = useState([]);
+  const insets = useSafeAreaInsets();
+  const [workProgressData, setWorkProgressData] = useState([]);
   const [load, setLoad] = useState(true);
-
+  const [refreshing, setRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
   const navigation = useNavigation();
 
   useEffect(() => {
     getWorkProgress();
   }, []);
 
-  const getWorkProgress = async () => {
+  const getWorkProgress = async ({ isRefresh = false } = {}) => {
     const authToken = await getFromSS("authToken");
-    setLoad(true);
+
+    if (isRefresh) {
+      setRefreshing(true);
+    } else {
+      setLoad(true);
+    }
+
     try {
       const res = await fetchWorkProgress(authToken);
-      console.log("RESSSS  Packagess::", res);
-      if (res?.success) {
-        setWorkProgressData(res?.data);
-        // const storeSql = {
-        //   userId: user?.id,
-        //   access_token: authToken,
-        //   data: res?.data?.projects,
-        // };
-        // await saveSqlProjectData(storeSql);
-        setTimeout(() => {
-          setLoad(false);
-        }, 2000);
+
+      if (!res?.success) {
+        throw new Error(res?.data?.msg || "Unable to load work progress.");
       }
+
+      setWorkProgressData(Array.isArray(res?.data) ? res.data : []);
+      setErrorMessage("");
     } catch (error) {
-      console.log("error ::", error);
-      setLoad(false);
+      setErrorMessage(
+        error?.message || "Unable to load work progress. Please try again."
+      );
+      setWorkProgressData([]);
     } finally {
+      setLoad(false);
+      setRefreshing(false);
     }
   };
 
-  // const sortedData = WorkProgressData?.slice().sort(
-  //   (a, b) => Number(a.project_id) - Number(b.project_id)
-  // );
+  const filteredData = useMemo(() => {
+    const searchLower = search.trim().toLowerCase();
 
-  const filteredData = WorkProgressData?.filter((item) => {
-    const totalComponents = item?.work_progress_data?.length?.toString();
-    const searchLower = search.toLowerCase();
+    if (!searchLower) {
+      return workProgressData;
+    }
+
+    return workProgressData?.filter((item) => {
+      const totalComponents = item?.work_progress_data?.length?.toString() || "";
+      const contractValue = String(item?.contract_value || "").toLowerCase();
+
+      return (
+        item?.name?.toLowerCase().includes(searchLower) ||
+        item?.project_id?.toString().includes(searchLower) ||
+        totalComponents.includes(searchLower) ||
+        contractValue.includes(searchLower)
+      );
+    });
+  }, [search, workProgressData]);
+
+  const summary = useMemo(() => {
+    const totalComponents = filteredData.reduce(
+      (sum, item) => sum + (item?.work_progress_data?.length || 0),
+      0
+    );
+
+    return {
+      totalProjects: filteredData.length,
+      totalComponents,
+    };
+  }, [filteredData]);
+
+  const renderEmptyState = () => (
+    <View style={styles.emptyState}>
+      <MaterialCommunityIcons
+        name={errorMessage ? "alert-circle-outline" : "file-search-outline"}
+        size={34}
+        color={errorMessage ? "#dc2626" : "#64748b"}
+      />
+      <Text style={styles.emptyTitle}>
+        {errorMessage
+          ? "Work progress needs attention"
+          : search
+          ? "No projects match your search"
+          : "No work progress available"}
+      </Text>
+      <Text style={styles.emptyBody}>
+        {errorMessage ||
+          "Try a different keyword for project name, project ID, or components."}
+      </Text>
+      <TouchableOpacity
+        style={styles.retryButton}
+        onPress={() => getWorkProgress({ isRefresh: false })}
+      >
+        <Feather name="refresh-cw" size={16} color="#fff" />
+        <Text style={styles.retryButtonText}>Retry</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderItem = ({ item }) => {
+    const componentCount = item?.work_progress_data?.length || 0;
 
     return (
-      item?.name?.toLowerCase().includes(searchLower) ||
-      totalComponents?.includes(search)
+      <View style={styles.card}>
+        <View style={styles.cardTopRow}>
+          <View style={styles.projectBadge}>
+            <Text style={styles.projectBadgeText}>Project #{item.project_id}</Text>
+          </View>
+          <View style={styles.componentBadge}>
+            <MaterialCommunityIcons
+              name="format-list-bulleted-square"
+              size={14}
+              color="#0b57a4"
+            />
+            <Text style={styles.componentBadgeText}>{componentCount} items</Text>
+          </View>
+        </View>
+
+        <Text style={styles.title} numberOfLines={2}>
+          {item?.name || "Untitled project"}
+        </Text>
+
+        <View style={styles.metaGrid}>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Contract Value</Text>
+            <Text style={styles.metaValue}>
+              {convertToCr(item?.contract_value || 0)}
+            </Text>
+          </View>
+          <View style={styles.metaCard}>
+            <Text style={styles.metaLabel}>Components</Text>
+            <Text style={styles.metaValue}>{componentCount}</Text>
+          </View>
+        </View>
+
+        <View style={styles.btnRow}>
+          <TouchableOpacity
+            style={[styles.actionButton, styles.updateBtn]}
+            onPress={() =>
+              (stackNavigation || navigation).navigate("UpdateWorkProgress", {
+                project: item,
+              })
+            }
+            activeOpacity={0.85}
+          >
+            <Feather name="edit-3" size={18} color="#fff" />
+            <Text style={styles.actionText}>Update</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate("WorkProgressList", {
+                workData: item,
+              })
+            }
+            style={[styles.actionButton, styles.detailsBtn]}
+            activeOpacity={0.85}
+          >
+            <Entypo name="eye" size={18} color="#fff" />
+            <Text style={styles.actionText}>Details</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     );
-  });
+  };
+
+  const renderListEmptyComponent = () => {
+    if (load) {
+      return (
+        <View style={styles.loadingList}>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <WorkProgressSkeletonCard key={index} />
+          ))}
+        </View>
+      );
+    }
+
+    return renderEmptyState();
+  };
 
   return (
-    <View style={{ flex: 11, backgroundColor: "#fff" }}>
+    <View style={styles.screen}>
       <CustomHeader Title={"Work Progress"} GoBack={true} />
 
-      {/* Search Box */}
-      <View style={styles.searchWrapper}>
-        <TextInput
-          placeholder="Search by Project Name or Total Components"
-          placeholderTextColor="#888"
-          value={search}
-          onChangeText={setSearch}
-          style={styles.searchInput}
-        />
-      </View>
+      <FlatList
+        data={load ? [] : filteredData}
+        keyExtractor={(item) => String(item?.id || item?.project_id)}
+        contentContainerStyle={[styles.listContent, { paddingBottom: Math.max(insets.bottom, 28) }]}
+        showsVerticalScrollIndicator={false}
+        refreshing={refreshing}
+        onRefresh={() => getWorkProgress({ isRefresh: true })}
+        ListHeaderComponent={
+          <View style={styles.headerBlock}>
+            <View style={styles.searchWrapper}>
+              <Feather name="search" size={18} color="#64748b" />
+              <TextInput
+                placeholder="Search by project, ID, or components"
+                placeholderTextColor="#888"
+                value={search}
+                onChangeText={setSearch}
+                style={styles.searchInput}
+              />
+              {load ? (
+                <ActivityIndicator size="small" color="#0b57a4" />
+              ) : null}
+            </View>
 
-      <ScrollView style={{ paddingHorizontal: 16 }}>
-        {load
-          ? Array.from({ length: 5 }).map((_, index) => (
-              <WorkProgressSkeletonCard key={index} />
-            ))
-          : filteredData?.map((project) => (
-              <View key={project.id} style={styles.card}>
-                {/* Project ID */}
-                <Text style={styles.projectId}>#ID: {project.project_id}</Text>
-                <Text style={styles.title}>{project.name}</Text>
-
-                <Text style={styles.label}>
-                  Components:{" "}
-                  <Text style={styles.value}>
-                    {project.work_progress_data.length}
-                  </Text>
-                </Text>
-
-                <Text style={styles.label}>
-                  Contract Value:{" "}
-                  <Text style={styles.value}>₹ {project.contract_value}</Text>
-                </Text>
-
-                <View style={styles.btnRow}>
-                  <TouchableOpacity
-                    style={styles.updateBtn}
-                    onPress={() =>
-                      props?.navigation.navigate("UpdateWorkProgress", {
-                        project: project,
-                      })
-                    }
-                  >
-                    <Feather name="edit" size={20} color="#fff" />
-                    <Text style={styles.updateText}>Update Progress</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    onPress={() =>
-                      navigation.navigate("WorkProgressList", {
-                        workData: project,
-                      })
-                    }
-                    style={styles.detailsBtn}
-                  >
-                    <Entypo name="eye" size={20} color="#fff" />
-                    <Text style={styles.detailsText}>View Details</Text>
-                  </TouchableOpacity>
-                </View>
+            <View style={styles.summaryRow}>
+              <View style={styles.summaryChip}>
+                <Text style={styles.summaryValue}>{summary.totalProjects}</Text>
+                <Text style={styles.summaryLabel}>Projects</Text>
               </View>
-            ))}
-      </ScrollView>
+              <View style={styles.summaryChip}>
+                <Text style={styles.summaryValue}>{summary.totalComponents}</Text>
+                <Text style={styles.summaryLabel}>Components</Text>
+              </View>
+            </View>
+          </View>
+        }
+        ListEmptyComponent={renderListEmptyComponent}
+        renderItem={renderItem}
+      />
     </View>
   );
 };
@@ -201,84 +255,196 @@ const WorkProgress = (props) => {
 export default WorkProgress;
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: "#f4f7fb",
+  },
+  listContent: {
+    paddingHorizontal: 16,
+    paddingTop: 14,
+    paddingBottom: 28,
+  },
+  headerBlock: {
+    gap: 14,
+    marginBottom: 2,
+  },
+  loadingList: {
+    gap: 12,
+  },
   searchWrapper: {
-    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#ffffff",
+    borderRadius: 16,
+    paddingHorizontal: 14,
+    minHeight: 50,
+    borderWidth: 1,
+    borderColor: "#dbe5ef",
   },
   searchInput: {
-    height: 45,
-    backgroundColor: "#f1f1f1",
-    borderRadius: 10,
-    paddingHorizontal: 12,
+    flex: 1,
+    marginLeft: 10,
     fontSize: 14,
+    color: "#0f172a",
+    fontFamily: "Jost-Regular",
+  },
+  summaryRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  summaryChip: {
+    flex: 1,
+    borderRadius: 16,
+    backgroundColor: "#ffffff",
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+  },
+  summaryValue: {
+    fontFamily: "Jost-Bold",
+    fontSize: 18,
+    color: "#0b57a4",
+  },
+  summaryLabel: {
+    marginTop: 4,
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    color: "#64748b",
   },
   card: {
     width: "100%",
     backgroundColor: "#fff",
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 18,
+    marginTop: 14,
     shadowColor: "#000",
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
     borderWidth: 1,
-    borderColor: "#eee",
+    borderColor: "#e6edf5",
+  },
+  cardTopRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+  },
+  projectBadge: {
+    borderRadius: 999,
+    backgroundColor: "#eef4ff",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  projectBadgeText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 11,
+    color: "#0b57a4",
+  },
+  componentBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: 999,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  componentBadgeText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 11,
+    color: "#334155",
   },
   title: {
-    fontSize: 14,
-    // fontWeight: "700",
-    fontFamily: "Jost-Medium",
-    color: "#000",
-    marginVertical: 5,
-  },
-  label: {
-    fontSize: 14,
-    color: "#555",
-    marginTop: 4,
-  },
-  value: {
-    fontWeight: "600",
-    color: "#222",
-  },
-  projectId: {
     fontSize: 16,
-    color: "#888",
-    // marginBottom: 8,
     fontFamily: "Jost-SemiBold",
+    color: "#0f172a",
+    marginTop: 12,
+    lineHeight: 22,
+  },
+  metaGrid: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  metaCard: {
+    flex: 1,
+    borderRadius: 14,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  metaLabel: {
+    fontFamily: "Jost-Regular",
+    fontSize: 11,
+    color: "#64748b",
+  },
+  metaValue: {
+    marginTop: 4,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 13,
+    color: "#0f172a",
   },
   btnRow: {
     flexDirection: "row",
     marginTop: 16,
-    justifyContent: "space-between",
+    gap: 10,
   },
-
+  actionButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 8,
+    justifyContent: "center",
+  },
   updateBtn: {
-    flex: 0.48,
-    backgroundColor: "#28A745",
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 5,
-    justifyContent: "center",
+    backgroundColor: "#13803d",
   },
-  updateText: {
-    color: "#fff",
-    fontFamily: "Jost-SemiBold",
-  },
-
   detailsBtn: {
-    flex: 0.48,
-    backgroundColor: "#17A2B8",
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    flexDirection: "row",
-    gap: 5,
-    justifyContent: "center",
+    backgroundColor: "#0b57a4",
   },
-  detailsText: {
+  actionText: {
     color: "#fff",
     fontFamily: "Jost-SemiBold",
+    fontSize: 13,
+  },
+  emptyState: {
+    marginTop: 24,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 24,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    marginTop: 10,
+    fontFamily: "Jost-Bold",
+    fontSize: 16,
+    color: "#0f172a",
+    textAlign: "center",
+  },
+  emptyBody: {
+    marginTop: 8,
+    fontFamily: "Jost-Regular",
+    fontSize: 13,
+    color: "#64748b",
+    textAlign: "center",
+    lineHeight: 20,
+  },
+  retryButton: {
+    marginTop: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderRadius: 12,
+    backgroundColor: "#0b57a4",
+    paddingHorizontal: 16,
+    paddingVertical: 11,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontFamily: "Jost-SemiBold",
+    fontSize: 13,
   },
 });

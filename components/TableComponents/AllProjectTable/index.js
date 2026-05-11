@@ -1,407 +1,220 @@
+import React, { useMemo, useState } from "react";
 import {
-  View,
-  Text,
   FlatList,
   RefreshControl,
-  TouchableOpacity,
+  Text,
   TextInput,
-  Dimensions,
-  Animated,
-  StyleSheet,
+  TouchableOpacity,
+  View,
 } from "react-native";
-import React, {
-  useState,
-  useMemo,
-  useEffect,
-  useRef,
-  useCallback,
-} from "react";
-import styles from "./styles";
-import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { useAuth } from "@/navigation/AuthContext/AuthContext";
-import {
-  Feather,
-  Ionicons,
-  FontAwesome,
-  FontAwesome5,
-} from "@expo/vector-icons";
-import SkeletonLoader from "@/components/SkeletonDesign/PackageTableRow";
-import { convertToCr, height, width } from "@/services/helper";
-import {
-  useSharedValue,
-  useAnimatedProps,
-  withTiming,
-} from "react-native-reanimated";
+import { useNavigation } from "@react-navigation/native";
+import { FontAwesome, FontAwesome5, Ionicons } from "@expo/vector-icons";
 import * as Progress from "react-native-progress";
-import { LinearGradient } from "expo-linear-gradient";
-import ButtonGrid from "@/components/TableComponents/ActionButtons/ActionButtons";
 
-const { width: screenWidth } = Dimensions.get("window");
+import { useAuth } from "@/navigation/AuthContext/AuthContext";
+import { convertToCr } from "@/services/helper";
+import SkeletonLoader from "@/components/SkeletonDesign/PackageTableRow";
+import SectionCard from "@/components/UI/SectionCard";
+import styles from "./styles";
 
-const ShimmerBar = ({ progress, color }) => {
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
-
-  useFocusEffect(
-    useCallback(() => {
-      Animated.loop(
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 4000,
-          useNativeDriver: true,
-        })
-      ).start();
-    }, [])
-  );
-
-  const translateX = shimmerAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [-screenWidth, screenWidth],
-  });
-
-  return (
-    <View style={{ overflow: "hidden", borderRadius: 10 }}>
-      {/* Base progress bar */}
-      <Progress.Bar
-        progress={progress}
-        width={null}
-        height={10}
-        borderRadius={8}
-        color={color}
-        unfilledColor="#E6E6E6"
-        borderWidth={0}
-        animated={true}
-      />
-
-      {/* Shimmer overlay */}
-      <Animated.View
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            transform: [{ translateX }],
-          },
-        ]}
-      >
-        <LinearGradient
-          colors={["transparent", "rgba(255,255,255,0.6)", "transparent"]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
-          style={{ flex: 1, borderRadius: 10 }}
-        />
-      </Animated.View>
+const ProgressWithLabel = ({ label, progress, color }) => (
+  <View style={styles.progressBlock}>
+    <View style={styles.progressHeader}>
+      <Text style={styles.progressLabel}>{label}</Text>
+      <Text style={styles.progressValue}>{Math.round(progress * 100)}%</Text>
     </View>
-  );
-};
-
-const ProgressWithLabel = ({ label, progress, color }) => {
-  return (
-    <View style={{ marginBottom: 10 }}>
-      <View style={styles.row}>
-        <Text style={[styles.label, { fontFamily: "Jost-SemiBold" }]}>
-          {label}
-        </Text>
-        <Text style={styles.value}>{Math.round(progress * 100)}%</Text>
-      </View>
-      <ShimmerBar progress={progress} color={color} />
-    </View>
-  );
-};
-
-const ActionButton = ({ label, color, icon, onPress, disabled }) => (
-  <TouchableOpacity
-    style={[
-      styles.button,
-      { backgroundColor: color },
-      disabled && { opacity: 0.5 },
-    ]}
-    onPress={disabled ? null : onPress}
-    activeOpacity={0.6}
-    disabled={disabled}
-  >
-    <FontAwesome5
-      name={icon}
-      size={14}
-      color="#fff"
-      style={{ marginRight: 6 }}
+    <Progress.Bar
+      progress={progress}
+      width={null}
+      height={10}
+      borderRadius={999}
+      color={color}
+      unfilledColor="#E6EAF0"
+      borderWidth={0}
     />
-    <Text style={styles.buttonText}>{label}</Text>
+  </View>
+);
+
+const ActionButton = ({ label, color, icon, onPress }) => (
+  <TouchableOpacity
+    activeOpacity={0.75}
+    onPress={onPress}
+    style={[styles.actionButton, { backgroundColor: color }]}
+  >
+    <FontAwesome5 name={icon} size={14} color="#fff" style={styles.actionIcon} />
+    <Text style={styles.actionText}>{label}</Text>
   </TouchableOpacity>
+);
+
+const HeaderBlock = ({ searchText, setSearchText }) => (
+  <View style={styles.headerArea}>
+    <Text style={styles.headerTitle}>Sub-Project Overview</Text>
+    <Text style={styles.headerSubtitle}>
+      Review contract value, live progress, and route actions without layout overlap.
+    </Text>
+
+    <View style={styles.searchWrap}>
+      <Ionicons name="search" size={18} color="#64748b" />
+      <TextInput
+        placeholder="Search sub-project..."
+        value={searchText}
+        onChangeText={setSearchText}
+        style={styles.searchInput}
+        placeholderTextColor="#94a3b8"
+      />
+      {searchText.length > 0 ? (
+        <TouchableOpacity onPress={() => setSearchText("")}>
+          <Ionicons name="close-circle" size={18} color="#94a3b8" />
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  </View>
 );
 
 const AllprojectTable = ({ refresh, handleRefresh, projectData, loading }) => {
   const navigation = useNavigation();
   const { user } = useAuth();
-
   const [expandedRows, setExpandedRows] = useState({});
   const [searchText, setSearchText] = useState("");
 
-  const toggleExpand = (id) => {
-    setExpandedRows((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
-
-  // Filtered data
   const filteredData = useMemo(() => {
-    if (!searchText.trim()) return projectData;
+    if (!searchText.trim()) {
+      return projectData;
+    }
+
     const lower = searchText.toLowerCase();
-    return projectData?.filter((item) =>
-      item?.name?.toLowerCase().includes(lower)
-    );
+    return projectData?.filter((item) => item?.name?.toLowerCase().includes(lower));
   }, [projectData, searchText]);
 
-  // Skeleton Loader UI
-  const renderSkeleton = () => {
+  const renderSkeleton = () =>
+    [...Array(4)].map((_, index) => (
+      <View key={index} style={styles.skeletonCard}>
+        <SkeletonLoader width={"55%"} height={16} style={styles.skeletonGap} />
+        <SkeletonLoader width={"92%"} height={14} style={styles.skeletonGap} />
+        <SkeletonLoader width={"72%"} height={14} style={styles.skeletonGap} />
+        <SkeletonLoader width={"100%"} height={10} style={styles.skeletonGapLg} />
+        <SkeletonLoader width={"100%"} height={10} style={styles.skeletonGapLg} />
+        <View style={styles.skeletonButtonRow}>
+          <SkeletonLoader width={"31%"} height={40} />
+          <SkeletonLoader width={"31%"} height={40} />
+          <SkeletonLoader width={"31%"} height={40} />
+        </View>
+      </View>
+    ));
+
+  const renderItem = ({ item }) => {
+    const expanded = expandedRows[item?.id] || false;
+    const showToggle = item?.name?.length > 72;
+
     return (
-      <>
-        {[...Array(5)].map((_, i) => (
-          <View
-            key={i}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginVertical: 10,
-              paddingHorizontal: 10,
-            }}
-          >
-            {/* Package details skeleton */}
-
-            <View style={{ marginLeft: 10, flex: 1 }}>
-              <SkeletonLoader
-                width={width * 0.5}
-                height={15}
-                style={{ marginBottom: 6 }}
-              />
-              <SkeletonLoader
-                width={width * 0.4}
-                height={15}
-                style={{ marginBottom: 6 }}
-              />
-              <SkeletonLoader width={50} height={15} />
-            </View>
-
-            {/* Button skeleton */}
-            <SkeletonLoader width={100} height={30} />
+      <SectionCard contentStyle={styles.projectCardContent}>
+        <View style={styles.projectTitleRow}>
+          <View style={styles.projectIconWrap}>
+            <FontAwesome name="folder-open" size={14} color="#0b57a4" />
           </View>
-        ))}
-      </>
+          <View style={styles.projectTitleContent}>
+            <Text
+              style={styles.projectName}
+              numberOfLines={expanded ? undefined : 3}
+            >
+              {item?.name}
+            </Text>
+            {showToggle ? (
+              <TouchableOpacity
+                onPress={() =>
+                  setExpandedRows((current) => ({
+                    ...current,
+                    [item?.id]: !current[item?.id],
+                  }))
+                }
+              >
+                <Text style={styles.expandText}>
+                  {expanded ? "Hide full name ▲" : "View full name ▼"}
+                </Text>
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        </View>
+
+        <View style={styles.metaBlock}>
+          <Text style={styles.metaText}>
+            <Text style={styles.metaLabel}>Contract Value: </Text>
+            <Text style={styles.metaHighlight}>{convertToCr(item?.contract_value)}</Text>
+          </Text>
+        </View>
+
+        <ProgressWithLabel
+          label="Physical Progress"
+          progress={(item?.physical_progress || 0) / 100}
+          color="#28a745"
+        />
+        <ProgressWithLabel
+          label="Financial Progress"
+          progress={(item?.financial_progress || 0) / 100}
+          color="#007BFF"
+        />
+
+        <View style={styles.actionGrid}>
+          <ActionButton
+            label="Financial"
+            color="#28a745"
+            icon="money-bill-wave"
+            onPress={() => navigation.navigate("FinancialScreen", { data: item })}
+          />
+
+          <ActionButton
+            label="Safeguard"
+            color="#f5b400"
+            icon="shield-alt"
+            onPress={() => navigation.navigate("SafeguardScreen", { data: item })}
+          />
+
+          {item?.type_of_procurement === "EPC" ? (
+            <ActionButton
+              label="EPC"
+              color="#007BFF"
+              icon="building"
+              onPress={() => navigation.navigate("ECPScreen", { data: item })}
+            />
+          ) : (
+            <ActionButton
+              label="BOQ"
+              color="#17A2B8"
+              icon="list-alt"
+              onPress={() => navigation.navigate("BOQScreen", { data: item })}
+            />
+          )}
+        </View>
+      </SectionCard>
     );
   };
 
   return (
-    <View style={styles.table}>
-      {/* 🔍 Search Bar */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#F1F3F6",
-          borderRadius: 8,
-          paddingHorizontal: 10,
-          marginVertical: 5,
-          marginHorizontal: 5,
-          height: height * 0.04,
-        }}
-      >
-        <Ionicons name="search" size={18} color="#666" />
-        <TextInput
-          placeholder="Search Sub-Project..."
-          value={searchText}
-          onChangeText={setSearchText}
-          style={{
-            flex: 1,
-            marginLeft: 8,
-            fontFamily: "Jost-Regular",
-            fontSize: 14,
-          }}
-          placeholderTextColor="#888"
-        />
-        {searchText.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchText("")}>
-            <Ionicons name="close-circle" size={18} color="#999" />
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Show Skeleton if loading */}
-      {loading ? (
-        renderSkeleton()
-      ) : (
-        <FlatList
-          data={filteredData}
-          showsVerticalScrollIndicator={false}
-          keyExtractor={(item, index) => index.toString()}
-          refreshControl={
-            <RefreshControl refreshing={refresh} onRefresh={handleRefresh} />
-          }
-          stickyHeaderIndices={[0]}
-          ListHeaderComponent={
-            <View style={[styles.row, { backgroundColor: "#E6EFFC" }]}>
-              {/* <Text style={[styles.headerSnoCell, { color: "#000" }]}>
-                S.No.
-              </Text> */}
-              <Text style={[styles.headerCell, { color: "#000" }]}>
-                Sub-Project Details
-              </Text>
-              <Text style={[styles.headerCell, { color: "#000" }]}>
-                {user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
-                user?.role?.department == "FIELD-PWD-SOCIAL" ||
-                user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
-                user?.role_department == "FIELD-PWD-SOCIAL"
-                  ? "Action"
-                  : "Action"}
-                {/* : "Update Milestone"} */}
+    <View style={styles.screen}>
+      <FlatList
+        data={loading ? [] : filteredData}
+        showsVerticalScrollIndicator={false}
+        keyExtractor={(item, index) => `${item?.id || "project"}-${index}`}
+        refreshControl={<RefreshControl refreshing={refresh} onRefresh={handleRefresh} />}
+        ListHeaderComponent={
+          <HeaderBlock searchText={searchText} setSearchText={setSearchText} />
+        }
+        renderItem={renderItem}
+        ListEmptyComponent={
+          loading ? (
+            <View style={styles.skeletonList}>{renderSkeleton()}</View>
+          ) : (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>
+                {searchText
+                  ? "No matching sub-project found."
+                  : "No sub-projects available right now."}
               </Text>
             </View>
-          }
-          renderItem={({ item, index }) => {
-            const expanded = expandedRows[item?.id] || false;
-
-            return (
-              <View
-                style={[
-                  styles.row,
-                  { backgroundColor: index % 2 === 0 ? "#F9FAFB" : "#FFFFFF" },
-                ]}
-              >
-                {/* Project details */}
-                <View style={[styles.cellNameView, { flex: 2 }]}>
-                  <View style={{ flexDirection: "row", gap: 5 }}>
-                    <FontAwesome
-                      name="folder-open"
-                      size={12}
-                      color="#007BFF"
-                      style={{ marginTop: 2.5 }}
-                    />
-                    <Text
-                      style={{ fontFamily: "Jost-Regular", fontSize: 13 }}
-                      numberOfLines={expanded ? undefined : 2}
-                    >
-                      {item?.name}
-                    </Text>
-                  </View>
-                  {item?.name?.length > 60 && (
-                    <TouchableOpacity
-                      style={{ alignSelf: "flex-end" }}
-                      onPress={() => toggleExpand(item?.id)}
-                    >
-                      <Text
-                        style={{
-                          fontFamily: "Jost-Regular",
-                          fontSize: 12,
-                          color: "#3488FD",
-                        }}
-                      >
-                        {expanded ? "Hide full name ▲" : "View full name ▼"}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-
-                  {/* Other fields */}
-                  <Text style={{ fontSize: 12.5, marginVertical: "1%" }}>
-                    <Text style={{ fontFamily: "Jost-SemiBold" }}>
-                      Contract Value:
-                    </Text>{" "}
-                    <Text
-                      style={{ fontFamily: "Jost-SemiBold", color: "green" }}
-                    >
-                      {convertToCr(item?.contract_value)}
-                    </Text>{" "}
-                  </Text>
-                  {/* Progress Bars */}
-                  <ProgressWithLabel
-                    label="Physical Progress"
-                    progress={item?.physical_progress / 100}
-                    color="#28a745"
-                  />
-                  <ProgressWithLabel
-                    label="Financial Progress"
-                    progress={item?.financial_progress / 100}
-                    color="#007BFF"
-                  />
-                </View>
-
-                {/* Action / Update button */}
-                <View style={[styles.cellView, { alignItems: "cente" }]}>
-                  {/* <TouchableOpacity
-                    style={styles.buttonView}
-                    onPress={() =>
-                      navigation.navigate("ProjectInfoScreen", { data: item })
-                    }
-                  >
-                    <Feather name="edit" size={15} color="#fff" />
-                    <Text
-                      style={{
-                        fontFamily: "Jost-Medium",
-                        color: "#fff",
-                        fontSize: 12,
-                        textAlign: "center",
-                        marginLeft: 6,
-                      }}
-                    >
-                      {user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
-                      user?.role?.department == "FIELD-PWD-SOCIAL" ||
-                      user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
-                      user?.role_department == "FIELD-PWD-SOCIAL"
-                        ? "Update Activities"
-                        : "Update Milestone"}
-                    </Text>
-                  </TouchableOpacity> */}
-                  <ActionButton
-                    label="Financial"
-                    color="#28a745"
-                    icon="money-bill-wave"
-                    // disabled={true}
-                    onPress={() =>
-                      navigation.navigate("FinancialScreen", { data: item })
-                    }
-                  />
-                  <ActionButton
-                    label="Safeguard"
-                    color="#ffc107"
-                    icon="vial"
-                    // onPress={() => console.log("Safeguard pressed")}
-                    onPress={() =>
-                      navigation.navigate("SafeguardScreen", { data: item })
-                    }
-                  />
-                  {item?.type_of_procurement === "EPC" ? (
-                    <ActionButton
-                      label="EPC"
-                      color="#007BFF"
-                      icon="building"
-                      onPress={() =>
-                        navigation.navigate("ECPScreen", { data: item })
-                      }
-                    />
-                  ) : (
-                    <ActionButton
-                      label="BOQ"
-                      color="#17A2B8"
-                      icon="list-alt"
-                      onPress={() =>
-                        navigation.navigate("BOQScreen", { data: item })
-                      }
-                    />
-                  )}
-                </View>
-              </View>
-            );
-          }}
-          ListEmptyComponent={
-            !loading && (
-              <View style={{ alignSelf: "center", margin: "5%" }}>
-                <Text style={{ fontFamily: "Jost-Medium", fontSize: 16 }}>
-                  {searchText
-                    ? "No matching package found 🔍"
-                    : "No Package Available Now!!"}
-                </Text>
-              </View>
-            )
-          }
-          ListFooterComponent={<View style={{ marginVertical: "18%" }} />}
-        />
-      )}
+          )
+        }
+        contentContainerStyle={styles.listContent}
+      />
     </View>
   );
 };

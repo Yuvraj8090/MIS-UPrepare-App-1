@@ -1,14 +1,6 @@
-import {
-  View,
-  Text,
-  ImageBackground,
-  TouchableOpacity,
-  ToastAndroid,
-} from "react-native";
+import { View, Text } from "react-native";
 import React, { useEffect, useState } from "react";
 import styles from "./styles";
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
 import * as Progress from "react-native-progress";
 import { NetConnected, width } from "@/services/helper";
 import {
@@ -24,40 +16,60 @@ import {
 } from "@/services/api/fetch";
 import { useAuth } from "@/navigation/AuthContext/AuthContext";
 import axios from "axios";
+import { showFeedback } from "@/services/platform/feedback";
 
-const PhotoCard = ({ navPath }) => {
-  const navigation = useNavigation();
+const PhotoCard = () => {
   const isInternet = NetConnected();
   const { user } = useAuth();
-
-  console.log("USERR :", user?.username);
 
   const [images, setImages] = useState([]);
   const [progress, setProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
   const [uploadIndex, setUploadIndex] = useState(0);
-  console.log("IMGEE LENGTHH :", images?.length);
+  const [queueMessage, setQueueMessage] = useState("");
 
   useEffect(() => {
-    if (isInternet)
-      if (user?.username == "PWD3") {
-        fetchPhysicalImageLocal();
-      } else {
-        fetchLocal();
-      }
-  }, [isInternet]);
+    if (!user?.username) {
+      return;
+    }
+
+    if (user?.username == "PWD3") {
+      fetchPhysicalImageLocal();
+    } else {
+      fetchLocal();
+    }
+  }, [isInternet, user?.username]);
+
+  useEffect(() => {
+    if (!user?.username) {
+      setQueueMessage("");
+      return;
+    }
+
+    if (images?.length > 0 && isInternet === false) {
+      setQueueMessage(
+        `${images.length} photo${images.length > 1 ? "s are" : " is"} queued and will upload automatically when you reconnect.`
+      );
+      return;
+    }
+
+    if (images?.length > 0 && isInternet) {
+      setQueueMessage(
+        `${images.length} pending photo${images.length > 1 ? "s" : ""} ready for sync.`
+      );
+      return;
+    }
+
+    setQueueMessage("");
+  }, [images?.length, isInternet, user?.username]);
 
   const fetchLocal = async () => {
     const imagesData = await fetchPhasesActivitiesImages();
-    console.log("IMAGEEE DATATA ::", imagesData);
     setImages(imagesData);
-    console.log("Phiycalal Imagee");
   };
 
   const fetchPhysicalImageLocal = async () => {
-    console.log("Phiycalal Imagee");
     const imagesData = await fetchMilestonePhyicalImages();
-    console.log("IMAGEEE DATATA ::", imagesData);
     setImages(imagesData);
   };
 
@@ -83,10 +95,7 @@ const PhotoCard = ({ navPath }) => {
         fileName: phyImageName,
       });
 
-      console.log("FORMDATAAA :::", formData);
-
       const AuthStr = `Bearer ${authToken}`;
-      console.log("AuthTOKENN :::", AuthStr);
 
       const config = {
         headers: {
@@ -106,15 +115,11 @@ const PhotoCard = ({ navPath }) => {
       try {
         if (isInternet) {
           const res = await uploadActivitiesImage(formData, config);
-          console.log("RESSS ::", res);
           if (res?.data?.ok) {
-            ToastAndroid.show(
-              "Photo Uploaded Successfully!",
-              ToastAndroid.LONG
-            );
+            showFeedback("Photo Uploaded Successfully!");
             setProgress(0);
           } else {
-            ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+            showFeedback(res?.data?.msg);
           }
         } else {
           // const storeSql = {
@@ -164,10 +169,7 @@ const PhotoCard = ({ navPath }) => {
         fileName: phyImageName,
       });
 
-      console.log("FORMDATAAA :::", formData);
-
       const AuthStr = `Bearer ${authToken}`;
-      console.log("AuthTOKENN :::", AuthStr);
 
       const config = {
         headers: {
@@ -187,15 +189,11 @@ const PhotoCard = ({ navPath }) => {
       try {
         if (isInternet) {
           const res = await uploadMilestoneImage(formData, config);
-          console.log("RESSS ::", res);
           if (res?.data?.ok) {
-            ToastAndroid.show(
-              "Photo Physical Uploaded Successfully!",
-              ToastAndroid.LONG
-            );
+            showFeedback("Photo Physical Uploaded Successfully!");
             setProgress(0);
           } else {
-            ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+            showFeedback(res?.data?.msg);
           }
         } else {
           // const storeSql = {
@@ -226,41 +224,34 @@ const PhotoCard = ({ navPath }) => {
   };
 
   useEffect(() => {
-    if (isInternet && images.length > 0) {
+    if (isInternet && images.length > 0 && !uploading) {
       if (user?.username == "PWD3") {
         handlePhysicalUpload();
       } else {
         handleUpload();
       }
     }
-  }, [images, isInternet]);
+  }, [images, isInternet, uploading, user?.username]);
 
   return (
     <>
       {images?.length > 0 && (
-        <View
-          style={{
-            alignItems: "center",
-            paddingVertical: "3%",
-            width: width,
-            backgroundColor: "#f1f1f1",
-          }}
-        >
+        <View style={styles.uploadBanner}>
           {uploading ? (
-            <View style={{ alignSelf: "center" }}>
+            <View style={{ alignSelf: "stretch", alignItems: "center" }}>
               <Progress.Bar
                 progress={progress / 100}
                 size={20}
                 width={width * 0.9}
                 color="green"
               />
-              <Text style={{ fontFamily: "Jost-Regular", marginTop: "2%" }}>
+              <Text style={styles.uploadText}>
                 Uploading {uploadIndex} of {images?.length} images...
               </Text>
             </View>
           ) : (
-            <Text style={{ fontFamily: "Jost-Regular", marginTop: "2%" }}>
-              No images for uploading!!
+            <Text style={styles.uploadText}>
+              {queueMessage || "Pending images are ready for sync."}
             </Text>
           )}
         </View>

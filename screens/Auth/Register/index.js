@@ -1,5 +1,8 @@
-import { View, Text, TouchableOpacity, ImageBackground } from "react-native";
+import React from "react";
+import { ImageBackground, Text, TouchableOpacity, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
+
 import RegisterCss from "./styles";
 
 const RegisterScreen = () => {
@@ -8,22 +11,29 @@ const RegisterScreen = () => {
   return (
     <ImageBackground
       source={require("../../../assets/images/home.jpeg")}
-      style={[RegisterCss.mainContainer]}
+      style={RegisterCss.mainContainer}
+      imageStyle={RegisterCss.backgroundImage}
     >
-      <View style={[RegisterCss.container]}>
-        <Text style={RegisterCss.LogoTitle}>To Register,</Text>
+      <View style={RegisterCss.overlay} />
+
+      <View style={RegisterCss.container}>
+        <View style={RegisterCss.iconWrap}>
+          <Ionicons name="shield-checkmark-outline" size={26} color="#0b57a4" />
+        </View>
+
+        <Text style={RegisterCss.LogoTitle}>To Register</Text>
         <Text style={RegisterCss.Subtitle}>
           Please contact the Uttarakhand Disaster Preparedness and Resilience
           Project (U-PREPARE) Admin.
         </Text>
-        <View>
-          <TouchableOpacity
-            onPress={() => navigation.navigate("LoginScreen")}
-            activeOpacity={0.8}
-          >
-            <Text style={RegisterCss.loginText}>Back To Login</Text>
-          </TouchableOpacity>
-        </View>
+
+        <TouchableOpacity
+          onPress={() => navigation.navigate("LoginScreen")}
+          activeOpacity={0.85}
+          style={RegisterCss.loginButton}
+        >
+          <Text style={RegisterCss.loginText}>Back To Login</Text>
+        </TouchableOpacity>
       </View>
     </ImageBackground>
   );

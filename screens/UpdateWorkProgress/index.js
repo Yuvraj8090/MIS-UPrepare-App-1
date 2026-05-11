@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
-  ScrollView,
+  FlatList,
   KeyboardAvoidingView,
   Platform,
   TouchableOpacity,
@@ -11,662 +11,773 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import {
+  Feather,
+  MaterialCommunityIcons,
+  Octicons,
+} from "@expo/vector-icons";
 import CustomHeader from "@/components/AppHeader/CustomHeader";
 import CalenderField from "@/components/TextField/CalenderField/CalenderField";
-import { fetchAllWorkProgressSubPackageProjectById } from "@/services/api/fetch";
+import {
+  fetchAllWorkProgressSubPackageProjectById,
+  saveWorkProgress,
+} from "@/services/api/fetch";
 import { getFromSS } from "@/services/storage/SecureStore";
 import { formatDate } from "@/services/helper";
 
-const data = [
-  {
-    id: 1,
-    work_service_id: 1,
-    work_component: "Preliminary Works",
-    type_details: "Diversion, Borehole, Dismantling etc.",
-    side_location: "-",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 2,
-    work_service_id: 1,
-    work_component: "Foundation",
-    type_details: "Pile / Well / Open",
-    side_location: "-",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 3,
-    work_service_id: 1,
-    work_component: "Substructure",
-    type_details: "RCC Pier / Abutment",
-    side_location: "LHS / RHS",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 4,
-    work_service_id: 1,
-    work_component: "Superstructure",
-    type_details: "PSC / RCC Slab / Truss",
-    side_location: "Span-wise",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 5,
-    work_service_id: 1,
-    work_component: "Deck Slab / Top",
-    type_details: "RCC Slab / Slab Over Girders",
-    side_location: "All Spans",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 6,
-    work_service_id: 1,
-    work_component: "Wearing Coat",
-    type_details: "BM / DBM / Mastic / CC",
-    side_location: "Deck Top",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 7,
-    work_service_id: 1,
-    work_component: "Crash Barrier / Railing",
-    type_details: "RCC / Steel",
-    side_location: "Both sides",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 8,
-    work_service_id: 1,
-    work_component: "Expansion Joint",
-    type_details: "Modular / Strip Seal",
-    side_location: "At Ends",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 9,
-    work_service_id: 1,
-    work_component: "Approach Road (A1)",
-    type_details: "WBM / Bituminous / CC",
-    side_location: "LHS",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 10,
-    work_service_id: 1,
-    work_component: "Approach Road (A2)",
-    type_details: "WBM / Bituminous / CC",
-    side_location: "RHS",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 11,
-    work_service_id: 1,
-    work_component: "Drainage (Roadside)",
-    type_details: "CC / RCC / Stone",
-    side_location: "A1 / A2 Side",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 12,
-    work_service_id: 1,
-    work_component: "Protection Work (U/S)",
-    type_details: "Gabion / RRM / CC / RCC",
-    side_location: "LHS",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 13,
-    work_service_id: 1,
-    work_component: "Protection Work (D/S)",
-    type_details: "Gabion / RRM / CC / RCC",
-    side_location: "RHS",
-    created_at: "2025-10-03T04:43:04.000000Z",
-    updated_at: "2025-10-03T04:43:04.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-  {
-    id: 15,
-    work_service_id: 1,
-    work_component: "Foundation A2",
-    type_details: "Pile / Well / Open",
-    side_location: "LHS/RHS",
-    created_at: "2025-10-10T02:16:49.000000Z",
-    updated_at: "2025-10-10T02:16:49.000000Z",
-    deleted_at: null,
-    work_service: {
-      id: 1,
-      name: "Bridge",
-      department_id: 1,
-      created_at: "2025-08-12T02:21:53.000000Z",
-      updated_at: "2025-08-12T04:51:21.000000Z",
-    },
-  },
-];
+const toSafeString = (value) => {
+  if (value === null || value === undefined) {
+    return "";
+  }
 
-export default function UpdateWorkProgressScreen({ route }) {
-  const { project } = route.params;
+  return typeof value === "string" ? value : String(value);
+};
 
-  // console.log("ROUTE PARAMS:", route?.params);
+const toSafeNumber = (value, fallback = 0) => {
+  const nextValue = Number(value);
+  return Number.isFinite(nextValue) ? nextValue : fallback;
+};
 
-  const [formState, setFormState] = useState({});
-  const [updateState, setUpdateState] = useState({});
-  const [datePickerFor, setDatePickerFor] = useState(null);
+const toSafeDate = (value) => {
+  if (!value) {
+    return new Date();
+  }
 
+  const nextDate = value instanceof Date ? value : new Date(value);
+  return Number.isNaN(nextDate.getTime()) ? new Date() : nextDate;
+};
+
+const makeDraftFromEntry = (entry) => ({
+  progress_percentage:
+    entry?.progress_percentage !== undefined && entry?.progress_percentage !== null
+      ? toSafeString(entry.progress_percentage)
+      : "",
+  qty_length:
+    entry?.qty_length !== undefined && entry?.qty_length !== null
+      ? toSafeString(entry.qty_length)
+      : "",
+  current_stage: entry?.current_stage ?? "",
+  remarks: entry?.remarks ?? "",
+  date_of_entry: entry?.date_of_entry
+    ? formatDate(entry.date_of_entry)
+    : formatDate(new Date()),
+  existing_id: entry?.id ?? null,
+});
+
+const isMeaningfulDraft = (draft) =>
+  Boolean(
+    draft?.progress_percentage ||
+      draft?.qty_length ||
+      draft?.current_stage ||
+      draft?.remarks
+  );
+
+const UpdateWorkProgressScreen = ({ route, navigation }) => {
+  const project = route?.params?.project;
+  const [draftState, setDraftState] = useState({});
+  const [initialState, setInitialState] = useState({});
   const [workProgressData, setWorkProgressData] = useState([]);
-  const [existingEntry, setExistingEntry] = useState([]);
+  const [existingEntry, setExistingEntry] = useState({});
   const [load, setLoad] = useState(false);
-
-  const existingMap = existingEntry || {};
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   useEffect(() => {
     getWorkProgress();
-  }, [project]);
+  }, [project?.id]);
 
   const getWorkProgress = async () => {
     const authToken = await getFromSS("authToken");
     setLoad(true);
+    setErrorMessage("");
     setWorkProgressData([]);
+
     try {
       const res = await fetchAllWorkProgressSubPackageProjectById(
         authToken,
         project?.id
       );
-      // console.log("RESSSS UPDATEE WORK PRGRESSS :;", res);
-      if (res?.success) {
-        setWorkProgressData(res?.components);
-        setExistingEntry(res?.existing_entries);
-        setTimeout(() => {
-          setLoad(false);
-        }, 2000);
+
+      if (!res?.success) {
+        throw new Error(
+          res?.data?.msg || "Unable to load work progress form data."
+        );
       }
+
+      const components = Array.isArray(res?.components) ? res.components : [];
+      const existingEntries = res?.existing_entries || {};
+      const nextDraftState = {};
+      const nextInitialState = {};
+
+      components.forEach((component) => {
+        const lastEntry = existingEntries?.[component.id]?.last_entry;
+        const draft = makeDraftFromEntry(lastEntry);
+        nextDraftState[component.id] = draft;
+        nextInitialState[component.id] = draft;
+      });
+
+      setWorkProgressData(components);
+      setExistingEntry(existingEntries);
+      setDraftState(nextDraftState);
+      setInitialState(nextInitialState);
     } catch (error) {
-      console.log("error ::", error);
-      setLoad(false);
+      setErrorMessage(
+        error?.message || "Something went wrong while loading components."
+      );
     } finally {
+      setLoad(false);
     }
   };
 
-  // Prefill existing progress into updateState
-  useEffect(() => {
-    const updateObj = {};
+  const handleInput = (id, field, value) => {
+    setDraftState((prev) => ({
+      ...prev,
+      [id]: { ...(prev[id] || {}), [field]: value },
+    }));
+  };
 
-    Object.entries(existingMap || {}).forEach(([wcId, data]) => {
-      updateObj[wcId] = {
-        progress_percentage: data?.last_entry?.progress_percentage ?? "",
-        qty_length: data?.last_entry?.qty_length ?? "",
-        current_stage: data?.last_entry?.current_stage ?? "",
-        remarks: data?.last_entry?.remarks ?? "",
-        date_of_entry: data?.last_entry?.date_of_entry?.split("T")[0] ?? "",
-        existing_id: data?.last_entry?.id, // 👈 important
-      };
-    });
-
-    setUpdateState(updateObj);
-  }, [existingMap]);
-
-  // Prepare final API request
-  const preparePayload = () => {
+  const buildPayload = () => {
     const entries = {};
     const updates = {};
 
-    // 🆕 NEW ENTRIES
-    Object.entries(formState).forEach(([wcId, data]) => {
-      if (data?.progress_percentage && data?.date_of_entry) {
-        entries[wcId] = {
-          progress_percentage: Number(data.progress_percentage),
-          qty_length: data.qty_length ?? null,
-          current_stage: data.current_stage ?? "",
-          remarks: data.remarks ?? "",
-          date_of_entry: formatDate(data.date_of_entry),
-        };
+    Object.entries(draftState).forEach(([workComponentId, draft]) => {
+      const existing = existingEntry?.[workComponentId]?.last_entry;
+      const initialDraft = initialState?.[workComponentId] || makeDraftFromEntry();
+      const progressValue = toSafeNumber(draft?.progress_percentage, NaN);
+
+      if (!draft?.progress_percentage || Number.isNaN(progressValue)) {
+        return;
+      }
+
+      const basePayload = {
+        progress_percentage: progressValue,
+        qty_length: draft?.qty_length
+          ? toSafeNumber(draft.qty_length, 0)
+          : null,
+        current_stage: draft?.current_stage?.trim() || "",
+        remarks: draft?.remarks?.trim() || "",
+        date_of_entry: formatDate(draft?.date_of_entry),
+      };
+
+      if (existing?.id) {
+        const changed =
+          String(initialDraft?.progress_percentage || "") !==
+            String(draft?.progress_percentage || "") ||
+          String(initialDraft?.qty_length || "") !== String(draft?.qty_length || "") ||
+          String(initialDraft?.current_stage || "") !==
+            String(draft?.current_stage || "") ||
+          String(initialDraft?.remarks || "") !== String(draft?.remarks || "") ||
+          formatDate(initialDraft?.date_of_entry) !== formatDate(draft?.date_of_entry);
+
+        if (changed) {
+          updates[workComponentId] = {
+            ...basePayload,
+            existing_id: draft?.existing_id,
+          };
+        }
+      } else if (isMeaningfulDraft(draft)) {
+        entries[workComponentId] = basePayload;
       }
     });
 
-    // ♻️ ONLY CHANGED UPDATES
-    Object.entries(updateState).forEach(([wcId, data]) => {
-      const old = existingMap[wcId]?.last_entry;
-      if (!old) return;
-
-      const isChanged =
-        String(old.progress_percentage) !== String(data.progress_percentage) ||
-        String(old.qty_length ?? "") !== String(data.qty_length ?? "") ||
-        String(old.current_stage ?? "") !== String(data.current_stage ?? "") ||
-        String(old.remarks ?? "") !== String(data.remarks ?? "") ||
-        formatDate(old.date_of_entry) !== formatDate(data.date_of_entry);
-
-      if (!isChanged) return;
-
-      updates[wcId] = {
-        progress_percentage: Number(data.progress_percentage),
-        qty_length: data.qty_length ?? null,
-        current_stage: data.current_stage ?? "",
-        remarks: data.remarks ?? "",
-        date_of_entry: formatDate(data.date_of_entry),
-        existing_id: data.existing_id,
-      };
-    });
-
     return {
-      project_id: project.id,
+      project_id: project?.id,
       entries,
       updates,
     };
   };
 
-  const submit = () => {
-    const payload = preparePayload();
-    console.log("FINAL API PAYLOAD ===========>");
-    console.log(JSON.stringify(payload, null, 2));
+  const validatePayload = (payload) => {
+    const totalChanges =
+      Object.keys(payload.entries || {}).length + Object.keys(payload.updates || {}).length;
 
-    // axios.post("/save-work-progress", payload)
-  };
-
-  const handleInput = (id, field, value, isUpdate = false) => {
-    if (isUpdate) {
-      setUpdateState((prev) => ({
-        ...prev,
-        [id]: { ...prev[id], [field]: value },
-      }));
-    } else {
-      setFormState((prev) => ({
-        ...prev,
-        [id]: { ...(prev[id] || {}), [field]: value },
-      }));
+    if (!totalChanges) {
+      return "Add or update at least one progress entry before submitting.";
     }
-  };
 
-  const handleDateChange = (id, date) => {
-    const iso = date.toISOString().split("T")[0];
+    for (const component of workProgressData) {
+      const draft = draftState?.[component.id];
+      if (!isMeaningfulDraft(draft)) {
+        continue;
+      }
 
-    if (updateState[id]) {
-      setUpdateState((prev) => ({
-        ...prev,
-        [id]: { ...prev[id], date_of_entry: iso },
-      }));
-    } else {
-      setFormState((prev) => ({
-        ...prev,
-        [id]: { ...(prev[id] || {}), date_of_entry: iso },
-      }));
+      if (!draft?.progress_percentage) {
+        return `Progress percentage is required for ${component?.work_component}.`;
+      }
+
+      if (!draft?.date_of_entry) {
+        return `Entry date is required for ${component?.work_component}.`;
+      }
     }
+
+    return null;
   };
 
-  const handleProgressChange = (id, value, max) => {
-    const num = Number(value);
+  const submit = async () => {
+    const payload = buildPayload();
+    const validationMessage = validatePayload(payload);
 
-    if (isNaN(num)) return;
-
-    if (num > max) {
-      Alert.alert("Invalid Progress", `You can enter maximum ${max}% only`, [
-        {
-          text: "OK",
-          onPress: () => {
-            setFormState((prev) => ({
-              ...prev,
-              [id]: {
-                ...prev[id],
-                progress_percentage: "", // 👈 CLEAR VALUE
-              },
-            }));
-          },
-        },
-      ]);
+    if (validationMessage) {
+      Alert.alert("Incomplete details", validationMessage);
       return;
     }
 
-    setFormState((prev) => ({
-      ...prev,
-      [id]: {
-        ...prev[id],
-        progress_percentage: value,
-      },
-    }));
+    const authToken = await getFromSS("authToken");
+    setSaveLoading(true);
+
+    try {
+      const response = await saveWorkProgress(authToken, payload);
+
+      if (!response?.success) {
+        throw new Error(response?.data?.msg || response?.message || "Save failed.");
+      }
+
+      Alert.alert(
+        "Saved",
+        response?.message || "Work progress updated successfully.",
+        [
+          {
+            text: "OK",
+            onPress: () => navigation.goBack(),
+          },
+        ]
+      );
+    } catch (error) {
+      Alert.alert(
+        "Unable to save",
+        error?.message || "Please try again after checking your entries."
+      );
+    } finally {
+      setSaveLoading(false);
+    }
   };
 
-  const COMPLETED_CELL_WIDTH = styles.input.width * 4 + 200;
+  const componentsSummary = useMemo(
+    () => ({
+      total: workProgressData.length,
+      completed: workProgressData.filter((item) => {
+        const totalProgress = Number(existingEntry?.[item.id]?.total_progress || 0);
+        return totalProgress >= 100;
+      }).length,
+    }),
+    [existingEntry, workProgressData]
+  );
+
+  const renderCard = ({ item }) => {
+    const existing = existingEntry?.[item.id];
+    const draft = draftState?.[item.id] || makeDraftFromEntry();
+    const lastEntry = existing?.last_entry;
+    const totalProgress = toSafeNumber(existing?.total_progress, 0);
+    const oldProgress = toSafeNumber(lastEntry?.progress_percentage, 0);
+    const isCompleted = totalProgress >= 100;
+    const maxAllowedProgress = Math.max(0, 100 - (totalProgress - oldProgress));
+
+    return (
+      <View style={styles.card}>
+        <View style={styles.cardHeader}>
+          <View style={styles.componentBadge}>
+            <Text style={styles.componentBadgeText}>Component #{item.id}</Text>
+          </View>
+          <View
+            style={[
+              styles.statusBadge,
+              isCompleted ? styles.statusComplete : styles.statusOpen,
+            ]}
+          >
+            <Text
+              style={[
+                styles.statusBadgeText,
+                isCompleted ? styles.statusCompleteText : styles.statusOpenText,
+              ]}
+            >
+              {isCompleted ? "Completed" : "Open"}
+            </Text>
+          </View>
+        </View>
+
+        <Text style={styles.cardTitle}>{item?.work_component}</Text>
+
+        <View style={styles.metaGroup}>
+          <View style={styles.metaItem}>
+            <MaterialCommunityIcons
+              name="briefcase-outline"
+              size={15}
+              color="#64748b"
+            />
+            <Text style={styles.metaText}>{item?.work_service?.name || "--"}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <MaterialCommunityIcons
+              name="tools"
+              size={15}
+              color="#64748b"
+            />
+            <Text style={styles.metaText}>{item?.type_details || "--"}</Text>
+          </View>
+          <View style={styles.metaItem}>
+            <Octicons name="location" size={15} color="#64748b" />
+            <Text style={styles.metaText}>{item?.side_location || "--"}</Text>
+          </View>
+        </View>
+
+        <View style={styles.progressOverview}>
+          <View style={styles.overviewChip}>
+            <Text style={styles.overviewLabel}>Current Total</Text>
+            <Text style={styles.overviewValue}>{totalProgress}%</Text>
+          </View>
+          <View style={styles.overviewChip}>
+            <Text style={styles.overviewLabel}>Max Allowed</Text>
+            <Text style={styles.overviewValue}>{maxAllowedProgress}%</Text>
+          </View>
+        </View>
+
+        {lastEntry ? (
+          <View style={styles.previousEntryBox}>
+            <Text style={styles.previousEntryTitle}>Latest saved entry</Text>
+            <Text style={styles.previousEntryText}>
+              {`${oldProgress}% on ${formatDate(lastEntry?.date_of_entry)}`}
+            </Text>
+            {lastEntry?.current_stage ? (
+              <Text style={styles.previousEntryText}>
+                Stage: {lastEntry.current_stage}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
+
+        {!isCompleted ? (
+          <>
+            <View style={styles.formRow}>
+              <View style={styles.fieldHalf}>
+                <Text style={styles.fieldLabel}>Date of Entry</Text>
+                <CalenderField
+                  placeholder="Select date"
+                  Cdate={toSafeDate(draft?.date_of_entry)}
+                  setCDate={(date) =>
+                    handleInput(item.id, "date_of_entry", formatDate(date))
+                  }
+                />
+              </View>
+
+              <View style={styles.fieldHalf}>
+                <Text style={styles.fieldLabel}>Progress %</Text>
+                <TextInput
+                  placeholder={`Max ${maxAllowedProgress}`}
+                  keyboardType="numeric"
+                  maxLength={3}
+                  style={styles.input}
+                  value={toSafeString(draft?.progress_percentage)}
+                  onChangeText={(value) => {
+                    const cleaned = value.replace(/[^0-9]/g, "");
+                    const numericValue = toSafeNumber(cleaned, 0);
+
+                    if (cleaned && numericValue > maxAllowedProgress) {
+                      Alert.alert(
+                        "Invalid progress",
+                        `You can enter a maximum of ${maxAllowedProgress}% for ${item?.work_component}.`
+                      );
+                      return;
+                    }
+
+                    handleInput(item.id, "progress_percentage", cleaned);
+                  }}
+                />
+              </View>
+            </View>
+
+            <Text style={styles.fieldLabel}>Qty / Length</Text>
+            <TextInput
+              placeholder="Enter quantity or length"
+              style={styles.input}
+              value={toSafeString(draft?.qty_length)}
+              onChangeText={(value) => handleInput(item.id, "qty_length", value)}
+            />
+
+            <Text style={styles.fieldLabel}>Current Stage</Text>
+            <TextInput
+              placeholder="Enter current stage"
+              style={styles.input}
+              value={toSafeString(draft?.current_stage)}
+              onChangeText={(value) => handleInput(item.id, "current_stage", value)}
+            />
+
+            <Text style={styles.fieldLabel}>Remarks</Text>
+            <TextInput
+              placeholder="Add remarks"
+              style={[styles.input, styles.remarksInput]}
+              multiline
+              textAlignVertical="top"
+              value={toSafeString(draft?.remarks)}
+              onChangeText={(value) => handleInput(item.id, "remarks", value)}
+            />
+          </>
+        ) : (
+          <View style={styles.completedNotice}>
+            <Feather name="check-circle" size={18} color="#13803d" />
+            <Text style={styles.completedNoticeText}>
+              This component is already complete and no further update is needed.
+            </Text>
+          </View>
+        )}
+      </View>
+    );
+  };
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.screen}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <CustomHeader GoBack={true} Title={"Work Progress Entry"} />
 
-      <ScrollView horizontal>
-        <View style={styles.table}>
-          {/* HEADER */}
-          <View style={[styles.row, styles.header]}>
-            <Text style={[styles.hCell, { width: 50 }]}>ID</Text>
-            <Text style={styles.hCell}>Work Service</Text>
-            <Text style={styles.hCell}>Component</Text>
-            <Text style={styles.hCell}>Type</Text>
-            <Text style={styles.hCell}>Side</Text>
-            <Text style={styles.hCell}>Date</Text>
-            <Text style={styles.hCell}>Qty</Text>
-            <Text style={styles.hCell}>Stage</Text>
-            <Text style={styles.hCell}>Progress %</Text>
-            <Text style={styles.hCell}>Remarks</Text>
-          </View>
-
-          {/* ROWS */}
-          <ScrollView style={{ maxHeight: 600, paddingBottom: 50 }}>
-            {load ? (
-              <View
-                style={{
-                  alignSelf: "flex-start",
-                  marginLeft: "15%",
-                  marginTop: "15%",
-                }}
-              >
-                <ActivityIndicator size="large" />
-              </View>
-            ) : (
-              <>
-                {workProgressData?.map((wc, index) => {
-                  const update = updateState[wc.id];
-                  const entry = formState[wc.id];
-                  const isOld = !!update;
-
-                  const existing = existingMap[wc.id];
-                  const lastProgress = Number(existing?.total_progress || 0);
-                  const isCompleted = lastProgress >= 100;
-                  const maxAllowedProgress = 100 - lastProgress;
-                  const isLastRow = index === workProgressData.length - 1;
-
-                  return (
-                    <View
-                      key={wc.id}
-                      style={[styles.row, isLastRow && { marginBottom: 40 }]}
-                    >
-                      <Text style={[styles.cell, { width: 50 }]}>{wc?.id}</Text>
-                      <Text style={styles.cell}>{wc?.work_service?.name}</Text>
-                      <Text style={styles.cell}>{wc?.work_component}</Text>
-                      <Text style={styles.cell}>{wc?.type_details}</Text>
-                      <Text style={styles.cell}>{wc?.side_location}</Text>
-
-                      {isCompleted ? (
-                        <>
-                          <Text
-                            style={[
-                              styles.cell,
-                              {
-                                width: COMPLETED_CELL_WIDTH,
-                                backgroundColor: "green",
-                                color: "#fff",
-                                textAlign: "center",
-                                fontFamily: "Jost-SemiBold",
-                                borderRadius: 5,
-                                paddingVertical: 3,
-                              },
-                            ]}
-                          >
-                            Completed
-                          </Text>
-                        </>
-                      ) : (
-                        <>
-                          <TouchableOpacity
-                            // onPress={() => openDatePicker(wc.id)}
-                            // style={styles.dateBox}
-                            style={{ alignSelf: "center" }}
-                          >
-                            {/* DATE */}
-                            <CalenderField
-                              placeholder="Date"
-                              Cdate={
-                                entry?.date_of_entry
-                                  ? new Date(entry.date_of_entry)
-                                  : // : existing?.date_of_entry
-                                    // ? new Date(existing.date_of_entry)
-                                    new Date() // 👈 AUTO SELECT TODAY
-                              }
-                              setCDate={(date) =>
-                                handleInput(wc.id, "date_of_entry", date)
-                              }
-                            />
-                          </TouchableOpacity>
-
-                          {/* QTY */}
-                          <TextInput
-                            placeholder="Qty"
-                            style={styles.input}
-                            value={entry?.qty_length ?? existing?.qty_length}
-                            onChangeText={(v) =>
-                              handleInput(wc.id, "qty_length", v)
-                            }
-                          />
-
-                          {/* STAGE */}
-                          <TextInput
-                            placeholder="Stage"
-                            style={styles.input}
-                            value={
-                              entry?.current_stage ?? existing?.current_stage
-                            }
-                            onChangeText={(v) =>
-                              handleInput(wc.id, "current_stage", v)
-                            }
-                          />
-
-                          {/* PROGRESS % */}
-                          <TextInput
-                            placeholder={`Max ${maxAllowedProgress}%`}
-                            keyboardType="numeric"
-                            maxLength={3}
-                            style={styles.input}
-                            value={entry?.progress_percentage ?? ""}
-                            onChangeText={(v) =>
-                              handleProgressChange(wc.id, v, maxAllowedProgress)
-                            }
-                          />
-
-                          {/* REMARKS */}
-                          <TextInput
-                            placeholder="Remarks"
-                            style={[styles.input, { width: 140 }]}
-                            value={entry?.remarks ?? existing?.remarks}
-                            onChangeText={(v) =>
-                              handleInput(wc.id, "remarks", v)
-                            }
-                          />
-                        </>
-                      )}
-                    </View>
-                  );
-                })}
-              </>
-            )}
-          </ScrollView>
+      {load ? (
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="large" color="#0b57a4" />
+          <Text style={styles.loaderText}>Loading work components...</Text>
         </View>
-      </ScrollView>
+      ) : (
+        <FlatList
+          data={workProgressData}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={renderCard}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={
+            <View style={styles.headerCard}>
+              <Text style={styles.projectName} numberOfLines={2}>
+                {project?.name || "Work Progress"}
+              </Text>
 
-      {/* DATE PICKER */}
-      {datePickerFor && (
-        <DateTimePicker
-          value={new Date()}
-          onChange={handleDateChange}
-          mode="date"
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryChip}>
+                  <Text style={styles.summaryValue}>{componentsSummary.total}</Text>
+                  <Text style={styles.summaryLabel}>Components</Text>
+                </View>
+                <View style={styles.summaryChip}>
+                  <Text style={styles.summaryValue}>
+                    {componentsSummary.completed}
+                  </Text>
+                  <Text style={styles.summaryLabel}>Completed</Text>
+                </View>
+              </View>
+
+              {errorMessage ? (
+                <View style={styles.errorBanner}>
+                  <MaterialCommunityIcons
+                    name="alert-circle-outline"
+                    size={18}
+                    color="#b45309"
+                  />
+                  <Text style={styles.errorText}>{errorMessage}</Text>
+                </View>
+              ) : null}
+            </View>
+          }
+          ListFooterComponent={
+            <TouchableOpacity
+              style={[styles.submitButton, saveLoading && styles.submitButtonDisabled]}
+              onPress={submit}
+              activeOpacity={0.85}
+              disabled={saveLoading || load}
+            >
+              {saveLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Feather name="upload-cloud" size={18} color="#fff" />
+              )}
+              <Text style={styles.submitButtonText}>
+                {saveLoading ? "Saving..." : "Submit Work Progress"}
+              </Text>
+            </TouchableOpacity>
+          }
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <MaterialCommunityIcons
+                name="clipboard-text-search-outline"
+                size={34}
+                color="#64748b"
+              />
+              <Text style={styles.emptyTitle}>No work components available</Text>
+              <Text style={styles.emptyBody}>
+                We could not find any components for this project yet.
+              </Text>
+            </View>
+          }
         />
       )}
-
-      {/* SUBMIT BUTTON */}
-      <TouchableOpacity style={styles.btn} onPress={submit}>
-        <Text style={styles.btnText}>Submit Work Progress</Text>
-      </TouchableOpacity>
     </KeyboardAvoidingView>
   );
-}
+};
+
+export default UpdateWorkProgressScreen;
 
 const styles = StyleSheet.create({
-  table: { padding: 0 },
-  row: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderColor: "#ccc",
-    paddingVertical: 8,
-    paddingHorizontal: 15,
+  screen: {
+    flex: 1,
+    backgroundColor: "#f4f7fb",
   },
-  header: {
-    backgroundColor: "#ccc",
+  listContent: {
+    padding: 16,
+    paddingBottom: 28,
   },
-  hCell: {
-    width: 120,
-    fontFamily: "Jost-SemiBold",
-    paddingHorizontal: 6,
-    marginRight: 15,
+  loaderWrap: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 12,
   },
-  cell: {
-    width: 120,
-    paddingHorizontal: 6,
-    marginRight: 15,
-    fontSize: 13,
+  loaderText: {
     fontFamily: "Jost-Medium",
-    alignSelf: "center",
+    color: "#475569",
+  },
+  headerCard: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 14,
+  },
+  projectName: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 17,
+    lineHeight: 24,
+    color: "#0f172a",
+  },
+  summaryRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  summaryChip: {
+    flex: 1,
+    borderRadius: 14,
+    backgroundColor: "#eef4ff",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  summaryValue: {
+    fontFamily: "Jost-Bold",
+    fontSize: 16,
+    color: "#0b57a4",
+  },
+  summaryLabel: {
+    marginTop: 4,
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    color: "#64748b",
+  },
+  errorBanner: {
+    marginTop: 14,
+    borderRadius: 14,
+    backgroundColor: "#fff6e5",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  errorText: {
+    flex: 1,
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#8a4b08",
+  },
+  card: {
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: "#e5e7eb",
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    gap: 10,
+  },
+  componentBadge: {
+    borderRadius: 999,
+    backgroundColor: "#eef4ff",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  componentBadgeText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 11,
+    color: "#0b57a4",
+  },
+  statusBadge: {
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  statusOpen: {
+    backgroundColor: "#eff6ff",
+  },
+  statusComplete: {
+    backgroundColor: "#e8f8ee",
+  },
+  statusBadgeText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 11,
+  },
+  statusOpenText: {
+    color: "#0b57a4",
+  },
+  statusCompleteText: {
+    color: "#13803d",
+  },
+  cardTitle: {
+    marginTop: 12,
+    fontFamily: "Jost-Bold",
+    fontSize: 16,
+    lineHeight: 23,
+    color: "#0f172a",
+  },
+  metaGroup: {
+    marginTop: 14,
+    gap: 8,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  metaText: {
+    flex: 1,
+    fontFamily: "Jost-Regular",
+    fontSize: 13,
+    color: "#475569",
+    lineHeight: 18,
+  },
+  progressOverview: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  overviewChip: {
+    flex: 1,
+    borderRadius: 14,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  overviewLabel: {
+    fontFamily: "Jost-Regular",
+    fontSize: 11,
+    color: "#64748b",
+  },
+  overviewValue: {
+    marginTop: 4,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 13,
+    color: "#0f172a",
+  },
+  previousEntryBox: {
+    marginTop: 14,
+    borderRadius: 14,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  previousEntryTitle: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 12,
+    color: "#334155",
+  },
+  previousEntryText: {
+    marginTop: 4,
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#475569",
+  },
+  formRow: {
+    flexDirection: "row",
+    gap: 10,
+    marginTop: 14,
+  },
+  fieldHalf: {
+    flex: 1,
+  },
+  fieldLabel: {
+    marginTop: 14,
+    marginBottom: 8,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 12,
+    color: "#334155",
   },
   input: {
-    width: 120,
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: "#f8fafc",
     borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 5,
-    borderRadius: 6,
-    marginHorizontal: 10,
-    height: 40,
-    alignSelf: "center",
+    borderColor: "#dbe5ef",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontFamily: "Jost-Regular",
+    fontSize: 14,
+    color: "#0f172a",
   },
-  dateBox: {
-    width: 120,
-    borderWidth: 1,
-    borderRadius: 6,
-    borderColor: "#ccc",
-    padding: 6,
+  remarksInput: {
+    minHeight: 92,
+  },
+  completedNotice: {
+    marginTop: 16,
+    borderRadius: 14,
+    backgroundColor: "#eefbf3",
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  completedNoticeText: {
+    flex: 1,
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    lineHeight: 18,
+    color: "#13803d",
+  },
+  submitButton: {
+    marginTop: 4,
+    borderRadius: 16,
+    backgroundColor: "#0b57a4",
+    minHeight: 52,
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "center",
+    gap: 8,
   },
-  btn: {
-    backgroundColor: "#007BFF",
-    padding: 15,
-    margin: 16,
-    borderRadius: 10,
+  submitButtonDisabled: {
+    opacity: 0.7,
   },
-  btnText: {
+  submitButtonText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
     color: "#fff",
-    textAlign: "center",
-    fontSize: 16,
+  },
+  emptyState: {
+    marginTop: 24,
+    backgroundColor: "#fff",
+    borderRadius: 20,
+    padding: 24,
+    alignItems: "center",
+  },
+  emptyTitle: {
+    marginTop: 10,
     fontFamily: "Jost-Bold",
+    fontSize: 16,
+    color: "#0f172a",
+    textAlign: "center",
+  },
+  emptyBody: {
+    marginTop: 8,
+    fontFamily: "Jost-Regular",
+    fontSize: 13,
+    lineHeight: 20,
+    color: "#64748b",
+    textAlign: "center",
   },
 });

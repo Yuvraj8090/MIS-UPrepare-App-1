@@ -23,7 +23,7 @@ import CustomHeader from "@/components/AppHeader/CustomHeader";
 import { Entypo, Feather, MaterialIcons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
-import ImageView from "react-native-image-viewing";
+import ImageView from "@/components/ImageViewerModal";
 import { useFocusEffect } from "@react-navigation/native";
 
 export default function BoqDetailScreen(props) {
@@ -242,8 +242,8 @@ export default function BoqDetailScreen(props) {
           <Image
             source={{
               uri:
-                `https://u-prepare.com/storage/app/public/${item?.media_files[0]?.path}` ||
-                `https://u-prepare.com/storage/app/public/${item?.media_files[0]}`,
+                `https://uprepare-storage-2026.s3.ap-south-1.amazonaws.com/${item?.media_files[0]?.path}` ||
+                `https://uprepare-storage-2026.s3.ap-south-1.amazonaws.com/${item?.media_files[0]}`,
             }}
             style={{ width: 72, height: 48, borderRadius: 4 }}
           />
@@ -263,7 +263,7 @@ export default function BoqDetailScreen(props) {
   };
 
   const imagesUrl = viewImages?.map((image) => ({
-    uri: `https://u-prepare.com/storage/app/public/${image?.path}`,
+    uri: `https://uprepare-storage-2026.s3.ap-south-1.amazonaws.com/${image?.path}`,
   }));
 
   console.log("Image Url :;", imagesUrl);

@@ -1,31 +1,37 @@
 import React from "react";
-import { Text, View, TextInput, StyleSheet, Dimensions } from "react-native";
-import { MaterialCommunityIcons, FontAwesome6 } from "@expo/vector-icons";
-const { width, height } = Dimensions.get("window");
+import { View, TextInput, StyleSheet } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { colors, radius, spacing } from "@/constants/theme";
 
 const TextField = ({ err, otp, number, iconName, ...props }) => {
-  //   console.log("Propss :", props);
   return (
     <View
       style={[
         styles.inputContainer,
-        { borderWidth: err ? 1 : 0, borderColor: err ? "red" : "transparent" },
+        {
+          borderWidth: 1,
+          borderColor: err ? colors.danger : colors.borderStrong,
+        },
       ]}
     >
       <MaterialCommunityIcons
         name={iconName}
-        size={24}
-        color="#000"
+        size={22}
+        color={colors.textMuted}
         style={styles.icon}
       />
       <TextInput
         style={styles.input}
         {...props}
         maxLength={number ? number : 50}
-        onChangeText={(txt) => props.setData(txt.trim())}
+        onChangeText={(txt) =>
+          props.setData(number || otp ? txt : txt.replace(/^\s+/, ""))
+        }
         keyboardType={number ? "numeric" : otp ? "numeric" : "default"}
         editable={!props.disable}
-        placeholderTextColor="#555"
+        placeholderTextColor="#64748b"
+        autoCapitalize="none"
+        selectionColor={colors.primary}
       />
     </View>
   );
@@ -33,24 +39,24 @@ const TextField = ({ err, otp, number, iconName, ...props }) => {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    width: width * 0.8,
-    height: height * 0.05,
+    width: "100%",
+    minHeight: 54,
     alignItems: "center",
-    borderRadius: 10,
+    borderRadius: radius.md,
     flexDirection: "row",
-    marginVertical: "2%",
-    backgroundColor: "#F3EEEA",
+    marginVertical: spacing.xs,
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: 14,
   },
   input: {
     flex: 1,
     fontSize: 16,
     fontFamily: "Jost-Medium",
-    paddingVertical: 8,
-    textTransform: "uppercase",
-    color: "#000",
+    paddingVertical: 12,
+    color: colors.text,
   },
   icon: {
-    marginHorizontal: "5%",
+    marginRight: 10,
   },
 });
 

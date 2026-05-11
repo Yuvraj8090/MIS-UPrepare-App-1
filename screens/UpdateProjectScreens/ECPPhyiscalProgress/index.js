@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ToastAndroid,
   Image,
   ScrollView,
   Platform,
@@ -20,7 +19,6 @@ import { getFromSS } from "@/services/storage/SecureStore";
 import {
   fetchECPActivityStages,
   saveECPPhycialProgressImage,
-  updatePhysicalProgress,
 } from "@/services/api/fetch";
 import SelectDropdown from "react-native-select-dropdown";
 import {
@@ -29,6 +27,7 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { width } from "@/services/helper";
+import { showFeedback } from "@/services/platform/feedback";
 
 const EPCPhysicalProgressForm = (props) => {
   console.log("PORPSPPSPSPSP ::", props?.route?.params);
@@ -36,7 +35,7 @@ const EPCPhysicalProgressForm = (props) => {
   const navigation = useNavigation();
 
   const [stage, setStage] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(new Date());
   const [progress, setProgress] = useState("");
   const [items, setItems] = useState("");
   const [images, setImages] = useState([]);
@@ -146,16 +145,12 @@ const EPCPhysicalProgressForm = (props) => {
       const res = await saveECPPhycialProgressImage(authToken, formData);
       console.log("RESS UDPALED IMAHESS ::", res);
       if (res?.status) {
-        Platform.OS === "ios"
-          ? Alert.alert(res?.message)
-          : ToastAndroid.show(res?.message, ToastAndroid.LONG);
+        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
         setTimeout(() => {
           navigation.goBack();
         }, 2000);
       } else {
-        Platform.OS === "ios"
-          ? Alert.alert(res?.message)
-          : ToastAndroid.show(res?.message, ToastAndroid.LONG);
+        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
       }
       setShowLCard(false);
     } catch (error) {
@@ -168,7 +163,7 @@ const EPCPhysicalProgressForm = (props) => {
 
   // ♻️ Reset
   const handleReset = () => {
-    setDate("");
+    setDate(new Date());
     setProgress("");
     setItems("");
     setImages([]);
@@ -178,7 +173,7 @@ const EPCPhysicalProgressForm = (props) => {
     <View style={styles.mainConatiner}>
       <CustomHeader Title={"Add Physical EPC Progress"} GoBack={true} />
 
-      <ScrollView style={{ margin: "1%" }}>
+      <ScrollView style={{ margin: 8 }}>
         {/* <Text style={styles.headerTitle}>
           Update Progress for Milestone: {data?.milestone?.name}
         </Text> */}
@@ -350,7 +345,7 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: "#fff",
-    padding: "8%",
+    padding: 24,
     borderRadius: 10,
     elevation: 2,
     // width: width * 0.85,
@@ -408,7 +403,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     width: width * 0.8,
     height: 40,
-    paddingHorizontal: "5%",
+    paddingHorizontal: 16,
     backgroundColor: "#fff",
     borderRadius: 5,
     borderWidth: 1,
@@ -427,10 +422,10 @@ const styles = StyleSheet.create({
     elevation: 5,
     backgroundColor: "#fff",
     zIndex: 2000,
-    padding: "1%",
+    padding: 6,
   },
   dropdownItemTxtStyle: {
-    padding: "2%",
+    padding: 10,
     fontSize: 13,
     marginVertical: 2,
     fontFamily: "Jost-Medium",

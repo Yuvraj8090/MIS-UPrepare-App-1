@@ -1,330 +1,204 @@
-// Charts.js
 import React from "react";
-import {
-  View,
-  Text,
-  Dimensions,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-} from "react-native";
-import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
-import SelectDropdown from "react-native-select-dropdown";
-import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
-import { width as screenHelperWidth, width } from "@/services/helper"; // keep if you already use it
-import Svg from "react-native-svg";
+import { Dimensions, ScrollView, StyleSheet, Text, View } from "react-native";
+import { BarChart } from "react-native-chart-kit";
+
+import SectionCard from "@/components/UI/SectionCard";
 
 const screenWidth = Dimensions.get("window").width;
-const dropdownWidth = (screenHelperWidth || screenWidth) * 0.28;
+const chartWidth = Math.min(screenWidth - 56, 360);
 
-// small helpers
-const safeNum = (v) => {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : 0;
+const safeNum = (value) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
 };
-const toFixedStr = (v, dp = 2) => safeNum(v).toFixed(dp);
-const formatCR = (v) => `${toFixedStr(v, 2)} CR`;
 
 const ContractsDistributaionCharts = ({ data }) => {
-  // if caller passes null / undefined
   if (!data) {
-    return (
-      <View style={styles.center}>
-        <Text>Loading...</Text>
-      </View>
-    );
+    return null;
   }
 
-  const typeDist = data?.type_of_contracts_distribution;
-
   const palette = ["#3466CC", "#17A589", "#DC3913", "#2E86C1", "#C0392B"];
-  const typeOfContracts =
-    (data.type_of_contracts_distribution?.labels || []).map((label, idx) => ({
-      name: label,
-      value: safeNum(data.type_of_contracts_distribution?.data?.[idx]) || 0,
-      color: palette[idx % palette.length],
-    })) || [];
+  const labels = data?.type_of_contracts_distribution?.labels || [];
+  const values = data?.type_of_contracts_distribution?.data || [];
 
-  console.log("TYPEPPE ;", typeOfContracts);
+  const typeOfContracts = labels.map((label, index) => ({
+    name: label,
+    population: safeNum(values[index]),
+    color: palette[index % palette.length],
+    legendFontColor: "#334155",
+    legendFontSize: 12,
+  }));
 
-  const total = typeOfContracts.reduce((sum, d) => sum + d.value, 0);
-
-  // Helper to convert angle to x,y position
-  const getCoordinatesForAngle = (angle, radius) => {
-    const x = radius * Math.cos(angle) + radius;
-    const y = radius * Math.sin(angle) + radius;
-    return { x, y };
-  };
-
-  let lastAngle = 0;
-  const radius = 100; // adjust based on size
-
-  const Labels = ({ slices }) =>
-    slices.map((slice, index) => {
-      const { pieCentroid, data } = slice;
-      const percent = ((data.value / total) * 100).toFixed(1) + "%";
-
-      return (
-        <SvgText
-          key={index}
-          x={pieCentroid[0]}
-          y={pieCentroid[1]}
-          fill="white"
-          textAnchor="middle"
-          alignmentBaseline="middle"
-          fontSize={12}
-          fontWeight="bold"
-        >
-          {percent}
-        </SvgText>
-      );
-    });
+  const rows = data?.type_of_contracts_distribution?.rows || [];
 
   return (
-    <ScrollView style={styles.container}>
-      {/* CONTRACT OVERVIEW card + table (top) */}
-      <View style={styles.topCard}>
-        <Text style={styles.topTitle}>Type of Contracts Distribution</Text>
-
-        <View style={styles.topContent}>
-          {/* Pie */}
-          <View style={{ flex: 1 }}>
-            <PieChart
-              data={typeOfContracts.map((d) => ({
-                ...d,
-                population: d.value,
-              }))}
-              width={screenWidth - 40}
-              height={260}
-              accessor="value"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              hasLegend={false}
-              chartConfig={{
-                backgroundColor: "#fff",
-                backgroundGradientFrom: "#fff",
-                backgroundGradientTo: "#fff",
-                color: (opacity = 1) => `rgba(0,0,0,${opacity})`,
-              }}
-            />
-          </View>
-
-          {/* small stats on right */}
-          <View style={styles.topRight}>
-            {typeOfContracts?.map((item, i) => (
-              <View style={styles.statRow} key={i}>
-                <View
-                  style={[styles.colorDot, { backgroundColor: item?.color }]}
-                />
-                <Text style={styles.statText}>
-                  {item?.name}: {item?.value}
-                </Text>
-              </View>
-            ))}
-          </View>
+    <SectionCard title="Type of Contracts Distribution">
+      <View style={styles.chartBlock}>
+        <View style={styles.chartStage}>
+          <BarChart
+            data={{
+              labels: typeOfContracts.map((item) => item.name),
+              datasets: [
+                {
+                  data: typeOfContracts.map((item) => safeNum(item.population)),
+                },
+              ],
+            }}
+            width={chartWidth}
+            height={240}
+            fromZero
+            showValuesOnTopOfBars
+            withInnerLines={false}
+            yAxisLabel=""
+            yAxisSuffix=""
+            chartConfig={{
+              backgroundColor: "#fff",
+              backgroundGradientFrom: "#fff",
+              backgroundGradientTo: "#fff",
+              decimalPlaces: 0,
+              barPercentage: 0.65,
+              color: (opacity = 1) => `rgba(11, 87, 164, ${opacity})`,
+              labelColor: (opacity = 1) => `rgba(51, 65, 85, ${opacity})`,
+              propsForBackgroundLines: {
+                stroke: "#e2e8f0",
+              },
+              propsForLabels: {
+                fontSize: 11,
+              },
+            }}
+            style={styles.chartCanvas}
+          />
         </View>
 
-        {/* department table */}
-        <ScrollView horizontal>
-          <View style={styles.bigTable}>
-            <View style={styles.bigThead}>
-              <Text style={[styles.bigTh]}>Procurement Type</Text>
-              <Text style={styles.bigTh}>No. of Packages</Text>
+        <View style={styles.legendList}>
+          {typeOfContracts.map((item) => (
+            <View key={item.name} style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: item.color }]} />
+              <Text style={styles.legendText}>
+                {item.name}: {item.population}
+              </Text>
             </View>
-
-            {typeDist?.rows?.map((r, i) => {
-              const contract = r[0];
-              const count = r[1];
-              return (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => Linking.openURL(contract?.url)}
-                >
-                  <View
-                    style={[
-                      styles.bigTrow,
-                      i % 2 === 0 ? styles.rowEven : styles.rowOdd,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.bigTd,
-                        { flex: 2, color: "#0A4D68", fontWeight: "700" },
-                      ]}
-                    >
-                      {contract?.text}
-                    </Text>
-                    <Text style={styles.bigTd}>{count}</Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
+          ))}
+        </View>
       </View>
-    </ScrollView>
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableHeadCell, styles.typeColumn]}>
+              Procurement Type
+            </Text>
+            <Text style={styles.tableHeadCell}>No. of Packages</Text>
+          </View>
+
+          {rows.map((row, index) => (
+            <View
+              key={`${row?.[0]?.text || "row"}-${index}`}
+              style={[
+                styles.tableRow,
+                index % 2 === 0 ? styles.rowEven : styles.rowOdd,
+              ]}
+            >
+              <Text style={[styles.tableCell, styles.typeColumn, styles.typeText]}>
+                {row?.[0]?.text || "-"}
+              </Text>
+              <Text style={styles.tableCell}>{safeNum(row?.[1])}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+    </SectionCard>
   );
 };
 
-export default ContractsDistributaionCharts;
-
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#eef1f4" },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-
-  // top big contract overview card
-  topCard: {
-    margin: 10,
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    // padding: 12,
-    elevation: 4,
-    overflow: "hidden",
+  chartBlock: {
+    alignItems: "center",
+    gap: 8,
   },
-  topTitle: {
-    fontSize: 16,
-    fontFamily: "Jost-Bold",
-    color: "#fff",
-    backgroundColor: "#28A745",
-    padding: 12,
-    // borderRadius: 4,
-    alignSelf: "stretch",
+  chartStage: {
+    width: "100%",
+    minHeight: 248,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  topContent: {
+  chartCanvas: {
+    borderRadius: 12,
+  },
+  legendList: {
+    width: "100%",
+    gap: 10,
+    marginTop: -8,
+    marginBottom: 8,
+  },
+  legendItem: {
     flexDirection: "row",
-    marginTop: 12,
-    padding: 10,
-    // alignItems: "center",
-    // justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
   },
-  topRight: {
-    width: 150,
-    // marginLeft: 10,
-    // justifyContent: "center",
-    position: "relative",
-    top: 10,
+  legendDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 999,
+    marginTop: 4,
   },
-  statRow: { flexDirection: "row", alignItems: "center", marginBottom: 10 },
-  statText: {
-    marginLeft: 8,
+  legendText: {
+    flex: 1,
     fontFamily: "Jost-SemiBold",
-    color: "#333",
     fontSize: 14,
+    lineHeight: 20,
+    color: "#334155",
   },
-
-  // big table styles
-  bigTable: {
-    // minWidth: width,
-    marginTop: 14,
+  table: {
+    minWidth: 420,
     borderWidth: 1,
-    borderColor: "#dfe7de",
-    borderRadius: 6,
+    borderColor: "#dbe7da",
+    borderRadius: 14,
     overflow: "hidden",
+    marginTop: 4,
   },
-  bigThead: {
+  tableHeader: {
     flexDirection: "row",
     backgroundColor: "#28A745",
-    paddingVertical: 10,
-    // justifyContent: "space-between",
-    // paddingHorizontal: 8,
-    // minWidth: width,
   },
-  bigTh: {
-    // flex: 1,
+  tableHeadCell: {
+    width: 140,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
     color: "#fff",
     textAlign: "center",
     fontFamily: "Jost-Bold",
     fontSize: 13,
-    width: width * 0.45,
-    marginHorizontal: 2,
     borderRightWidth: 1,
-    borderColor: "#eef6ee",
+    borderRightColor: "rgba(255,255,255,0.2)",
   },
-  bigTrow: {
+  typeColumn: {
+    width: 280,
+  },
+  tableRow: {
     flexDirection: "row",
-    padding: 10,
-    borderBottomWidth: 1,
-    borderColor: "#eef6ee",
     alignItems: "center",
-    // width: width * 0.2,
   },
-  bigTd: {
-    width: width * 0.45,
+  rowEven: {
+    backgroundColor: "#f6fbf6",
+  },
+  rowOdd: {
+    backgroundColor: "#fff",
+  },
+  tableCell: {
+    width: 140,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
     textAlign: "center",
-    color: "#0b3b12",
+    color: "#0f172a",
+    fontFamily: "Jost-Regular",
+    fontSize: 13,
   },
-  smallPct: { fontSize: 12, color: "#6b6b6b" },
-
-  // mini chart card
-  card: {
-    backgroundColor: "#fff",
-    margin: 10,
-    borderRadius: 8,
-    elevation: 3,
-    overflow: "hidden",
+  typeText: {
+    color: "#10621E",
+    fontFamily: "Jost-SemiBold",
+    textAlign: "left",
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    backgroundColor: "#28A745",
-    padding: 10,
-    alignItems: "center",
-  },
-  headerText: { color: "#fff", fontSize: 16, fontWeight: "700" },
-
-  dropdownBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    height: 36,
-    paddingHorizontal: 8,
-    backgroundColor: "#fff",
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#ccc",
-  },
-  dropdownBtnText: { fontSize: 13, color: "#000" },
-  dropdownMenu: { borderRadius: 6, elevation: 4 },
-
-  chartWrap: { padding: 10, alignItems: "center" },
-
-  pieRow: { width: "100%", alignItems: "center", justifyContent: "center" },
-  percentOverlay: {
-    position: "absolute",
-    right: 18,
-    top: 60,
-    backgroundColor: "transparent",
-    padding: 6,
-    borderRadius: 6,
-  },
-  percentItem: { flexDirection: "row", alignItems: "center", marginBottom: 6 },
-  percentText: { marginLeft: 6, color: "#222", fontSize: 12 },
-  colorDot: { width: 10, height: 10, borderRadius: 4 },
-
-  // small table inside card
-  table: {
-    margin: 10,
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
-    borderRadius: 6,
-    overflow: "hidden",
-  },
-  tHead: {
-    flexDirection: "row",
-    backgroundColor: "#28A745",
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-  },
-  th: { flex: 1, color: "#fff", textAlign: "center", fontWeight: "700" },
-  leftTh: { textAlign: "left", paddingLeft: 10 },
-
-  tRow: { flexDirection: "row", paddingVertical: 10, paddingHorizontal: 6 },
-  tCell: { flex: 1, textAlign: "center", color: "#333" },
-  leftCell: { textAlign: "left", paddingLeft: 10 },
-
-  rowEven: { backgroundColor: "#f7fff7" },
-  rowOdd: { backgroundColor: "#fff" },
-
-  // small helpers
-  verticalCenter: { alignItems: "center" },
 });
+
+export default ContractsDistributaionCharts;

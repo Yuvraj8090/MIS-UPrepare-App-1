@@ -1,244 +1,225 @@
 import React from "react";
 import {
-  View,
-  Text,
-  Image,
-  TextInput,
-  Dimensions,
-  ToastAndroid,
-  TouchableOpacity,
   ImageBackground,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import { useNavigation } from "@react-navigation/native";
+import { Ionicons } from "@expo/vector-icons";
 
 import BButton from "../../../components/Button/BButton";
 import LoaderCard from "../../../components/LoaderCard";
-
 import authStyles from "../styles";
-
 import { resendOTP, verifyOTP } from "../../../services/api/fetch";
-import { useNavigation } from "@react-navigation/native";
-import { savetoSS } from "../../../services/storage/SecureStore";
-import { navtoRegDataScreen } from "../../../services/helper";
-
 import { useAuth } from "../../../navigation/AuthContext/AuthContext";
-
-const { width, height } = Dimensions.get("window");
+import { showFeedback } from "@/services/platform/feedback";
 
 const OTPScreen = (props) => {
   const { userName } = props.route.params;
-  // console.log("USERNAME ::", userName);
-
   const otpInputs = React.useRef([]);
   const navigation = useNavigation();
 
   const [otp, setOtp] = React.useState(["", "", "", ""]);
   const [timer, setTimer] = React.useState(60);
-  const [load, setLoad] = React.useState(false);
-
-  // Error Message
+  const [resendLoading, setResendLoading] = React.useState(false);
   const [otpError, setOtpError] = React.useState("");
-
-  const { setUser, showLCard, setShowLCard, setUserToken } = useAuth();
+  const { showLCard, setShowLCard } = useAuth();
 
   React.useEffect(() => {
     const interval = setInterval(() => {
-      if (timer > 0) {
-        setTimer(timer - 1);
-      }
+      setTimer((current) => (current > 0 ? current - 1 : 0));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [timer]);
+  }, []);
+
+  React.useEffect(() => {
+    otpInputs.current[0]?.focus();
+  }, []);
 
   const handleResend = async () => {
-    // Implement logic to resend OTP
-    // Reset the timer to 60 seconds
-    // setTimer(60);
-
-    var formData = {
-      username: userName,
-    };
+    const formData = { username: userName };
 
     try {
-      setLoad(true);
-
+      setResendLoading(true);
       const res = await resendOTP(formData);
+      showFeedback(res?.data?.msg || "OTP resent.");
 
-      console.log("RESSSS ::", res);
-
-      if (res.data.ok) {
-        ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
-      } else {
-        ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+      if (res?.data?.ok) {
+        setTimer(60);
+        setOtp(["", "", "", ""]);
+        setOtpError("");
+        otpInputs.current[0]?.focus();
       }
-    } catch (e) {
-      console.log("Error in OTP Screen handleVerify method: ", e);
+    } catch (error) {
+      console.log("Error in OTP Screen handleResend method: ", error);
+      showFeedback("Unable to resend OTP right now.");
     } finally {
-      setLoad(false);
+      setResendLoading(false);
     }
   };
 
-  React.useEffect(() => {
-    // Focus on the first TextInput when the component mounts
-    if (otpInputs.current[0]) {
-      otpInputs.current[0].focus();
-    }
-  }, []);
-
   const handleOtpInputChange = (text, index) => {
-    const newOtp = [...otp];
-    newOtp[index] = text;
-    setOtp(newOtp);
+    const nextValue = text.replace(/[^0-9]/g, "").slice(0, 1);
+    const nextOtp = [...otp];
+    nextOtp[index] = nextValue;
+    setOtp(nextOtp);
 
-    // Move to the previous TextInput if text is deleted
-    if (text.length === 0 && index > 0) {
-      otpInputs.current[index - 1].focus();
+    if (nextValue.length === 0 && index > 0) {
+      otpInputs.current[index - 1]?.focus();
     }
 
-    // Move to the next TextInput
-    if (text.length === 1 && index < otp.length - 1) {
-      otpInputs.current[index + 1].focus();
+    if (nextValue.length === 1 && index < nextOtp.length - 1) {
+      otpInputs.current[index + 1]?.focus();
     }
   };
 
   const validateOtp = () => {
-    // Check if each OTP input is filled
-    for (let i = 0; i < otp.length; i++) {
-      if (!otp[i]) {
-        // Set an error message for empty OTP fields
-        // You can customize the error message as needed
-        // Here, I'm setting a generic message for all fields
-        // You might want to provide more specific error messages
-        setOtpError("Please fill all OTP fields");
-        return false;
-      }
+    const enteredOTP = otp.join("");
+
+    if (enteredOTP.length !== 4) {
+      setOtpError("Please enter the complete 4-digit OTP.");
+      return false;
     }
-    // Reset the OTP error message if all fields are filled
+
     setOtpError("");
     return true;
   };
 
   const handleVerify = async () => {
-    const isOtpValid = validateOtp();
-    // Implement your OTP verification logic here
-    const enteredOTP = otp.join("");
-    // if (enteredOTP === "1234") {
-    if (isOtpValid) {
-      const formData = {
-        username: userName,
-        otp: enteredOTP,
-      };
-
-      console.log("FORM DATA ::", formData);
-
-      // setShowLCard(true);
-      // setTimeout(() => {
-      //   setShowLCard(false);
-      //   ToastAndroid.show("OTP Verified Successfully!", ToastAndroid.LONG);
-      // }, 3000);
-
-      // setTimeout(() => {
-      // }, 5000);
-
-      try {
-        setShowLCard(true);
-
-        const res = await verifyOTP(formData);
-
-        console.log("RESSSS ::", res);
-
-        if (res.data.ok) {
-          ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
-          navigation.navigate("ResetPassword", {
-            username: userName,
-            otp: enteredOTP,
-          });
-        } else {
-          ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
-        }
-
-        // ToastAndroid.show(resp.data.msg, ToastAndroid.LONG);
-      } catch (e) {
-        console.log("Error in OTP Screen handleVerify method: ", e);
-      } finally {
-        setShowLCard(false);
-      }
+    if (!validateOtp()) {
+      return;
     }
-  };
 
-  const OTPErrorMsg = ({ error }) => {
-    return (
-      error && (
-        <View style={authStyles.otpErrView}>
-          <Text style={authStyles.errTxt}>{error}</Text>
-        </View>
-      )
-    );
+    const enteredOTP = otp.join("");
+    const formData = {
+      username: userName,
+      otp: enteredOTP,
+    };
+
+    try {
+      setShowLCard(true);
+      const res = await verifyOTP(formData);
+
+      if (res?.data?.ok) {
+        showFeedback(res?.data?.msg);
+        navigation.navigate("ResetPassword", {
+          username: userName,
+          otp: enteredOTP,
+        });
+      } else {
+        setOtpError(res?.data?.msg || "Invalid OTP. Please try again.");
+      }
+    } catch (error) {
+      console.log("Error in OTP Screen handleVerify method: ", error);
+      setOtpError("Unable to verify OTP right now. Please try again.");
+    } finally {
+      setShowLCard(false);
+    }
   };
 
   return (
     <ImageBackground
       source={require("../../../assets/images/home.jpeg")}
       style={authStyles.mainContainer}
+      imageStyle={authStyles.backgroundImage}
     >
-      <View>
-        <View style={authStyles.container}>
-          <Text
-            style={[
-              authStyles.title,
-              { fontSize: 20, fontFamily: "Jost-Medium" },
-            ]}
-          >
-            Enter OTP To Verify ?
-          </Text>
+      <View style={authStyles.backgroundOverlay}>
+        <KeyboardAwareScrollView
+          contentContainerStyle={authStyles.scrollContent}
+          enableOnAndroid={true}
+          extraHeight={88}
+          extraScrollHeight={64}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={authStyles.topBrand}>
+            <View style={authStyles.logoWrap}>
+              <Ionicons
+                name="shield-checkmark-outline"
+                size={30}
+                color="#0b57a4"
+              />
+            </View>
+            <Text style={authStyles.title}>Verification</Text>
+            <Text style={authStyles.LogoTitle}>Enter OTP</Text>
+            <Text style={authStyles.subtitle}>
+              We sent a verification code to your account for {userName}.
+            </Text>
+          </View>
 
-          <View style={authStyles.otpView}>
-            <KeyboardAwareScrollView showsVerticalScrollIndicator={false}>
+          <View style={authStyles.container}>
+            <Text style={authStyles.cardTitle}>Verify your identity</Text>
+            <Text style={authStyles.cardSubtitle}>
+              Enter the 4-digit OTP below to continue to password reset.
+            </Text>
+
+            <View style={authStyles.otpView}>
               <View style={authStyles.otpicView}>
                 <View style={authStyles.flexRow}>
-                  {[1, 2, 3, 4].map((_, index) => (
+                  {[0, 1, 2, 3].map((index) => (
                     <TextInput
                       key={index}
-                      ref={(ref) => (otpInputs.current[index] = ref)}
+                      ref={(ref) => {
+                        otpInputs.current[index] = ref;
+                      }}
                       style={authStyles.otpInput}
                       value={otp[index]}
                       maxLength={1}
-                      keyboardType="numeric"
+                      keyboardType="number-pad"
+                      textAlign="center"
                       onChangeText={(text) => {
-                        setOtpError(null);
+                        setOtpError("");
                         handleOtpInputChange(text, index);
                       }}
-                      selectionColor="#06D001"
+                      onKeyPress={({ nativeEvent }) => {
+                        if (nativeEvent.key === "Backspace" && !otp[index] && index > 0) {
+                          otpInputs.current[index - 1]?.focus();
+                        }
+                      }}
+                      selectionColor="#0b57a4"
                     />
                   ))}
                 </View>
               </View>
-            </KeyboardAwareScrollView>
+            </View>
 
-            <View style={authStyles.otpres}>
-              {/* <Text style={authStyles.ffPopSemi}>Don't get the OTP?</Text> */}
+            {otpError ? (
+              <View style={authStyles.otpErrView}>
+                <Text style={authStyles.errTxt}>{otpError}</Text>
+              </View>
+            ) : null}
+
+            <View style={authStyles.helperRowCenter}>
               {timer > 0 ? (
-                <View style={authStyles.flexRow}>
-                  <Text style={authStyles.ffPopSemi}>
-                    Request OTP in {timer} seconds
-                  </Text>
-                </View>
+                <Text style={authStyles.helperText}>
+                  Request a new OTP in {timer} seconds
+                </Text>
               ) : (
-                <TouchableOpacity onPress={handleResend} activeOpacity={0.5}>
-                  <Text style={authStyles.otpres}>Resend OTP</Text>
+                <TouchableOpacity onPress={handleResend} activeOpacity={0.8}>
+                  <Text style={authStyles.resendLink}>Resend OTP</Text>
                 </TouchableOpacity>
               )}
             </View>
+
+            <BButton Title={"Verify OTP"} onPress={handleVerify} />
           </View>
-
-          <OTPErrorMsg error={otpError} />
-
-          <BButton Title={"Verify OTP"} onPress={handleVerify} />
-        </View>
-        <LoaderCard text={"Resending OTP..."} show={load} />
-        <LoaderCard text={"Verifying OTP..."} show={showLCard} />
+        </KeyboardAwareScrollView>
       </View>
+
+      <LoaderCard
+        visible={resendLoading}
+        message="Resending OTP..."
+        backgroundColor="rgba(15,23,42,0.28)"
+      />
+      <LoaderCard
+        visible={showLCard}
+        message="Verifying OTP..."
+        backgroundColor="rgba(15,23,42,0.28)"
+      />
     </ImageBackground>
   );
 };

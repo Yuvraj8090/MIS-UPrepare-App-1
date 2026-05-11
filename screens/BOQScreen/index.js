@@ -1,5 +1,6 @@
 // screens/BoqListScreen.js
 import React, { useCallback, useEffect, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   View,
   Text,
@@ -257,7 +258,7 @@ export default function BoqListScreen({ navigation, route }) {
             // stickyHeaderIndices={[0]}
             renderItem={renderItem}
             ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
-            contentContainerStyle={{ paddingBottom: 20 }}
+            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
             ListEmptyComponent={
               <View
                 style={{
