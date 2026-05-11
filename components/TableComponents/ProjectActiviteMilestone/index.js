@@ -1,4 +1,10 @@
-import { View, Text, FlatList, TouchableOpacity, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+} from "react-native";
 import React from "react";
 import styles from "./styles";
 import { useNavigation } from "@react-navigation/native";
@@ -6,7 +12,41 @@ import * as Progress from "react-native-progress";
 import { useAuth } from "@/navigation/AuthContext/AuthContext";
 import { Feather } from "@expo/vector-icons";
 
-const ProjectActivitesMilestone = ({ project, data, refreshing, onRefresh }) => {
+const milestones = [
+  {
+    id: 1,
+    name: "Foundation Work",
+    weightage: 20,
+    progress: 40, // %
+  },
+  {
+    id: 2,
+    name: "Structural Work",
+    weightage: 30,
+    progress: 60, // %
+  },
+  {
+    id: 3,
+    name: "Plumbing & Electrical",
+    weightage: 15,
+    progress: 25, // %
+  },
+  {
+    id: 4,
+    name: "Interior Finishing",
+    weightage: 25,
+    progress: 10, // %
+  },
+  {
+    id: 5,
+    name: "Final Inspection",
+    weightage: 10,
+    progress: 0, // %
+  },
+];
+
+
+const ProjectActivitesMilestone = ({ data, load, setLoad }) => {
   const navigation = useNavigation();
   const { user } = useAuth();
 
@@ -91,8 +131,6 @@ const ProjectActivitesMilestone = ({ project, data, refreshing, onRefresh }) => 
                 onPress={() =>
                   navigation.navigate("PhysicalProgressMilestone", {
                     milestone_id: item?.id,
-                    milestone: item,
-                    project,
                   })
                 }
                 style={styles.cellView}
@@ -125,18 +163,17 @@ const ProjectActivitesMilestone = ({ project, data, refreshing, onRefresh }) => 
   };
 
   const handleRefresh = () => {
-    if (onRefresh) {
-      onRefresh();
-    }
+    setLoad(true);
   };
 
   return (
     <View style={styles.table}>
       {/* Data rows */}
       <FlatList
-        data={data || []}
+        // data={data}
+        data={milestones}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
+          <RefreshControl refreshing={load} onRefresh={handleRefresh} />
         }
         showsVerticalScrollIndicator={false}
         keyExtractor={(item, index) => index.toString()}

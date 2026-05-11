@@ -1,54 +1,38 @@
-import { Text, TouchableOpacity, StyleSheet, View } from "react-native";
+import { View, Text, TouchableOpacity, Dimensions } from "react-native";
 import React from "react";
-import { colors, radius, shadows, spacing } from "@/constants/theme";
+const { width, height } = Dimensions.get("window");
 
-const BButton = ({ Title, icon, onPress = () => {}, style, disabled }) => {
+const BButton = ({ Title, icon, onPress = () => {} }) => {
   return (
     <TouchableOpacity
       activeOpacity={0.8}
       onPress={onPress}
-      disabled={disabled}
-      style={[styles.button, disabled && styles.buttonDisabled, style]}
+      style={{
+        width: width * 0.6,
+        padding: "4%",
+        flexDirection: "row",
+        backgroundColor: "#1f2937",
+        alignSelf: "center",
+        alignItems: "center",
+        justifyContent: "center",
+        margin: "5%",
+        borderRadius: 10,
+        zIndex: 5,
+      }}
     >
-      <View style={styles.content}>
-        <Text style={styles.text}>
+      <Text
+        style={{
+          fontFamily: "Jost-Medium",
+          fontSize: 18,
+          color: "#fff",
+          marginHorizontal: "2%",
+        }}
+      >
         {Title}
-        </Text>
-        {icon ? <View style={styles.iconWrap}>{icon}</View> : null}
-      </View>
+      </Text>
+      {icon}
     </TouchableOpacity>
   );
 };
 
 export default BButton;
-
-const styles = StyleSheet.create({
-  button: {
-    width: "100%",
-    minHeight: 54,
-    paddingHorizontal: 18,
-    paddingVertical: 14,
-    backgroundColor: colors.primary,
-    alignSelf: "center",
-    justifyContent: "center",
-    marginTop: spacing.md,
-    borderRadius: radius.md,
-    ...shadows.soft,
-  },
-  buttonDisabled: {
-    opacity: 0.65,
-  },
-  content: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  text: {
-    fontFamily: "Jost-SemiBold",
-    fontSize: 16,
-    color: "#fff",
-  },
-  iconWrap: {
-    marginLeft: 8,
-  },
-});
