@@ -6,7 +6,6 @@ const endpoints = {
   user: `${apiURL}/me`, // New Route✅
   login: `${apiURL}/login`,
   logout: `${apiURL}/logout`, // New Route✅
-  refresh: process.env.EXPO_PUBLIC_AUTH_REFRESH_URL || null,
   forgot: `${apiURL}/forgot`,
   verifyOTP: `${apiURL}/verify-otp`,
   resendOTP: `${apiURL}/resend-otp`,
@@ -91,12 +90,8 @@ const endpoints = {
   // Delete Work Progress Sub-Project By Id -------->>>>>>>>>
   deleteWorkProgressById: `${apiURL}/work-progress`,
 
-  // Save Work Progress -------->>>>>>>>>
-  saveWorkProgress: `${apiURL}/work-progress`,
-
   // Get All Work Progress Sub-Package Project By Id -------->>>>>>>>>
   getAllWorkProgressSubPackageProjectById: `${apiURL}/work-progress/create?sub_package_project_id=`,
 };
 
 export default endpoints;
-export { baseURL, apiURL };

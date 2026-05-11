@@ -138,6 +138,11 @@ export const initDB = async () => {
   // console.log("RESSS DASBB::", res);
   const res11 = await db.runAsync("DELETE FROM milestone_physicalProgress;");
   // console.log("RESSS DASBB::", res11);
+  const res111 = await db.runAsync("DELETE FROM phaseActivitiesImages;");
+  // console.log("RESSS DASBB::", res111);
+
+  const res1 = await db.runAsync("DELETE FROM milestonePhyicalImages");
+  // console.log("RESSS DASBB::", res1);
   const res2 = await db.runAsync("DELETE FROM phaseSubActivities");
   // console.log("RESSS DASBB::", res2);
 
@@ -832,10 +837,7 @@ export const saveSqlPhaseActivitiesImage = async (storeSql) => {
 // Access Phases Activities Images Data
 export const fetchPhasesActivitiesImages = async () => {
   const data = await db.getAllAsync("SELECT * FROM phaseActivitiesImages;");
-
-  if (__DEV__ && data?.length > 0) {
-    console.log(`Loaded ${data.length} queued phase activity image(s).`);
-  }
+  console.log("Fetchhh Phase Activitess Image ::", data);
 
   return data;
 };
@@ -901,16 +903,14 @@ export const fetchImages = (callback) => {
 
 // Clear token
 export const clearDB = async () => {
-  await db.runAsync("DELETE FROM token;");
-  await db.runAsync("DELETE FROM user;");
-  await db.runAsync("DELETE FROM userdashboard;");
-  await db.runAsync("DELETE FROM userProjects;");
-  await db.runAsync("DELETE FROM projectDetails;");
-  await db.runAsync("DELETE FROM projectMilestones;");
-  await db.runAsync("DELETE FROM milestone_physicalProgress;");
-  await db.runAsync("DELETE FROM projectPhases;");
-  await db.runAsync("DELETE FROM phaseActivities;");
-  await db.runAsync("DELETE FROM phaseSubActivities;");
-  await db.runAsync("DELETE FROM phaseActivitiesImages;");
-  await db.runAsync("DELETE FROM milestonePhyicalImages;");
+  const res1 = await db.runAsync("DELETE FROM token;");
+  // console.log("RESSS TOKENN::", res1);
+  const res2 = await db.runAsync("DELETE FROM user;");
+  // console.log("RESSS USERR::", res2);
+  const res = await db.runAsync("DELETE FROM userdashboard;");
+  // console.log("RESSS DASBB::", res);
+  // const res3 = await db.runAsync("DELETE FROM userProjects;");
+  // console.log("RESSS DASBB::", res3);
+  // await db.runAsync("DROP TABLE IF EXISTS projectDetails");
+  // console.log("RESSS DROP::", res);
 };

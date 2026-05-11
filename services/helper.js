@@ -22,6 +22,10 @@ export const NetConnected = () => {
   return netInfo?.isConnected ?? null;
 };
 
+export const useNetConnected = () => {
+  return NetConnected();
+};
+
 export const convertToCr = (value) => {
   if (!value) return "₹0 Cr";
   return `₹${(Number(value) / 10000000).toFixed(2)} Cr`;

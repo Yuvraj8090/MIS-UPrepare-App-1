@@ -1,39 +1,23 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const parseStoredValue = (value) => {
-  if (typeof value !== "string") {
-    return value ?? null;
-  }
-
-  try {
-    return JSON.parse(value);
-  } catch (error) {
-    return value;
-  }
-};
-
 const saveStorageData = async (key, value) => {
   try {
-    const serialisedValue =
-      typeof value === "string" ? value : JSON.stringify(value);
-    await AsyncStorage.setItem(key, serialisedValue);
-  } catch (error) {
-    console.log(`Error saving async storage key ${key}`, error);
-  }
+    await AsyncStorage.setItem(key, JSON.stringify(value));
+  } catch (e) {}
 };
 
 const storeExpoToken = async (value) => {
-  await saveStorageData("expoToken", value);
+  try {
+    await saveStorageData("expoToken", value);
+  } catch (e) {}
 };
 
 const getStorageData = async (key) => {
   try {
-    const value = await AsyncStorage.getItem(key);
-    return parseStoredValue(value);
-  } catch (error) {
-    console.log(`Error reading async storage key ${key}`, error);
-    return null;
-  }
+    var data = await AsyncStorage.getItem(key);
+    console.log("DATA ASYNC:", data);
+    return JSON.parse(data);
+  } catch (e) {}
 };
 
 const getExpoToken = async () => {
@@ -42,17 +26,27 @@ const getExpoToken = async () => {
 
 const removeAllData = async () => {
   try {
+    // if (!key) {
+    //   return;
+    // }
     await AsyncStorage.clear();
-  } catch (error) {
-    console.log("Error clearing async storage", error);
+    // await AsyncStorage.removeItem();
+  } catch (e) {
+    console.log("Error for " + key, e);
   }
 };
 
 const storeImage = async (key, uri) => {
-  const existingQueue = (await getStorageData(key)) || [];
-  const nextQueue = [...existingQueue, uri];
-  await saveStorageData(key, nextQueue);
-  return nextQueue;
+  try {
+    const existingQueue = await AsyncStorage.getItem(key);
+    let newQueue = JSON.parse(existingQueue) || [];
+    newQueue.push(uri);
+    await AsyncStorage.setItem(key, JSON.stringify(newQueue));
+    setImageQueue(newQueue);
+    console.log("Image added to upload queue");
+  } catch (error) {
+    console.error("Error adding image to queue: ", error);
+  }
 };
 
 export {

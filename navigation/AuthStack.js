@@ -4,29 +4,20 @@ import RegisterScreen from "../screens/Auth/Register";
 import OTPScreen from "../screens/Auth/OTP";
 import ForgotScreen from "../screens/ForgotScreen";
 import ResetPassword from "../screens/Auth/ResetPassword";
-import { View, Text, Pressable } from "react-native";
+import { View, Platform, Text } from "react-native";
 import { Feather } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { CheckInternet } from "@/services/helper";
+
+import { LayoutAnimation, UIManager } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { useEffect, useState } from "react";
 
 const Stack = createStackNavigator();
 
-const headerLeft = (navigation) => (
-  <Pressable
-    accessibilityRole="button"
-    onPress={() => navigation.goBack()}
-    style={{
-      backgroundColor: "#fff",
-      padding: 10,
-      borderRadius: 10,
-      marginLeft: 16,
-    }}
-  >
-    <Feather name="arrow-left-circle" size={28} color="black" />
-  </Pressable>
-);
+const AuthStack = (props) => {
+  const navigation = useNavigation();
 
-const AuthStack = () => {
   const NetConnected = NetInfo.useNetInfo();
 
   const [netCheck, setNetCheck] = useState(null);
@@ -34,6 +25,17 @@ const AuthStack = () => {
   useEffect(() => {
     setNetCheck(NetConnected?.isConnected);
   }, [NetConnected?.isConnected]);
+
+  // if (Platform.OS === "android") {
+  //   if (UIManager.setLayoutAnimationEnabledExperimental) {
+  //     UIManager.setLayoutAnimationEnabledExperimental(true);
+  //   }
+  // }
+
+  // const toggleShow = () => {
+  //   LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+  //   setNetCheck(NetConnected?.isConnected);
+  // };
 
   return (
     <Stack.Navigator
@@ -98,42 +100,94 @@ const AuthStack = () => {
       />
       <Stack.Screen
         name="RegisterScreen"
-        options={({ navigation }) => ({
+        options={{
           headerShown: true,
           headerTitle: "",
           headerTransparent: true,
-          headerLeft: () => headerLeft(navigation),
-        })}
+          headerLeft: () => (
+            <View
+              onTouchEnd={() => navigation.goBack()}
+              style={{
+                backgroundColor: "#fff",
+                padding: "3%",
+                borderRadius: 10,
+                // alignSelf: "flex-start",
+                marginLeft: "20%",
+              }}
+            >
+              <Feather name="arrow-left-circle" size={28} color="black" />
+            </View>
+          ),
+        }}
         component={RegisterScreen}
       />
       <Stack.Screen
         name="OTPScreen"
-        options={({ navigation }) => ({
+        options={{
           headerShown: true,
           headerTitle: "",
           headerTransparent: true,
-          headerLeft: () => headerLeft(navigation),
-        })}
+          headerLeft: () => (
+            <View
+              onTouchEnd={() => navigation.goBack()}
+              style={{
+                backgroundColor: "#fff",
+                padding: "3%",
+                borderRadius: 10,
+                // alignSelf: "flex-start",
+                marginLeft: "20%",
+              }}
+            >
+              <Feather name="arrow-left-circle" size={28} color="black" />
+            </View>
+          ),
+        }}
         component={OTPScreen}
       />
       <Stack.Screen
         name="ForgotScreen"
-        options={({ navigation }) => ({
+        options={{
           headerShown: true,
           headerTitle: "",
           headerTransparent: true,
-          headerLeft: () => headerLeft(navigation),
-        })}
+          headerLeft: () => (
+            <View
+              onTouchEnd={() => navigation.goBack()}
+              style={{
+                backgroundColor: "#fff",
+                padding: "3%",
+                borderRadius: 10,
+                // alignSelf: "flex-start",
+                marginLeft: "20%",
+              }}
+            >
+              <Feather name="arrow-left-circle" size={28} color="black" />
+            </View>
+          ),
+        }}
         component={ForgotScreen}
       />
       <Stack.Screen
         name="ResetPassword"
-        options={({ navigation }) => ({
+        options={{
           headerShown: true,
           headerTitle: "",
           headerTransparent: true,
-          headerLeft: () => headerLeft(navigation),
-        })}
+          headerLeft: () => (
+            <View
+              onTouchEnd={() => navigation.goBack()}
+              style={{
+                backgroundColor: "#fff",
+                padding: "3%",
+                borderRadius: 10,
+                // alignSelf: "flex-start",
+                marginLeft: "20%",
+              }}
+            >
+              <Feather name="arrow-left-circle" size={28} color="black" />
+            </View>
+          ),
+        }}
         component={ResetPassword}
       />
     </Stack.Navigator>
