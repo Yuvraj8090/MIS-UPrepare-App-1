@@ -35,7 +35,7 @@ const AddPhotoPopUp = ({
         exif: true, // Enable EXIF data
       });
 
-      if (!result.cancelled) {
+      if (!result.canceled) {
         // console.log("Captured Image Result:", result?.assets[0]?.uri);
 
         try {

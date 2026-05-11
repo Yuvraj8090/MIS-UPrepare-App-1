@@ -5,7 +5,6 @@ import {
   Pressable,
   Text,
   TextInput,
-  ToastAndroid,
   View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -27,6 +26,7 @@ import LoaderCard from "../../components/LoaderCard";
 import { forgotPassword } from "../../services/api/fetch";
 import loginStyles, { feedbackVariants } from "../Auth/Login/styles";
 import styles from "./styles";
+import { showFeedback } from "@/services/platform/feedback";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -158,7 +158,7 @@ const ForgotScreen = () => {
           type: "success",
           message,
         });
-        ToastAndroid.show(message, ToastAndroid.LONG);
+        showFeedback(message);
         navigation.navigate("OTPScreen", { userName: trimmedUserName });
         return;
       }
@@ -171,7 +171,7 @@ const ForgotScreen = () => {
         type: "error",
         message,
       });
-      ToastAndroid.show(message, ToastAndroid.LONG);
+      showFeedback(message);
     } catch (error) {
       const message =
         error?.response?.data?.msg ||
@@ -182,7 +182,7 @@ const ForgotScreen = () => {
         type: "error",
         message,
       });
-      ToastAndroid.show(message, ToastAndroid.LONG);
+      showFeedback(message);
     } finally {
       buttonScale.value = withSpring(1, { damping: 12, stiffness: 180 });
       setLoading(false);

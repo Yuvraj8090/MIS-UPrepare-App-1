@@ -10,7 +10,7 @@ import {
 import React, { useState } from "react";
 import styles from "./styles";
 import { width, height } from "@/services/helper";
-import ImageView from "react-native-image-viewing";
+import ImageView from "@/components/ImageViewerModal";
 
 const ActivitiesPhotos = ({
   data,

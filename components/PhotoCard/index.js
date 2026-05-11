@@ -1,4 +1,4 @@
-import { View, Text, ToastAndroid } from "react-native";
+import { View, Text } from "react-native";
 import React, { useEffect, useState } from "react";
 import styles from "./styles";
 import * as Progress from "react-native-progress";
@@ -16,6 +16,7 @@ import {
 } from "@/services/api/fetch";
 import { useAuth } from "@/navigation/AuthContext/AuthContext";
 import axios from "axios";
+import { showFeedback } from "@/services/platform/feedback";
 
 const PhotoCard = () => {
   const isInternet = NetConnected();
@@ -115,13 +116,10 @@ const PhotoCard = () => {
         if (isInternet) {
           const res = await uploadActivitiesImage(formData, config);
           if (res?.data?.ok) {
-            ToastAndroid.show(
-              "Photo Uploaded Successfully!",
-              ToastAndroid.LONG
-            );
+            showFeedback("Photo Uploaded Successfully!");
             setProgress(0);
           } else {
-            ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+            showFeedback(res?.data?.msg);
           }
         } else {
           // const storeSql = {
@@ -192,13 +190,10 @@ const PhotoCard = () => {
         if (isInternet) {
           const res = await uploadMilestoneImage(formData, config);
           if (res?.data?.ok) {
-            ToastAndroid.show(
-              "Photo Physical Uploaded Successfully!",
-              ToastAndroid.LONG
-            );
+            showFeedback("Photo Physical Uploaded Successfully!");
             setProgress(0);
           } else {
-            ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+            showFeedback(res?.data?.msg);
           }
         } else {
           // const storeSql = {

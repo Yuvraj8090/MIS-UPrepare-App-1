@@ -1,4 +1,4 @@
-import { View, Text, ActivityIndicator, ToastAndroid } from "react-native";
+import { View, Text, ActivityIndicator } from "react-native";
 import React, { useEffect, useState } from "react";
 import styles from "./styles";
 import CustomHeader from "@/components/AppHeader/CustomHeader";
@@ -13,6 +13,7 @@ import {
 } from "@/services/api/fetch";
 import { useIsFocused } from "@react-navigation/native";
 import { saveSqlPhaseActivitiesImage } from "@/services/database/database";
+import { showFeedback } from "@/services/platform/feedback";
 
 const PhaseActivitiesPhotoScreen = (props) => {
   // console.log("PORPSSS ::", props?.route?.params);
@@ -120,10 +121,10 @@ const PhaseActivitiesPhotoScreen = (props) => {
         const res = await uploadActivitiesImage(formData, config);
         console.log("RESSS ::", res);
         if (res?.data?.ok) {
-          ToastAndroid.show("Photo Uploaded Successfully!", ToastAndroid.LONG);
+          showFeedback("Photo Uploaded Successfully!");
           // setIsVisible(false);
         } else {
-          ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+          showFeedback(res?.data?.msg);
         }
       } else {
         const storeSql = {
@@ -134,9 +135,8 @@ const PhaseActivitiesPhotoScreen = (props) => {
         const res = await saveSqlPhaseActivitiesImage(storeSql);
         console.log("SQL IMAGEE RESSS ::", res);
         if (res?.changes) {
-          ToastAndroid.show(
-            "Save images locally; they'll upload automatically when you're online.",
-            ToastAndroid.LONG
+          showFeedback(
+            "Save images locally; they'll upload automatically when you're online."
           );
           setSaveLocally(true);
         }

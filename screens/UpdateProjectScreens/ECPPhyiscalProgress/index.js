@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ToastAndroid,
   Image,
   ScrollView,
   Platform,
@@ -28,6 +27,7 @@ import {
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
 import { width } from "@/services/helper";
+import { showFeedback } from "@/services/platform/feedback";
 
 const EPCPhysicalProgressForm = (props) => {
   console.log("PORPSPPSPSPSP ::", props?.route?.params);
@@ -145,16 +145,12 @@ const EPCPhysicalProgressForm = (props) => {
       const res = await saveECPPhycialProgressImage(authToken, formData);
       console.log("RESS UDPALED IMAHESS ::", res);
       if (res?.status) {
-        Platform.OS === "ios"
-          ? Alert.alert(res?.message)
-          : ToastAndroid.show(res?.message, ToastAndroid.LONG);
+        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
         setTimeout(() => {
           navigation.goBack();
         }, 2000);
       } else {
-        Platform.OS === "ios"
-          ? Alert.alert(res?.message)
-          : ToastAndroid.show(res?.message, ToastAndroid.LONG);
+        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
       }
       setShowLCard(false);
     } catch (error) {

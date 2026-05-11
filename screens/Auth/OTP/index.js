@@ -3,7 +3,6 @@ import {
   ImageBackground,
   Text,
   TextInput,
-  ToastAndroid,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -16,6 +15,7 @@ import LoaderCard from "../../../components/LoaderCard";
 import authStyles from "../styles";
 import { resendOTP, verifyOTP } from "../../../services/api/fetch";
 import { useAuth } from "../../../navigation/AuthContext/AuthContext";
+import { showFeedback } from "@/services/platform/feedback";
 
 const OTPScreen = (props) => {
   const { userName } = props.route.params;
@@ -46,7 +46,7 @@ const OTPScreen = (props) => {
     try {
       setResendLoading(true);
       const res = await resendOTP(formData);
-      ToastAndroid.show(res?.data?.msg || "OTP resent.", ToastAndroid.LONG);
+      showFeedback(res?.data?.msg || "OTP resent.");
 
       if (res?.data?.ok) {
         setTimer(60);
@@ -56,7 +56,7 @@ const OTPScreen = (props) => {
       }
     } catch (error) {
       console.log("Error in OTP Screen handleResend method: ", error);
-      ToastAndroid.show("Unable to resend OTP right now.", ToastAndroid.LONG);
+      showFeedback("Unable to resend OTP right now.");
     } finally {
       setResendLoading(false);
     }
@@ -105,7 +105,7 @@ const OTPScreen = (props) => {
       const res = await verifyOTP(formData);
 
       if (res?.data?.ok) {
-        ToastAndroid.show(res?.data?.msg, ToastAndroid.LONG);
+        showFeedback(res?.data?.msg);
         navigation.navigate("ResetPassword", {
           username: userName,
           otp: enteredOTP,

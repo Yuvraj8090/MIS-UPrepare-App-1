@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  ToastAndroid,
   Image,
   ScrollView,
   Platform,
@@ -24,6 +23,7 @@ import {
 import { formatDate, width } from "@/services/helper";
 import * as DocumentPicker from "expo-document-picker";
 import { FontAwesome } from "@expo/vector-icons";
+import { showFeedback } from "@/services/platform/feedback";
 
 const FinancialProgress = (props) => {
   const { data } = props?.route?.params;
@@ -146,9 +146,7 @@ const FinancialProgress = (props) => {
     try {
       const res = await saveFinancialProgress(authToken, formData);
       if (res?.status) {
-        Platform.OS === "ios"
-          ? Alert.alert(res?.message)
-          : ToastAndroid.show(res?.message, ToastAndroid.LONG);
+        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
         setTimeout(() => navigation.goBack(), 2000);
       } else {
         Alert.alert(res?.message || "Submission failed");

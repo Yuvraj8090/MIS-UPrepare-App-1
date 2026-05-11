@@ -5,7 +5,6 @@ import {
   Pressable,
   Text,
   TextInput,
-  ToastAndroid,
   View,
 } from "react-native";
 import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
@@ -28,6 +27,7 @@ import { resetPassword } from "../../../services/api/fetch";
 import LoaderCard from "../../../components/LoaderCard";
 import loginStyles, { feedbackVariants } from "../Login/styles";
 import styles from "./styles";
+import { showFeedback } from "@/services/platform/feedback";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -255,7 +255,7 @@ const ResetPassword = (props) => {
           type: "success",
           message,
         });
-        ToastAndroid.show(message, ToastAndroid.LONG);
+        showFeedback(message);
         navigation.navigate("LoginScreen");
         return;
       }
@@ -266,7 +266,7 @@ const ResetPassword = (props) => {
         type: "error",
         message,
       });
-      ToastAndroid.show(message, ToastAndroid.LONG);
+      showFeedback(message);
     } catch (error) {
       const message =
         error?.response?.data?.msg ||
@@ -275,7 +275,7 @@ const ResetPassword = (props) => {
         type: "error",
         message,
       });
-      ToastAndroid.show(message, ToastAndroid.LONG);
+      showFeedback(message);
     } finally {
       buttonScale.value = withSpring(1, { damping: 12, stiffness: 180 });
       setLoading(false);
