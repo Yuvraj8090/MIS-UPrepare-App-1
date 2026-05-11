@@ -1,115 +1,137 @@
-import {
-  View,
-  Text,
-  ActivityIndicator,
-  FlatList,
-  StyleSheet,
-  RefreshControl,
-} from "react-native";
 import React from "react";
-import styles from "./styles";
+import { View } from "react-native";
+
 import CustomHeader from "../../../components/AppHeader/CustomHeader";
 import { getFromSS } from "../../../services/storage/SecureStore";
-import {
-  fetchPackages,
-  fetchProjects,
-  fetchSubProjects,
-} from "../../../services/api/fetch";
-import AllPackageTable from "../../../components/TableComponents/AllPackageTable";
-import {
-  fetchUserProjectData,
-  saveSqlProjectData,
-} from "@/services/database/database";
+import { fetchSubProjects } from "../../../services/api/fetch";
+import { fetchUserProjectData } from "@/services/database/database";
 import { NetConnected } from "@/services/helper";
-import { useAuth } from "@/navigation/AuthContext/AuthContext";
 import AllprojectTable from "@/components/TableComponents/AllProjectTable";
 import { UPDATE_REFRESH_KEYS, useUpdateFlow } from "@/navigation/UpdateFlowContext";
+import styles from "./styles";
+
+const normaliseSubProjects = (response) => {
+  const subProjects = response?.data?.sub_packages;
+  return Array.isArray(subProjects) ? subProjects : [];
+};
 
 const AllProjectScreen = () => {
   const [projectData, setProjectData] = React.useState([]);
   const [load, setLoad] = React.useState(true);
   const [refresh, setRefresh] = React.useState(false);
   const isInternet = NetConnected();
-  const { user } = useAuth();
   const { refreshMap } = useUpdateFlow();
   const refreshVersion = refreshMap[UPDATE_REFRESH_KEYS.allProjects] || 0;
+  const screenActiveRef = React.useRef(true);
+  const loadTimerRef = React.useRef(null);
+
+  const stopLoadingWithDelay = React.useCallback((delayMs = 0) => {
+    if (loadTimerRef.current) {
+      clearTimeout(loadTimerRef.current);
+    }
+
+    loadTimerRef.current = setTimeout(() => {
+      if (screenActiveRef.current) {
+        setLoad(false);
+      }
+    }, delayMs);
+  }, []);
+
+  React.useEffect(() => {
+    screenActiveRef.current = true;
+
+    return () => {
+      screenActiveRef.current = false;
+
+      if (loadTimerRef.current) {
+        clearTimeout(loadTimerRef.current);
+      }
+    };
+  }, []);
+
+  const getProjectSql = React.useCallback(async () => {
+    setLoad(true);
+
+    try {
+      const storedProjects = await fetchUserProjectData();
+
+      if (screenActiveRef.current) {
+        setProjectData(Array.isArray(storedProjects) ? storedProjects : []);
+      }
+    } catch (error) {
+      console.log("Project SQL read error:", error);
+
+      if (screenActiveRef.current) {
+        setProjectData([]);
+      }
+    } finally {
+      stopLoadingWithDelay(250);
+    }
+  }, [stopLoadingWithDelay]);
+
+  const getProjectsData = React.useCallback(async () => {
+    const authToken = await getFromSS("authToken");
+    setLoad(true);
+
+    if (!authToken) {
+      if (screenActiveRef.current) {
+        setProjectData([]);
+      }
+
+      stopLoadingWithDelay(0);
+      return;
+    }
+
+    try {
+      const response = await fetchSubProjects(authToken);
+      const nextProjects = normaliseSubProjects(response);
+
+      if (screenActiveRef.current) {
+        setProjectData(nextProjects);
+      }
+    } catch (error) {
+      console.log("Sub-project fetch error:", error);
+
+      if (screenActiveRef.current) {
+        setProjectData([]);
+      }
+    } finally {
+      stopLoadingWithDelay(250);
+    }
+  }, [stopLoadingWithDelay]);
+
+  const fetchDataBasedOnConnectivity = React.useCallback(async () => {
+    if (isInternet === null) {
+      setLoad(true);
+      return;
+    }
+
+    if (isInternet) {
+      await getProjectsData();
+      return;
+    }
+
+    await getProjectSql();
+  }, [getProjectSql, getProjectsData, isInternet]);
 
   React.useEffect(() => {
     fetchDataBasedOnConnectivity();
-    // getProjectSql();
-  }, [isInternet, refreshVersion]);
+  }, [fetchDataBasedOnConnectivity, refreshVersion]);
 
-  const fetchDataBasedOnConnectivity = async () => {
-    setLoad(true);
-    try {
-      if (isInternet) {
-        console.log("Fetching data from the server...");
-        await getProjectsData();
-      } else {
-        console.log("Fetching data from local storage...");
-        // await getProjectSql();
-      }
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setTimeout(() => {
-        setLoad(false);
-      }, 3000);
-    }
-  };
-
-  const getProjectSql = async () => {
-    setLoad(true);
-    try {
-      await fetchUserProjectData(user?.id).then((res) => {
-        // console.log("RESS PROJECTT SQL ::", res);
-        setProjectData(res);
-      });
-    } catch (error) {
-      console.log("Eroro ::", error);
-    }
-  };
-
-  const getProjectsData = async () => {
-    const authToken = await getFromSS("authToken");
-    setLoad(true);
-    try {
-      const res = await fetchSubProjects(authToken);
-      console.log("RESSSS Sub-Projects::", res);
-      if (res?.data) {
-        setProjectData(res?.data?.sub_packages);
-        // const storeSql = {
-        //   userId: user?.id,
-        //   access_token: authToken,
-        //   data: res?.data?.projects,
-        // };
-        // await saveSqlProjectData(storeSql);
-      }
-    } catch (error) {
-      console.log("error ::", error);
-    } finally {
-      setTimeout(() => {
-        setLoad(false);
-      }, 2000);
-    }
-  };
-
-  const handleRefresh = () => {
+  const handleRefresh = React.useCallback(() => {
     setRefresh(true);
-    fetchDataBasedOnConnectivity();
-    setTimeout(() => setRefresh(false), 1000);
-  };
+
+    fetchDataBasedOnConnectivity().finally(() => {
+      if (screenActiveRef.current) {
+        setRefresh(false);
+      }
+    });
+  }, [fetchDataBasedOnConnectivity]);
 
   return (
     <View style={styles.mainContainer}>
       <CustomHeader Title={"All Sub-Projects"} GoBack={true} />
 
-      {/* {load ? (
-        <>
-          <ActivityIndicator size="small" color="#000" />
-        </>
-      ) : (
-        <> */}
       <View style={{ flex: 1 }}>
         <AllprojectTable
           refresh={refresh}
@@ -118,8 +140,6 @@ const AllProjectScreen = () => {
           loading={load}
         />
       </View>
-      {/* </>
-      )} */}
     </View>
   );
 };
