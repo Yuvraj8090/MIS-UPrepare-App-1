@@ -1,5 +1,5 @@
 import * as React from "react";
-import { BackHandler, ToastAndroid } from "react-native";
+import { Alert, BackHandler, Platform, ToastAndroid } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 
 import NetInfo from "@react-native-community/netinfo";
@@ -14,6 +14,19 @@ import {
 } from "@/services/auth/tokenStorage";
 
 const AuthContext = React.createContext();
+
+const showFeedbackMessage = (message) => {
+  if (!message) {
+    return;
+  }
+
+  if (Platform.OS === "android") {
+    ToastAndroid.show(message, ToastAndroid.LONG);
+    return;
+  }
+
+  Alert.alert("U-PREPARE", message);
+};
 
 const AuthProvider = ({ children }) => {
   const [user, setUser] = React.useState(null);
@@ -119,17 +132,16 @@ const AuthProvider = ({ children }) => {
         if (userData) {
           checkLogin();
         }
-        ToastAndroid.show("Authentication succeeded", ToastAndroid.LONG);
+        showFeedbackMessage("Authentication succeeded");
       } else {
-        ToastAndroid.show("Authentication Failed", ToastAndroid.LONG);
-        BackHandler?.exitApp();
+        showFeedbackMessage("Authentication failed");
+        if (Platform.OS === "android") {
+          BackHandler.exitApp();
+        }
       }
     } catch (error) {
       console.error("Authentication error:", error);
-      ToastAndroid.show(
-        "Could not authenticate using biometrics",
-        ToastAndroid.LONG
-      );
+      showFeedbackMessage("Could not authenticate using biometrics");
     }
   };
 
