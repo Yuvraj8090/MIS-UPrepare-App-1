@@ -1,6 +1,6 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { useRoute } from "@react-navigation/native";
+
 import DashBoardScreen from "../screens/DashboardScreen";
 import ProjectInfoScreen from "../screens/UpdateProjectScreens/ProjectInfoScreen";
 import ProjectMilestones from "../screens/UpdateProjectScreens/ProjectMiltonesScreen";
@@ -17,49 +17,40 @@ import SafeguardScreen from "@/screens/SafeGuardScreen";
 import ECPScreen from "@/screens/ECPScreen";
 import ECPPhysicalProgressForm from "@/screens/UpdateProjectScreens/ECPPhyiscalProgress";
 import BOQScreen from "@/screens/BOQScreen";
-import BOQDetailsScreen from "@/screens/BOQDetailsScreen";
+import BoqDetailScreen from "@/screens/BOQDetailsScreen";
 import FinancialScreen from "@/screens/FinancialScreen";
 import FinancialProgressForm from "@/screens/UpdateProjectScreens/FinancialProgress";
-import PackageInfoScren from "@/screens/Packages/PackageDetailsScreen";
-import BoqDetailScreen from "@/screens/BOQDetailsScreen";
+import PackageInfoScreen from "@/screens/Packages/PackageDetailsScreen";
 import WorkProgressScreen from "@/screens/WorkProgress";
 import WorkProjectProgressList from "@/screens/WorkProjectProgressList";
-import UpdateWorkProjectProgres from "@/screens/UpdateWorkProgress";
+import UpdateWorkProjectProgress from "@/screens/UpdateWorkProgress";
 
 const Stack = createStackNavigator();
 
-const Navigation = (props) => {
-  const route = useRoute();
-  // console.log("ROUTEEE ::", route);
+const getInitialRouteName = (routeName) => {
+  switch (routeName) {
+    case "Work":
+      return "WorkProgress";
+    case "UpdateProgress":
+      return "AllProjectScreen";
+    case "Packages":
+      return "AllPackagesScreen";
+    case "ProjectImages":
+      return "ProjectImagesScreen";
+    default:
+      return "DashboardScreen";
+  }
+};
 
-  // useFocusEffect(
-  //   React.useCallback(() => {
-  //     return () => {
-  //       // Reset navigation to HomeScreen when component loses focus
-  //       props?.navigation.dispatch(
-  //         CommonActions.reset({
-  //           index: 0,
-  //           routes: [{ name: "MCQScreen" }],
-  //         })
-  //       );
-  //     };
-  //   }, [])
-  // );
+const Navigation = ({ route }) => {
+  const initialRouteName = useMemo(
+    () => getInitialRouteName(route?.name),
+    [route?.name]
+  );
 
   return (
     <Stack.Navigator
-      // initialRouteName={"SafeguardScreen"}
-      initialRouteName={
-        props?.route?.name == "Work"
-          ? "WorkProgress"
-          : props?.route?.name == "UpdateProgress"
-          ? "AllProjectScreen"
-          : props?.route?.name == "Packages"
-          ? "AllPackagesScreen"
-          : props?.route?.name == "ProjectImages"
-          ? "ProjectImagesScreen"
-          : "DashboardScreen"
-      }
+      initialRouteName={initialRouteName}
       screenOptions={{
         headerShown: false,
         cardStyleInterpolator: ({ current, next, layouts }) => ({
@@ -75,7 +66,7 @@ const Navigation = (props) => {
                 scale: next
                   ? next.progress.interpolate({
                       inputRange: [0, 1],
-                      outputRange: [1, 0.9],
+                      outputRange: [1, 0.96],
                     })
                   : 1,
               },
@@ -84,7 +75,7 @@ const Navigation = (props) => {
           overlayStyle: {
             opacity: current.progress.interpolate({
               inputRange: [0, 1],
-              outputRange: [0, 0.5],
+              outputRange: [0, 0.12],
             }),
           },
         }),
@@ -101,14 +92,12 @@ const Navigation = (props) => {
       />
       <Stack.Screen name="BOQScreen" component={BOQScreen} />
       <Stack.Screen name="BOQDetailsScreen" component={BoqDetailScreen} />
-
       <Stack.Screen name="FinancialScreen" component={FinancialScreen} />
       <Stack.Screen
         name="FinancialProgressForm"
         component={FinancialProgressForm}
       />
-
-      <Stack.Screen name="PackageInfoScreen" component={PackageInfoScren} />
+      <Stack.Screen name="PackageInfoScreen" component={PackageInfoScreen} />
       <Stack.Screen name="ProjectInfoScreen" component={ProjectInfoScreen} />
       <Stack.Screen name="ProjectMilestones" component={ProjectMilestones} />
       <Stack.Screen
@@ -143,7 +132,7 @@ const Navigation = (props) => {
       />
       <Stack.Screen
         name="UpdateWorkProgress"
-        component={UpdateWorkProjectProgres}
+        component={UpdateWorkProjectProgress}
       />
     </Stack.Navigator>
   );

@@ -1,15 +1,14 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons"; // Unified Icon Library
+import { Ionicons } from "@expo/vector-icons";
 
 import Navigation from "./Navigation";
-import { useAuth } from "./AuthContext/AuthContext";
 import AppHeader from "@/components/AppHeader/AppHeader";
+import { colors, shadows } from "@/constants/theme";
 
 const Tab = createBottomTabNavigator();
 
-// 1. Data-Driven Configuration with Active/Inactive States
 const TAB_SCREENS = [
   {
     name: "Home",
@@ -27,14 +26,14 @@ const TAB_SCREENS = [
   },
   {
     name: "UpdateProgress",
-    label: "Update Progress",
+    label: "Update",
     component: Navigation,
     activeIcon: "cloud-upload",
     inactiveIcon: "cloud-upload-outline",
   },
   {
     name: "Work",
-    label: "Work Progress",
+    label: "Progress",
     component: Navigation,
     activeIcon: "bar-chart",
     inactiveIcon: "bar-chart-outline",
@@ -42,68 +41,57 @@ const TAB_SCREENS = [
 ];
 
 const TabNavigation = ({ route }) => {
-  const { user } = useAuth();
-  const insets = useSafeAreaInsets(); 
-
-  // Secure fallback for initial route
+  const insets = useSafeAreaInsets();
   const initialRoute = route?.name === "Update" ? "UpdateProgress" : "Home";
 
   return (
     <Tab.Navigator
       initialRouteName={initialRoute}
       screenOptions={{
-        header: () => <AppHeader Title={"U-PREPARE"} />,
+        header: () => <AppHeader Title="U-PREPARE" />,
         headerShown: true,
-        tabBarShowLabel: true, 
+        tabBarShowLabel: true,
         tabBarActiveTintColor: "#4f98f3",
-        tabBarInactiveTintColor: "#8e8e93", // Standard iOS inactive gray for better contrast
-        
+        tabBarInactiveTintColor: "#8e8e93",
         tabBarStyle: {
-          backgroundColor: "#ffffff",
+          backgroundColor: colors.surface,
           borderTopWidth: 1,
-          borderTopColor: "#f0f0f0",
-          height: 70 + (insets.bottom || 0), 
-          paddingBottom: insets.bottom ? insets.bottom + 5 : 12,
+          borderTopColor: colors.border,
+          height: 72 + (insets.bottom || 0),
+          paddingBottom: insets.bottom ? insets.bottom + 6 : 12,
           paddingTop: 10,
+          ...shadows.soft,
         },
-        
         tabBarLabelStyle: {
-          fontSize: 10, 
+          fontSize: 11,
           fontFamily: "Jost-SemiBold",
-          marginTop: 4,
+          marginTop: 2,
           textAlign: "center",
         },
-        
         tabBarItemStyle: {
-          flex: 1, 
           justifyContent: "center",
           alignItems: "center",
         },
       }}
     >
-      {TAB_SCREENS.map((screen) => {
-        const { name, label, component, activeIcon, inactiveIcon } = screen;
-        
-        return (
-          <Tab.Screen
-            key={name}
-            name={name}
-            component={component}
-            options={{
-              tabBarLabel: label,
-              tabBarLabelPosition: 'below-icon',
-              // Dynamically switch icon based on 'focused' state
-              tabBarIcon: ({ color, focused }) => (
-                <Ionicons 
-                  name={focused ? activeIcon : inactiveIcon} 
-                  size={24} // Standard native tab bar icon size
-                  color={color} 
-                />
-              ),
-            }}
-          />
-        );
-      })}
+      {TAB_SCREENS.map((screen) => (
+        <Tab.Screen
+          key={screen.name}
+          name={screen.name}
+          component={screen.component}
+          options={{
+            tabBarLabel: screen.label,
+            tabBarLabelPosition: "below-icon",
+            tabBarIcon: ({ color, focused }) => (
+              <Ionicons
+                name={focused ? screen.activeIcon : screen.inactiveIcon}
+                size={22}
+                color={color}
+              />
+            ),
+          }}
+        />
+      ))}
     </Tab.Navigator>
   );
 };

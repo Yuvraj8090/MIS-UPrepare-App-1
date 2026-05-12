@@ -1,56 +1,36 @@
 import React from "react";
-import { Text, Dimensions, View, StyleSheet, Platform } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Feather } from "@expo/vector-icons";
-import { Ionicons } from "@expo/vector-icons";
-import { DrawerActions } from "@react-navigation/native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { DrawerActions, useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+
 import { CheckInternet } from "@/services/helper";
+import { colors, radius, shadows, spacing } from "@/constants/theme";
 
-const { width, height } = Dimensions.get("screen");
-
-export default function AppHeader({ GoBack, Title }) {
-  var navigation = useNavigation();
-  const route = useRoute();
+export default function AppHeader({ Title }) {
+  const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   return (
     <>
-      <View style={[styles.mainContainer]}>
-        <View
-          style={{
-            width: 36,
-            height: 36,
-            padding: 0,
-            // marginTop: "5%",
-            marginLeft: "2%",
-            alignItems: "center",
-            borderRadius: 8,
-            justifyContent: "center",
-            backgroundColor: "#f1f1f1",
-          }}
+      <View style={[styles.mainContainer, { paddingTop: Math.max(insets.top, 10) }]}>
+        <Pressable
+          onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
+          style={({ pressed }) => [
+            styles.menuButton,
+            pressed && styles.menuButtonPressed,
+          ]}
         >
-          <Feather
-            name="align-left"
-            size={24}
-            color="#000"
-            onPress={() => navigation.dispatch(DrawerActions.openDrawer())}
-          />
+          <Feather name="align-left" size={22} color={colors.text} />
+        </Pressable>
+
+        <View style={styles.titleWrap}>
+          <Text numberOfLines={1} style={styles.title}>
+            {Title}
+          </Text>
         </View>
 
-        {Title && (
-          <View
-            style={{
-              width: "50%",
-              padding: "0.7%",
-              alignItems: "center",
-              marginLeft: "14%",
-              borderRadius: 8,
-            }}
-          >
-            <Text style={{ fontFamily: "Jost-SemiBold", fontSize: 18 }}>
-              {Title}
-            </Text>
-          </View>
-        )}
+        <View style={styles.placeholder} />
       </View>
       <CheckInternet />
     </>
@@ -59,23 +39,39 @@ export default function AppHeader({ GoBack, Title }) {
 
 const styles = StyleSheet.create({
   mainContainer: {
-    alignItems: "center",
-    backgroundColor: "#fff",
-    width: width,
-    height: height * 0.06,
     flexDirection: "row",
-    padding: 5,
-    // elevation: 3,
-    borderBottomWidth:1,
-    borderBottomColor:"#ccc",
-    zIndex: 2,
-    marginTop:"14%"
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+    ...shadows.soft,
   },
-  img: { width: width * 0.1, height: height * 0.3, marginTop: 10 },
+  menuButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: colors.surfaceMuted,
+  },
+  menuButtonPressed: {
+    opacity: 0.82,
+  },
+  titleWrap: {
+    flex: 1,
+    alignItems: "center",
+    paddingHorizontal: spacing.md,
+  },
   title: {
-    fontSize: 25,
-    fontWeight: "bold",
-    color: "#fb9943",
-    marginLeft: 10,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 18,
+    color: colors.text,
+  },
+  placeholder: {
+    width: 40,
+    height: 40,
   },
 });
