@@ -12,66 +12,56 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import SelectDropdown from "react-native-select-dropdown";
+import { FontAwesome, Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+
+// Components & Services
 import CustomHeader from "@/components/AppHeader/CustomHeader";
 import TextField from "@/components/TextField/TextField";
-import CalenderField from "@/components/TextField/CalenderField/CalenderField";
 import LoaderCard from "@/components/LoaderCard";
 import { getFromSS } from "@/services/storage/SecureStore";
-import {
-  fetchECPActivityStages,
-  saveECPPhycialProgressImage,
-} from "@/services/api/fetch";
-import SelectDropdown from "react-native-select-dropdown";
-import {
-  AntDesign,
-  FontAwesome,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
-import { width } from "@/services/helper";
+import { fetchECPActivityStages, saveECPPhycialProgressImage } from "@/services/api/fetch";
 import { showFeedback } from "@/services/platform/feedback";
-import { colors, radius, shadows, spacing } from "@/constants/theme";
 
 const EPCPhysicalProgressForm = (props) => {
-  const { data, remainProgress } = props?.route?.params;
+  const { data, remainProgress } = props?.route?.params || {};
   const navigation = useNavigation();
 
-  const [stage, setStage] = useState("");
-  const [date, setDate] = useState(new Date());
-  const [progress, setProgress] = useState("");
+  // State
+  const [stage, setStage] = useState(null);
   const [items, setItems] = useState("");
   const [images, setImages] = useState([]);
+  
+  // UI State
   const [showLCard, setShowLCard] = useState(false);
-
   const [activity, setAcitvity] = useState([]);
   const [expandedTitle, setExpandedTitle] = useState(false);
   const [load, setLoad] = useState(false);
 
+  // Fetch Activities
   const getActivity = async (id) => {
     const authToken = await getFromSS("authToken");
-
     setLoad(true);
     try {
       const res = await fetchECPActivityStages(authToken, id);
       setAcitvity(res?.data || []);
-      setLoad(false);
     } catch (error) {
       console.log("EPC activity fetch error ::", error);
+    } finally {
       setLoad(false);
     }
   };
 
   useEffect(() => {
-    if (data?.id) {
-      getActivity(data?.id);
-    }
+    if (data?.id) getActivity(data?.id);
   }, [data?.id]);
 
+  // Media Pickers
   const pickFromCamera = async () => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       quality: 0.7,
     });
-
     if (!result.canceled) {
       setImages((prev) => [...prev, result.assets[0]]);
     }
@@ -83,22 +73,23 @@ const EPCPhysicalProgressForm = (props) => {
       allowsMultipleSelection: true,
       quality: 0.7,
     });
-
     if (!result.canceled) {
       setImages((prev) => [...prev, ...result.assets]);
     }
   };
 
+  // Submit Handler
   const handleSubmit = async () => {
-    if (!stage) {
-      Alert.alert("Stage is required");
+    if (!stage?.id) {
+      Alert.alert("Required", "Please select an Activity & Stage.");
       return;
     }
 
     if (!images || images.length === 0) {
-      Alert.alert("Image is required");
+      Alert.alert("Required", "Please upload at least one image.");
       return;
     }
+
     setShowLCard(true);
     const authToken = await getFromSS("authToken");
 
@@ -106,293 +97,432 @@ const EPCPhysicalProgressForm = (props) => {
     formData.append("epcentry_data_id", stage?.id);
     formData.append("remarks", items);
 
-    let localUri = images[0]?.uri;
-    let filename = localUri.split("/").pop();
-    let match = /\.(\w+)$/.exec(filename);
-    let type = match ? `image/${match[1]}` : `image`;
+    // FIXED: Loop through all images to append them correctly for Laravel array validation
+    images.forEach((img, index) => {
+      let localUri = img.uri;
+      let filename = img.fileName || localUri.split("/").pop() || `image_${index}.jpg`;
+      let match = /\.(\w+)$/.exec(filename);
+      let type = match ? `image/${match[1]}` : `image/jpeg`;
 
-    formData.append("images[]", {
-      uri: localUri,
-      name: filename,
-      type,
+      formData.append("images[]", {
+        uri: localUri,
+        name: filename,
+        type,
+      });
     });
 
     try {
       const res = await saveECPPhycialProgressImage(authToken, formData);
       if (res?.status) {
-        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
+        Platform.OS === "ios" ? Alert.alert("Success", res?.message) : showFeedback(res?.message);
         setTimeout(() => {
           navigation.goBack();
         }, 2000);
       } else {
-        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
+        Alert.alert("Error", res?.message || "Something went wrong");
       }
-      setShowLCard(false);
     } catch (error) {
       console.log("EPC progress submit error ::", error);
-      setShowLCard(false);
+      Alert.alert("Error", "Failed to submit progress. Please try again.");
     } finally {
       setShowLCard(false);
     }
   };
 
   const handleReset = () => {
-    setDate(new Date());
-    setProgress("");
+    setStage(null);
     setItems("");
     setImages([]);
+    navigation.goBack();
   };
 
   return (
-    <SafeAreaView style={styles.mainConatiner} edges={["bottom"]}>
-      <CustomHeader Title={"Add Physical EPC Progress"} GoBack={true} />
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      <View style={styles.container}>
+        <CustomHeader Title={"Add Physical EPC Progress"} GoBack={true} />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-
-        <View style={styles.formCard}>
-          <View style={styles.projectTag}>
-            <FontAwesome
-              name="folder-open"
-              size={12}
-              color={colors.primary}
-              style={styles.projectTagIcon}
-            />
-            <Text style={styles.projectTagText}>{data?.name}</Text>
-          </View>
-
-          <Text style={styles.label}>Activity Name & Stage</Text>
-          <SelectDropdown
-            data={activity}
-            defaultValue="Select Activity & Stage"
-            onSelect={(selectedItem) => setStage(selectedItem)}
-            renderDropdownIcon={(isOpened) => (
-              <AntDesign
-                name={isOpened ? "up" : "down"}
-                size={14}
-                color="#000"
-              />
-            )}
-            renderButton={(selectedItem, isOpened) => {
-              return (
-                <View style={styles.dropdownBtn}>
-                  <Text style={styles.dropdownBtnText} numberOfLines={1}>
-                    {selectedItem
-                      ? `${selectedItem?.activity_name} - ${selectedItem?.stage_name} `
-                      : "Select Activity & Stage"}
-                  </Text>
-                  <MaterialCommunityIcons
-                    name={isOpened ? "chevron-up" : "chevron-down"}
-                    size={15}
-                  />
-                </View>
-              );
-            }}
-            renderItem={(item, index, isSelected) => {
-              return (
-                <View
-                  style={{
-                    ...styles.dropdownMenu,
-                    ...(isSelected && { backgroundColor: "#D2D9DF" }),
-                  }}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+            {/* Project Context Card with Expandable Text */}
+            <TouchableOpacity 
+              style={styles.projectCard} 
+              activeOpacity={0.8}
+              onPress={() => setExpandedTitle(!expandedTitle)}
+            >
+              <FontAwesome name="folder-open" size={16} color="#3B82F6" style={styles.projectTagIcon} />
+              <View style={styles.projectTextContainer}>
+                <Text style={styles.projectLabel}>Posting to Project</Text>
+                <Text 
+                  style={styles.projectTagText} 
+                  numberOfLines={expandedTitle ? undefined : 2}
                 >
-                  <Text style={styles.dropdownItemTxtStyle}>
-                    {item?.activity_name} - {item?.stage_name}
+                  {data?.name || "Unknown Project"}
+                </Text>
+                {data?.name?.length > 50 && (
+                  <Text style={styles.expandText}>
+                    {expandedTitle ? "Hide ▲" : "View full name ▼"}
                   </Text>
-                </View>
-              );
-            }}
-            dropdownIconPosition={"right"}
-            dropdownStyle={styles.dropdownMenu}
-          />
-
-          <Text style={styles.label}>Items</Text>
-          <TextField
-            placeholder="Enter items description"
-            value={items}
-            setData={setItems}
-            multiline
-            numberOfLines={3}
-          />
-
-          <Text style={styles.label}>Upload Images</Text>
-          <View style={styles.rowBetween}>
-            <TouchableOpacity style={styles.fileBtn} onPress={pickFromCamera}>
-              <Text style={styles.fileBtnText}>📷 Camera</Text>
+                )}
+              </View>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.fileBtn} onPress={pickFromGallery}>
-              <Text style={styles.fileBtnText}>🖼️ Gallery</Text>
-            </TouchableOpacity>
-          </View>
 
-          {images.length > 0 && (
-            <ScrollView horizontal style={styles.previewScroller} showsHorizontalScrollIndicator={false}>
-              {images.map((img, i) => (
-                <Image
-                  key={i}
-                  source={{ uri: img.uri }}
-                  style={styles.previewImg}
-                />
-              ))}
-            </ScrollView>
-          )}
+            {/* Dropdown Field */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Activity Name & Stage <Text style={styles.requiredAsterisk}>*</Text>
+              </Text>
+              <SelectDropdown
+                data={activity}
+                onSelect={(selectedItem) => setStage(selectedItem)}
+                renderButton={(selectedItem, isOpened) => {
+                  return (
+                    <View style={styles.dropdownBtn}>
+                      <Text style={[styles.dropdownBtnText, !selectedItem && { color: "#9CA3AF" }]} numberOfLines={1}>
+                        {selectedItem
+                          ? `${selectedItem?.activity_name} - ${selectedItem?.stage_name}`
+                          : "Select Activity & Stage"}
+                      </Text>
+                      <MaterialCommunityIcons
+                        name={isOpened ? "chevron-up" : "chevron-down"}
+                        size={20}
+                        color="#6B7280"
+                      />
+                    </View>
+                  );
+                }}
+                renderItem={(item, index, isSelected) => {
+                  return (
+                    <View style={[styles.dropdownItem, isSelected && styles.dropdownItemSelected]}>
+                      <Text style={[styles.dropdownItemTxt, isSelected && { color: "#1E3A8A", fontFamily: "Jost-SemiBold" }]}>
+                        {item?.activity_name} - {item?.stage_name}
+                      </Text>
+                    </View>
+                  );
+                }}
+                dropdownStyle={styles.dropdownMenu}
+              />
+            </View>
 
-          <View style={styles.btnRow}>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: "#777" }]}
-              onPress={handleReset}
-            >
-              <Text style={styles.btnText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: "green" }]}
-              onPress={handleSubmit}
-            >
-              <Text style={styles.btnText}>Save Progress</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
+            {/* Remarks Field */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Remarks / Items</Text>
+              <TextField
+                placeholder="Enter item descriptions or remarks..."
+                value={items}
+                setData={setItems}
+                multiline
+                numberOfLines={3}
+              />
+            </View>
 
-      <LoaderCard visible={showLCard} message={"Updating Progress..."} />
+            {/* File Upload Section */}
+            <View style={styles.uploadSection}>
+              <Text style={styles.label}>
+                Upload Images <Text style={styles.requiredAsterisk}>*</Text>
+              </Text>
+              <View style={styles.rowBetween}>
+                <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={pickFromCamera}>
+                  <View style={[styles.iconCircle, { backgroundColor: '#E0F2FE' }]}>
+                    <Ionicons name="camera" size={22} color="#0284C7" />
+                  </View>
+                  <Text style={styles.actionBtnText}>Camera</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={pickFromGallery}>
+                  <View style={[styles.iconCircle, { backgroundColor: '#F3E8FF' }]}>
+                    <Ionicons name="images" size={22} color="#9333EA" />
+                  </View>
+                  <Text style={styles.actionBtnText}>Gallery</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Image Preview Scroller */}
+            {images?.length > 0 && (
+              <ScrollView
+                horizontal
+                style={styles.previewScroller}
+                contentContainerStyle={{ paddingRight: 20 }}
+                showsHorizontalScrollIndicator={false}
+              >
+                {images.map((img, i) => (
+                  <View key={i} style={styles.filePreviewContainer}>
+                    <TouchableOpacity
+                      style={styles.removeBtn}
+                      activeOpacity={0.8}
+                      onPress={() => setImages((prev) => prev.filter((_, index) => index !== i))}
+                    >
+                      <Ionicons name="close" size={14} color="#FFF" />
+                    </TouchableOpacity>
+                    <Image source={{ uri: img.uri }} style={styles.previewImg} />
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Action Buttons */}
+            <View style={styles.btnRow}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                activeOpacity={0.8}
+                onPress={handleReset}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.saveButton}
+                activeOpacity={0.8}
+                onPress={handleSubmit}
+              >
+                <Ionicons name="cloud-upload-outline" size={18} color="#FFF" />
+                <Text style={styles.saveBtnText}>Upload</Text>
+              </TouchableOpacity>
+            </View>
+
+   
+        </ScrollView>
+
+        <LoaderCard visible={showLCard} message={"Uploading Images..."} />
+      </View>
     </SafeAreaView>
   );
 };
 
+export default EPCPhysicalProgressForm;
+
+// ------------------------------------------------------------------
+// Professional Stylesheet
+// ------------------------------------------------------------------
 const styles = StyleSheet.create({
-  mainConatiner: {
+  safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "#FFFFFF",
+  },
+  container: {
+    flex: 1,
+    height:1560,
+    minHeight: 600,
+    backgroundColor: "#F3F4F6", // Light gray background
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.md,
+    padding: 16,
+    paddingBottom: 40,
   },
   formCard: {
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    alignSelf: "stretch",
-    ...shadows.card,
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    // Premium soft shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  projectTag: {
+  projectCard: {
     flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: spacing.sm,
+    alignItems: "flex-start",
+    backgroundColor: "#EFF6FF", // Subtle blue tint
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 20,
+    gap: 12,
+  },
+  projectTextContainer: {
+    flex: 1,
   },
   projectTagIcon: {
-    marginTop: 1,
+    marginTop: 2,
+  },
+  projectLabel: {
+    fontFamily: "Jost-Medium",
+    fontSize: 11,
+    color: "#6B7280",
+    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   projectTagText: {
-    flex: 1,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+    color: "#1E3A8A",
+    lineHeight: 20,
+  },
+  expandText: {
     fontFamily: "Jost-Medium",
-    fontSize: 13,
-    color: colors.text,
+    fontSize: 12,
+    color: "#3B82F6",
+    marginTop: 6,
+  },
+  inputGroup: {
+    marginBottom: 16,
   },
   label: {
-    fontSize: 13,
     fontFamily: "Jost-SemiBold",
-    marginTop: 10,
-    marginBottom: 4,
-    color: colors.text,
-  },
-  readonlyBox: {
-    backgroundColor: "#f0f0f0",
-    padding: 10,
-    borderRadius: 6,
-  },
-  rowBetween: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 10,
-  },
-  fileBtn: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.md,
-    padding: 10,
-    marginTop: 5,
-    flex: 0.48,
-    alignItems: "center",
-  },
-  fileBtnText: {
     fontSize: 13,
-    color: colors.text,
-    fontFamily: "Jost-Medium",
+    color: "#374151",
+    marginBottom: 6,
   },
-  previewScroller: {
-    marginTop: spacing.sm,
+  requiredAsterisk: {
+    color: "#EF4444",
   },
-  previewImg: {
-    width: 84,
-    height: 84,
-    borderRadius: radius.md,
-    marginRight: spacing.sm,
-  },
-  btnRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-    marginTop: 20,
-  },
-  button: {
-    flex: 0.48,
-    padding: 12,
-    borderRadius: radius.md,
-    alignItems: "center",
-    ...shadows.soft,
-  },
-  btnText: {
-    color: "#fff",
-    fontFamily: "Jost-SemiBold",
-  },
-
+  // Dropdown Styles
   dropdownBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     width: "100%",
-    minHeight: 48,
-    paddingHorizontal: 16,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.md,
+    minHeight: 50,
+    paddingHorizontal: 14,
+    backgroundColor: "#F9FAFB",
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.border,
-    zIndex: 1000,
+    borderColor: "#E5E7EB",
   },
   dropdownBtnText: {
-    fontSize: 14,
-    color: colors.text,
-    textAlign: "left",
     fontFamily: "Jost-Medium",
+    fontSize: 14,
+    color: "#111827",
     flex: 1,
-    marginRight: spacing.sm,
+    marginRight: 8,
   },
   dropdownMenu: {
-    borderRadius: radius.md,
-    backgroundColor: colors.surface,
-    zIndex: 2000,
-    padding: 6,
-    ...shadows.card,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    marginTop: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
   },
-  dropdownItemTxtStyle: {
-    padding: 10,
-    fontSize: 13,
-    marginVertical: 2,
+  dropdownItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  dropdownItemSelected: {
+    backgroundColor: "#EFF6FF",
+  },
+  dropdownItemTxt: {
     fontFamily: "Jost-Medium",
+    fontSize: 14,
+    color: "#4B5563",
+  },
+  uploadSection: {
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 8,
+  },
+  actionBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionBtnText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 12,
+    color: "#4B5563",
+  },
+  previewScroller: {
+    marginTop: 8,
+    marginBottom: 16,
+  },
+  filePreviewContainer: {
+    position: "relative",
+    marginRight: 16,
+    marginTop: 8,
+  },
+  previewImg: {
+    width: 80,
+    height: 80,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  removeBtn: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    zIndex: 10,
+    backgroundColor: "#EF4444",
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+  },
+  btnRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelBtnText: {
+    color: "#4B5563",
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+  },
+  saveButton: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: "#10B981", // Emerald Green for positive action
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  saveBtnText: {
+    color: "#FFFFFF",
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
   },
 });
-
-export default EPCPhysicalProgressForm;

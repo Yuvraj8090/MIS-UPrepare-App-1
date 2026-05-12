@@ -76,7 +76,7 @@ const DashboardScreen = () => {
   const overviewItems = [
     {
       label: "Departments",
-      value: dashboardData?.departments?.length ?? 0,
+      value: dashboardData?.department_contract_overview?.length ?? 0,
       icon: "layers-triple-outline",
     },
     {
@@ -133,11 +133,6 @@ const DashboardScreen = () => {
               </View>
 
               <Text style={styles.greetingText}>Hi, {user?.name || "User"}</Text>
-              <Text style={styles.greetingSubtext}>
-                Review key contract, financial, and project progress updates in one
-                place.
-              </Text>
-
               <View style={styles.overviewRow}>
                 {overviewItems.map((item) => (
                   <View key={item.label} style={styles.overviewCard}>
@@ -236,11 +231,12 @@ const styles = StyleSheet.create({
     fontFamily: "Jost-Medium",
   },
   greetingText: {
-    marginTop: spacing.md,
-    fontFamily: "Jost-Bold",
-    fontSize: 28,
-    color: "#ffffff",
-  },
+  marginTop: spacing.md,
+  fontFamily: "Jost-Bold",
+  fontSize: 28,
+  color: "#ffffff",
+  textTransform: "capitalize", // Capitalizes the first letter of each word
+},
   greetingSubtext: {
     marginTop: 8,
     fontFamily: "Jost-Regular",
@@ -265,13 +261,13 @@ const styles = StyleSheet.create({
   overviewValue: {
     marginTop: 8,
     fontFamily: "Jost-Bold",
-    fontSize: 22,
+    fontSize: 16,
     color: colors.text,
   },
   overviewLabel: {
     marginTop: 4,
     fontFamily: "Jost-Regular",
-    fontSize: 12,
+    fontSize: 10,
     color: colors.textMuted,
   },
   sectionIntro: {

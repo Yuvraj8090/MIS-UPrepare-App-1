@@ -1,140 +1,216 @@
-import React, { useCallback, useMemo, useState } from "react";
-import { View, Image, Text, StyleSheet, Pressable } from "react-native";
+import React, { useState, useCallback } from "react";
+import {
+  View,
+  Image,
+  Text,
+  StyleSheet,
+  Platform,
+} from "react-native";
 import {
   createDrawerNavigator,
   DrawerItem,
   DrawerItemList,
+  DrawerContentScrollView,
 } from "@react-navigation/drawer";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+// Context & Services
 import { useAuth } from "./AuthContext/AuthContext";
+import { removeAllData } from "../services/storage/AsyncStorage";
+import { userLogOut } from "../services/api/fetch";
+import { deleteFromSS, getFromSS } from "../services/storage/SecureStore";
+
+// Components
 import TabNavigation from "./TabNavigation";
+import Navigation from "./Navigation"; // Your Stack Navigator
 import LoaderCard from "@/components/LoaderCard";
-import { colors, radius, shadows, spacing } from "@/constants/theme";
+
+// Mock Components (Replace with actual imports if needed)
+const ProfileScreen = () => <View style={{ flex: 1, backgroundColor: "#fff" }} />;
+const SettingsScreen = () => <View style={{ flex: 1, backgroundColor: "#fff" }} />;
 
 const Drawer = createDrawerNavigator();
-const FALLBACK_AVATAR = require("../assets/images/user.jpg");
 
-const formatLabel = (value, fallback = "-") => {
-  if (typeof value === "string" && value.trim()) {
-    return value.trim();
-  }
-  return fallback;
-};
-
-const readNestedName = (value, fallback = "-") => {
-  if (typeof value === "string") {
-    return formatLabel(value, fallback);
-  }
-
-  if (value && typeof value === "object" && typeof value.name === "string") {
-    return formatLabel(value.name, fallback);
-  }
-
-  return fallback;
+// Enforce capitalized first letter only
+const formatUsername = (name) => {
+  if (!name || typeof name !== "string") return "Guest User";
+  const trimmed = name.trim();
+  if (trimmed.length === 0) return "Guest User";
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1).toLowerCase();
 };
 
 const DrawerNavigation = () => {
-  const { user, LogOut, loading } = useAuth();
-  const [logoutPending, setLogoutPending] = useState(false);
+  const { user, LogOut, setLoading } = useAuth();
+  const [load, setLoad] = useState(false);
   const insets = useSafeAreaInsets();
 
-  const handleLogOut = useCallback(async () => {
-    setLogoutPending(true);
-
+  const handleLogOut = async () => {
     try {
-      await LogOut();
+      setLoad(true);
+      setLoading(true);
+      
+      const token = await getFromSS("authToken");
+      if (token) {
+        await userLogOut(token);
+      }
+    } catch (error) {
+      console.error("[DrawerNavigation] Logout Error:", error);
     } finally {
-      setLogoutPending(false);
+      // Always clear data and logout locally even if API fails
+      LogOut();
+      removeAllData();
+      deleteFromSS("authToken");
+      setLoad(false);
+      setLoading(false);
     }
-  }, [LogOut]);
+  };
 
-  const profilePhoto = useMemo(() => {
-    if (typeof user?.profile_photo === "string" && user.profile_photo.trim()) {
-      return { uri: user.profile_photo };
-    }
-
-    return FALLBACK_AVATAR;
-  }, [user?.profile_photo]);
-
-  const drawerContent = useCallback(
-    (props) => (
+  const CustomDrawerContent = useCallback((props) => {
+    return (
       <View style={styles.drawerContainer}>
-        <View style={[styles.profileHeader, { paddingTop: insets.top + spacing.lg }]}>
-          <Image source={profilePhoto} style={styles.avatar} />
-
-          <Text style={styles.welcomeText}>Welcome back</Text>
-          <Text style={styles.userName} numberOfLines={1}>
-            {formatLabel(user?.name, "Guest User")}
-          </Text>
-
-          <View style={styles.metaRow}>
-            <View style={styles.metaChip}>
-              <Ionicons name="shield-checkmark-outline" size={14} color={colors.primary} />
-              <Text style={styles.metaChipText}>
-                {readNestedName(user?.role, "User")}
-              </Text>
-            </View>
-            <View style={styles.metaChip}>
-              <Ionicons name="business-outline" size={14} color={colors.success} />
-              <Text style={styles.metaChipText}>
-                {readNestedName(user?.department, "Department")}
-              </Text>
-            </View>
+        {/* Profile Header */}
+        <View style={[styles.profileHeader, { paddingTop: insets.top + 20 }]}>
+          <View style={styles.avatarContainer}>
+            <Image
+              style={styles.avatar}
+              source={require("../assets/images/user.jpg")}
+            />
           </View>
-
-          <Text style={styles.userEmail} numberOfLines={1}>
-            {formatLabel(user?.email, "No email available")}
-          </Text>
+          
+          <View style={styles.userInfo}>
+            <Text style={styles.welcomeText}>Welcome back,</Text>
+            <Text style={styles.userName} numberOfLines={1}>
+              {formatUsername(user?.name)}
+            </Text>
+            {/* Optional: Add Role or Department if available */}
+            <Text style={styles.userRole} numberOfLines={1}>
+               {user?.role?.name || user?.department || "User"}
+            </Text>
+          </View>
         </View>
 
-        <View style={styles.navList}>
+        <View style={styles.divider} />
+
+        {/* Scrollable Navigation List */}
+        <DrawerContentScrollView {...props} contentContainerStyle={{ paddingTop: 0 }}>
           <DrawerItemList {...props} />
-        </View>
+        </DrawerContentScrollView>
 
-        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, spacing.md) }]}>
+        {/* Fixed Footer for Logout */}
+        <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20) }]}>
           <DrawerItem
             label="Logout"
             labelStyle={styles.logoutLabel}
             onPress={handleLogOut}
-            icon={({ color }) => (
-              <Ionicons name="log-out-outline" size={22} color={color} />
+            icon={({ size }) => (
+              <Ionicons name="log-out-outline" size={24} color="#EF4444" />
             )}
             style={styles.logoutItem}
-            inactiveTintColor={colors.danger}
+            activeOpacity={0.7}
           />
+          <Text style={styles.versionText}>App Version 1.0.0</Text>
         </View>
 
-        <LoaderCard show={logoutPending || loading} text="Logging Out..." />
+        {/* Ensure props match your LoaderCard implementation */}
+        <LoaderCard visible={load} message={"Logging Out..."} />
       </View>
-    ),
-    [insets.bottom, loading, logoutPending, profilePhoto, user, handleLogOut]
-  );
+    );
+  }, [user, load, insets]);
 
   return (
     <Drawer.Navigator
-      initialRouteName="Dashboard"
-      drawerContent={drawerContent}
+      initialRouteName="DashboardScreen"
+      drawerContent={CustomDrawerContent}
       screenOptions={{
         headerShown: false,
-        drawerType: "front",
-        swipeEdgeWidth: 60,
-        drawerStyle: styles.drawerStyle,
-        drawerActiveBackgroundColor: "rgba(79, 152, 243, 0.12)",
-        drawerActiveTintColor: "#4f98f3",
-        drawerInactiveTintColor: colors.textMuted,
-        drawerLabelStyle: styles.drawerLabel,
-        drawerItemStyle: styles.drawerItem,
+        drawerActiveBackgroundColor: "#EFF6FF", // Subtle Premium Blue
+        drawerActiveTintColor: "#2563EB", // Primary Blue
+        drawerInactiveTintColor: "#4B5563", // Dark Gray
+        drawerLabelStyle: {
+          fontFamily: "Jost-SemiBold",
+          fontSize: 15,
+          marginLeft: -10, // Aligns text perfectly with Ionicons
+        },
+        drawerItemStyle: {
+          borderRadius: 10,
+          marginHorizontal: 12,
+          paddingVertical: 2,
+          marginVertical: 4, 
+        },
       }}
     >
       <Drawer.Screen
-        name="Dashboard"
+        name="DashboardScreen"
         component={TabNavigation}
         options={{
           drawerLabel: "Dashboard",
           drawerIcon: ({ color }) => (
-            <Ionicons name="grid-outline" size={22} color={color} />
+            <Ionicons name="grid" size={22} color={color} />
+          ),
+        }}
+      />
+      
+      {/* 
+        REDIRECT FIX: 
+        Because you are using the same 'Navigation' stack for multiple Drawer screens, 
+        you must pass initialParams to tell the stack WHICH screen to open.
+        Replace "AllPackagesScreen" with your actual screen name inside Navigation.
+      */}
+      <Drawer.Screen
+        name="Packages"
+        component={Navigation}
+        initialParams={{ screen: "AllPackagesScreen" }} 
+        options={{
+          drawerLabel: "Packages",
+          drawerIcon: ({ color }) => (
+            <Ionicons name="cube" size={24} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="UpdateProgress"
+        component={Navigation}
+        initialParams={{ screen: "UpdateProgressScreen" }} 
+        options={{
+          drawerLabel: "Update Progress",
+          drawerIcon: ({ color }) => (
+            <Ionicons name="cloud-upload" size={24} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="Work"
+        component={Navigation}
+        initialParams={{ screen: "WorkProgressScreen" }} 
+        options={{
+          drawerLabel: "Work Progress",
+          drawerIcon: ({ color }) => (
+            <Ionicons name="bar-chart" size={22} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="Profile"
+        component={ProfileScreen}
+        options={{
+          drawerLabel: "My Profile",
+          drawerIcon: ({ color }) => (
+            <Ionicons name="person-circle" size={24} color={color} />
+          ),
+        }}
+      />
+
+      <Drawer.Screen
+        name="Settings"
+        component={SettingsScreen}
+        options={{
+          drawerLabel: "Settings",
+          drawerIcon: ({ color }) => (
+            <Ionicons name="settings" size={22} color={color} />
           ),
         }}
       />
@@ -142,94 +218,99 @@ const DrawerNavigation = () => {
   );
 };
 
+// ------------------------------------------------------------------
+// Professional Stylesheet
+// ------------------------------------------------------------------
 const styles = StyleSheet.create({
-  drawerStyle: {
-    width: 320,
-    backgroundColor: colors.surface,
-  },
   drawerContainer: {
     flex: 1,
-    backgroundColor: colors.surface,
+    backgroundColor: "#FFFFFF",
   },
   profileHeader: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
-    backgroundColor: colors.surfaceMuted,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 24,
+    backgroundColor: "#F9FAFB",
+  },
+  avatarContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+    overflow: "hidden",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   avatar: {
-    width: 74,
-    height: 74,
-    borderRadius: 37,
-    marginBottom: spacing.md,
-    backgroundColor: colors.border,
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+  userInfo: {
+    marginLeft: 16,
+    flex: 1,
+    justifyContent: "center",
   },
   welcomeText: {
     fontFamily: "Jost-Medium",
-    fontSize: 13,
-    color: colors.textMuted,
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 2,
   },
   userName: {
-    marginTop: 4,
     fontFamily: "Jost-Bold",
-    fontSize: 22,
-    color: colors.text,
+    fontSize: 18,
+    color: "#111827",
   },
-  metaRow: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: spacing.sm,
-    marginTop: spacing.md,
-  },
-  metaChip: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: radius.pill,
-    backgroundColor: colors.surface,
-    ...shadows.soft,
-  },
-  metaChipText: {
-    fontFamily: "Jost-SemiBold",
+  userRole: {
+    fontFamily: "Jost-Medium",
     fontSize: 12,
-    color: colors.text,
+    color: "#3B82F6",
+    marginTop: 2,
   },
-  userEmail: {
-    marginTop: spacing.md,
-    fontFamily: "Jost-Regular",
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  navList: {
-    flex: 1,
-    paddingTop: spacing.sm,
-  },
-  drawerItem: {
-    marginHorizontal: spacing.sm,
-    marginVertical: 4,
-    borderRadius: radius.md,
-  },
-  drawerLabel: {
-    marginLeft: -8,
-    fontFamily: "Jost-SemiBold",
-    fontSize: 15,
+  divider: {
+    height: 1,
+    backgroundColor: "#E5E7EB",
+    marginBottom: 8,
   },
   footer: {
     borderTopWidth: 1,
-    borderTopColor: colors.border,
-    paddingTop: spacing.sm,
-    paddingHorizontal: spacing.sm,
+    borderTopColor: "#E5E7EB",
+    paddingTop: 12,
+    paddingHorizontal: 12,
+    backgroundColor: "#FFFFFF",
   },
   logoutItem: {
-    borderRadius: radius.md,
+    borderRadius: 10,
+    marginVertical: 0,
+    backgroundColor: "#FEF2F2", // Very light red background
   },
   logoutLabel: {
-    marginLeft: -8,
     fontFamily: "Jost-SemiBold",
+    color: "#EF4444", 
     fontSize: 15,
+    marginLeft: -10, 
+  },
+  versionText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 11,
+    color: "#9CA3AF",
+    textAlign: "center",
+    marginTop: 16,
   },
 });
 

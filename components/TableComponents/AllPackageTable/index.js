@@ -5,12 +5,12 @@ import {
   RefreshControl,
   TouchableOpacity,
   TextInput,
+  StyleSheet,
 } from "react-native";
 import React, { useState, useMemo } from "react";
-import styles from "./styles";
 import { useNavigation } from "@react-navigation/native";
 import { useAuth } from "@/navigation/AuthContext/AuthContext";
-import { Feather, Ionicons, FontAwesome } from "@expo/vector-icons";
+import { Feather, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import SkeletonLoader from "@/components/SkeletonDesign/PackageTableRow";
 import { convertToCr, height, width } from "@/services/helper";
 
@@ -28,7 +28,7 @@ const AllPackageTable = ({ refresh, handleRefresh, projectData, loading }) => {
     }));
   };
 
-  // Filtered data
+  // Filter Data
   const filteredData = useMemo(() => {
     if (!searchText.trim()) return projectData;
     const lower = searchText.toLowerCase();
@@ -45,318 +45,143 @@ const AllPackageTable = ({ refresh, handleRefresh, projectData, loading }) => {
   // Skeleton Loader UI
   const renderSkeleton = () => {
     return (
-      <>
+      <View style={styles.skeletonContainer}>
         {[...Array(5)].map((_, i) => (
-          <View
-            key={i}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              marginVertical: 10,
-              paddingHorizontal: 10,
-            }}
-          >
-            <SkeletonLoader width={30} height={20} />
-
-            <View style={{ marginLeft: 10, flex: 1 }}>
-              <SkeletonLoader
-                width={width * 0.5}
-                height={15}
-                style={{ marginBottom: 6 }}
-              />
-              <SkeletonLoader
-                width={width * 0.4}
-                height={15}
-                style={{ marginBottom: 6 }}
-              />
-              <SkeletonLoader width={50} height={15} />
+          <View key={i} style={styles.skeletonRow}>
+            <SkeletonLoader width={40} height={40} style={{ borderRadius: 20 }} />
+            <View style={styles.skeletonContent}>
+              <SkeletonLoader width={80} height={20} style={{ marginBottom: 8, borderRadius: 4 }} />
+              <SkeletonLoader width={width * 0.6} height={16} style={{ marginBottom: 6, borderRadius: 4 }} />
+              <SkeletonLoader width={width * 0.4} height={16} style={{ marginBottom: 12, borderRadius: 4 }} />
+              <View style={styles.rowBetween}>
+                <SkeletonLoader width={60} height={20} style={{ borderRadius: 4 }} />
+                <SkeletonLoader width={100} height={32} style={{ borderRadius: 6 }} />
+              </View>
             </View>
-
-            {/* Button skeleton */}
-            <SkeletonLoader width={100} height={30} />
           </View>
         ))}
-      </>
+      </View>
     );
   };
 
   return (
-    <View style={styles.table}>
-      {/* 🔍 Search Bar */}
-      <View
-        style={{
-          flexDirection: "row",
-          alignItems: "center",
-          backgroundColor: "#F1F3F6",
-          borderRadius: 8,
-          paddingHorizontal: 10,
-          //   marginVertical: 5,
-          //   marginHorizontal: 5,
-          height: height * 0.04,
-        }}
-      >
-        <Ionicons name="search" size={18} color="#666" />
+    <View style={styles.container}>
+      {/* 🔍 Premium Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={20} color="#6B7280" />
         <TextInput
           placeholder="Search package, department, category..."
           value={searchText}
           onChangeText={setSearchText}
-          style={{
-            flex: 1,
-            marginLeft: 8,
-            fontFamily: "Jost-Regular",
-            fontSize: 14,
-          }}
-          placeholderTextColor="#888"
+          style={styles.searchInput}
+          placeholderTextColor="#9CA3AF"
         />
         {searchText.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchText("")}>
-            <Ionicons name="close-circle" size={18} color="#999" />
+          <TouchableOpacity onPress={() => setSearchText("")} style={styles.clearIcon}>
+            <Ionicons name="close-circle" size={20} color="#9CA3AF" />
           </TouchableOpacity>
         )}
       </View>
 
-      {/* Show Skeleton if loading */}
+      {/* List / Loader */}
       {loading ? (
         renderSkeleton()
       ) : (
         <FlatList
           data={filteredData}
           showsVerticalScrollIndicator={false}
-          keyExtractor={(item, index) => index.toString()}
+          keyExtractor={(item, index) => item?.id?.toString() || index.toString()}
           refreshControl={
-            <RefreshControl refreshing={refresh} onRefresh={handleRefresh} />
+            <RefreshControl refreshing={refresh} onRefresh={handleRefresh} tintColor="#3B82F6" />
           }
-          stickyHeaderIndices={[0]}
-          ListHeaderComponent={
-            <View style={[styles.row, { backgroundColor: "#E6EFFC" }]}>
-              <Text style={[styles.headerSnoCell, { color: "#000" }]}>
-                S.No.
-              </Text>
-              <Text style={[styles.headerCell, { color: "#000" }]}>
-                Package Details
-              </Text>
-              {/* <Text style={[styles.headerCell, { color: "#000" }]}>
-                {user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
-                user?.role?.department == "FIELD-PWD-SOCIAL" ||
-                user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
-                user?.role_department == "FIELD-PWD-SOCIAL"
-                  ? "Action"
-                  : "Action"}
-                : "Update Milestone"}
-              </Text> */}
-            </View>
-          }
+          contentContainerStyle={styles.listContent}
           renderItem={({ item, index }) => {
             const expanded = expandedRows[item?.id] || false;
+            const hasContracts = item?.contracts?.length > 0;
 
             return (
-              <View
-                style={[
-                  styles.row,
-                  { backgroundColor: index % 2 === 0 ? "#F9FAFB" : "#FFFFFF" },
-                ]}
-              >
-                {/* Serial no */}
-                <View style={styles.snocellView}>
-                  <Text style={styles.snocell}>{index + 1}</Text>
+              <View style={[styles.card, { backgroundColor: index % 2 === 0 ? "#FFFFFF" : "#F9FAFB" }]}>
+                
+                {/* S.No. Badge */}
+                <View style={styles.serialContainer}>
+                  <View style={styles.serialBadge}>
+                    <Text style={styles.serialText}>{index + 1}</Text>
+                  </View>
                 </View>
 
-                {/* Project details */}
-                <View style={[styles.cellNameView, { flex: 2 }]}>
-                  <Text
-                    style={{
-                      color: "green",
-                      fontFamily: "Jost-SemiBold",
-                      fontSize: 12.5,
-                    }}
-                  >
-                    Package ID : {item?.id}
-                  </Text>
+                {/* Package Details */}
+                <View style={styles.contentContainer}>
+                  
+                  {/* Header Row: ID Badge & Budget */}
+                  <View style={styles.cardHeader}>
+                   
+                    <View style={styles.budgetContainer}>
+                      <Text style={styles.budgetLabel}>Budget: </Text>
+                      <Text style={styles.budgetValue}>{convertToCr(item?.estimated_budget_incl_gst)}</Text>
+                    </View>
+                  </View>
 
-                  <Text
-                    style={{ fontFamily: "Jost-Regular", fontSize: 13 }}
-                    numberOfLines={expanded ? undefined : 3}
-                  >
-                    {item?.package_name}
-                  </Text>
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 10,
-                      marginVertical: "1%",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontSize: 12.5,
-                        marginTop: 4,
-                      }}
+                  {/* Title */}
+                  <TouchableOpacity activeOpacity={0.7} onPress={() => toggleExpand(item?.id)}>
+                    <Text 
+                      style={styles.title} 
+                      numberOfLines={expanded ? undefined : 2}
                     >
-                      {/* <FontAwesome name="building" size={14} color="#ccc" /> */}
-                      <Text
-                        style={{
-                          fontFamily: "Jost-SemiBold",
-                          marginLeft: "3%",
-                        }}
-                      >
-                        Department:
-                      </Text>{" "}
-                      <Text
-                        style={{
-                          color: "green",
-                          fontFamily: "Jost-SemiBold",
-                        }}
-                      >
-                        {item?.department}
+                      {item?.package_name || "Unnamed Package"}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {/* Meta Information (Dept & Category) */}
+                  <View style={styles.metaRow}>
+                    <View style={styles.metaItem}>
+                      <MaterialIcons name="account-balance" size={14} color="#6B7280" />
+                      <Text style={styles.metaText} numberOfLines={1}>
+                        <Text style={styles.metaLabel}>Dept: </Text>{item?.department || "N/A"}
                       </Text>
-                    </Text>
-                    <Text style={{ fontSize: 12.5 }}>
-                      <Text style={{ fontFamily: "Jost-SemiBold" }}>
-                        Category:
-                      </Text>{" "}
-                      {item?.category}{" "}
-                      {item?.sub_category && <>({item?.sub_category})</>}
-                    </Text>
+                    </View>
+                    <View style={styles.metaItem}>
+                      <MaterialIcons name="category" size={14} color="#6B7280" />
+                      <Text style={styles.metaText} numberOfLines={1}>
+                        <Text style={styles.metaLabel}>Cat: </Text>{item?.category || "N/A"}
+                        {item?.sub_category ? ` (${item?.sub_category})` : ""}
+                      </Text>
+                    </View>
                   </View>
 
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Jost-SemiBold",
-                        fontSize: 12.5,
-                        color: "#000",
-                      }}
+                  {/* Footer Row: Contracts & Action Button */}
+                  <View style={styles.cardFooter}>
+                    <View style={[styles.contractBadge, hasContracts ? styles.contractActive : styles.contractInactive]}>
+                      <Text style={[styles.contractText, hasContracts ? styles.contractTextActive : styles.contractTextInactive]}>
+                        {hasContracts ? `${item.contracts.length} Contracts` : "No Contracts"}
+                      </Text>
+                    </View>
+
+                    <TouchableOpacity
+                      style={styles.actionBtn}
+                      activeOpacity={0.8}
+                      onPress={() => navigation.navigate("PackageInfoScreen", { data: item })}
                     >
-                      Sanction Budget:
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "Jost-SemiBold",
-                        fontSize: 12.5,
-                        color: "green",
-                      }}
-                    >
-                      {convertToCr(item?.estimated_budget_incl_gst)}
-                    </Text>
+                      <Text style={styles.actionBtnText}>Details</Text>
+                      <Feather name="arrow-right" size={16} color="#FFFFFF" />
+                    </TouchableOpacity>
                   </View>
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      gap: 8,
-                      marginTop: "1%",
-                    }}
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Jost-SemiBold",
-                        fontSize: 12.5,
-                        color: "#000",
-                      }}
-                    >
-                      Contracts:
-                    </Text>
-                    <Text
-                      style={{
-                        fontFamily: "Jost-SemiBold",
-                        fontSize: 11,
-                        color: item?.contracts?.length > 0 ? "#17A2B8" : "#777",
-                        borderColor:
-                          item?.contracts?.length > 0 ? "#17A2B8" : "#777",
-                        borderWidth: 1,
-                        paddingHorizontal: "1%",
-                        borderRadius: 2,
-                      }}
-                    >
-                      {item?.contracts?.length > 0 ? (
-                        <Text>{item?.contracts?.length}</Text>
-                      ) : (
-                        <Text>No</Text>
-                      )}{" "}
-                      Contracts
-                    </Text>
-                  </View>
-                  <TouchableOpacity
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      backgroundColor: "#0C7DFE",
-                      alignSelf: "flex-end",
-                      marginVertical: "1%",
-                      gap: 5,
-                      borderRadius: 6,
-                      paddingHorizontal: "2.5%",
-                      paddingVertical: "1.5%",
-                    }}
-                    onPress={() =>
-                      navigation.navigate("PackageInfoScreen", { data: item })
-                    }
-                  >
-                    <Text
-                      style={{
-                        fontFamily: "Jost-Regular",
-                        fontSize: 12,
-                        color: "#fff",
-                      }}
-                    >
-                      View Details
-                      {/* {expanded ? "Hide full name ▲" : "View full name ▼"} */}
-                    </Text>
-                    <Feather name="arrow-right-circle" size={16} color="#fff" />
-                  </TouchableOpacity>
+
                 </View>
-
-                {/* Action / Update button */}
-                {/* <View style={[styles.cellView, { alignItems: "center" }]}>
-                  <TouchableOpacity
-                    style={styles.buttonView}
-                    onPress={() =>
-                      navigation.navigate("ProjectInfoScreen", { data: item })
-                    }
-                  >
-                    <Feather name="edit" size={15} color="#fff" />
-                    <Text
-                      style={{
-                        fontFamily: "Jost-Medium",
-                        color: "#fff",
-                        fontSize: 12,
-                        textAlign: "center",
-                        marginLeft: 6,
-                      }}
-                    >
-                      {user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
-                      user?.role?.department == "FIELD-PWD-SOCIAL" ||
-                      user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
-                      user?.role_department == "FIELD-PWD-SOCIAL"
-                        ? "Update Activities"
-                        : "Update Milestone"}
-                    </Text>
-                  </TouchableOpacity>
-                </View> */}
               </View>
             );
           }}
           ListEmptyComponent={
             !loading && (
-              <View style={{ alignSelf: "center", margin: "5%" }}>
-                <Text style={{ fontFamily: "Jost-Medium", fontSize: 16 }}>
-                  {searchText
-                    ? "No matching package found 🔍"
-                    : "No Package Available Now!!"}
+              <View style={styles.emptyContainer}>
+                <Ionicons name="document-text-outline" size={48} color="#D1D5DB" />
+                <Text style={styles.emptyText}>
+                  {searchText ? "No matching packages found." : "No packages available."}
                 </Text>
               </View>
             )
           }
-          ListFooterComponent={<View style={{ marginVertical: "18%" }} />}
-          initialNumToRender={20}
+          ListFooterComponent={<View style={{ height: 80 }} />}
+          initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}
           removeClippedSubviews={true}
@@ -367,3 +192,223 @@ const AllPackageTable = ({ refresh, handleRefresh, projectData, loading }) => {
 };
 
 export default AllPackageTable;
+
+// ------------------------------------------------------------------
+// Professional Stylesheet
+// ------------------------------------------------------------------
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    height: 1560,
+    minHeight: 600,
+    backgroundColor: "#F3F4F6", // Light gray background for contrast
+   },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontFamily: "Jost-Medium",
+    fontSize: 14,
+    color: "#111827",
+  },
+  clearIcon: {
+    padding: 4,
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+  card: {   
+    backgroundColor: "#FFFFFF",
+  },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#F3F4F6",
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    marginHorizontal: 16,
+    marginVertical: 12,
+    height: 48,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+  },
+  searchInput: {
+    flex: 1,
+    marginLeft: 8,
+    fontFamily: "Jost-Medium",
+    fontSize: 14,
+    color: "#111827",
+  },
+  clearIcon: {
+    padding: 4,
+  },
+  listContent: {
+    paddingBottom: 20,
+  },
+  card: {
+    flexDirection: "row",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  serialContainer: {
+    marginRight: 12,
+    alignItems: "center",
+  },
+  serialBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "#E5E7EB",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  serialText: {
+    fontFamily: "Jost-Bold",
+    fontSize: 12,
+    color: "#4B5563",
+  },
+  contentContainer: {
+    flex: 1,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  idBadge: {
+    backgroundColor: "#DEF7EC", // Light green
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  idText: {
+    fontFamily: "Jost-Bold",
+    fontSize: 11,
+    color: "#03543F", // Dark green
+  },
+  budgetContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  budgetLabel: {
+    fontFamily: "Jost-Medium",
+    fontSize: 12,
+    color: "#6B7280",
+  },
+  budgetValue: {
+    fontFamily: "Jost-Bold",
+    fontSize: 13,
+    color: "#10B981", // Emerald green
+  },
+  title: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 15,
+    color: "#111827",
+    marginBottom: 10,
+    lineHeight: 22,
+  },
+  metaRow: {
+    gap: 6,
+    marginBottom: 12,
+  },
+  metaItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  metaText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 12,
+    color: "#374151",
+    flex: 1,
+  },
+  metaLabel: {
+    fontFamily: "Jost-SemiBold",
+    color: "#6B7280",
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  contractBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  contractActive: {
+    backgroundColor: "#E0F2FE",
+    borderColor: "#BAE6FD",
+  },
+  contractInactive: {
+    backgroundColor: "#F3F4F6",
+    borderColor: "#E5E7EB",
+  },
+  contractText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 11,
+  },
+  contractTextActive: {
+    color: "#0284C7",
+  },
+  contractTextInactive: {
+    color: "#6B7280",
+  },
+  actionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#3B82F6", // Primary blue
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  actionBtnText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 12,
+    color: "#FFFFFF",
+  },
+  skeletonContainer: {
+    paddingHorizontal: 16,
+  },
+  skeletonRow: {
+    flexDirection: "row",
+    marginVertical: 12,
+  },
+  skeletonContent: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  rowBetween: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginTop: 8,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 60,
+    gap: 12,
+  },
+  emptyText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 15,
+    color: "#6B7280",
+  },
+});

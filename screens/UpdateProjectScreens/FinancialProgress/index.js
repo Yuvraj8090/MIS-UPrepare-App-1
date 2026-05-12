@@ -326,6 +326,8 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    height: 1560,
+    minHeight: 600,
     backgroundColor: "#F3F4F6", // Light gray matching the reference
   },
   scrollView: {
