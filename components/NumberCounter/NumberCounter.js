@@ -1,21 +1,30 @@
-import React, { useState, useEffect } from "react";
+import React, { useRef, useState, useEffect } from "react";
 import { View, Text, StyleSheet, Animated } from "react-native";
+import { animationEasing, animationTimings } from "@/constants/animations";
 
 const NumberCounter = ({ endValue, duration }) => {
-  const [animatedValue] = useState(new Animated.Value(0));
+  const animatedValue = useRef(new Animated.Value(0)).current;
   const [currentValue, setCurrentValue] = useState(0);
 
   useEffect(() => {
-    Animated.timing(animatedValue, {
-      toValue: endValue,
-      duration: duration,
-      useNativeDriver: false,
-    }).start();
-  }, [animatedValue, endValue, duration]);
+    const listenerId = animatedValue.addListener(({ value }) => {
+      setCurrentValue(Math.floor(value));
+    });
 
-  animatedValue.addListener(({ value }) => {
-    setCurrentValue(Math.floor(value));
-  });
+    const animation = Animated.timing(animatedValue, {
+      toValue: endValue,
+      duration: duration || animationTimings.splash,
+      easing: animationEasing.standard,
+      useNativeDriver: false,
+    });
+
+    animation.start();
+
+    return () => {
+      animatedValue.removeListener(listenerId);
+      animation.stop();
+    };
+  }, [animatedValue, duration, endValue]);
 
   return (
     <View style={styles.container}>

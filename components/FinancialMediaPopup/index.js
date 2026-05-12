@@ -12,6 +12,7 @@ import {
 import Modal from "react-native-modal";
 import { Ionicons } from "@expo/vector-icons";
 import { width } from "@/services/helper";
+import { animationTimings } from "@/constants/animations";
 
 const { height } = Dimensions.get("window");
 
@@ -52,8 +53,14 @@ const FinancialMediaPopUp = ({ data, visible, setVisible }) => {
     <SafeAreaView style={{ flex: 1 }}>
       <Modal
         isVisible={visible}
-        animationIn="zoomIn"
-        animationOut="zoomOut"
+        animationIn="fadeIn"
+        animationOut="fadeOut"
+        animationInTiming={animationTimings.standard}
+        animationOutTiming={animationTimings.quick}
+        backdropTransitionInTiming={animationTimings.standard}
+        backdropTransitionOutTiming={animationTimings.quick}
+        useNativeDriver={true}
+        hideModalContentWhileAnimating={true}
         backdropOpacity={0.6}
         onBackdropPress={() => setVisible(false)}
         style={{ margin: 0, justifyContent: "center" }}

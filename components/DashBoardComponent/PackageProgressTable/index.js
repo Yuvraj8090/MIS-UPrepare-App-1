@@ -14,6 +14,7 @@ import {
   UIManager,
   ScrollView,
 } from "react-native";
+import { layoutAnimationPresets } from "@/constants/animations";
 
 // const data = [
 //   {
@@ -126,7 +127,7 @@ export default function ProjectList({ data }) {
   }, [data, sortConfig]);
 
   const toggleExpand = (id) => {
-    LayoutAnimation.easeInEaseOut();
+    LayoutAnimation.configureNext(layoutAnimationPresets.standard);
     setExpandedCards((prev) => ({ ...prev, [id]: !prev[id] }));
   };
 

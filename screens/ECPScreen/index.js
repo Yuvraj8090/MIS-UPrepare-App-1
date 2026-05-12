@@ -1,3 +1,4 @@
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -7,43 +8,50 @@ import {
   Modal,
   Image,
   ActivityIndicator,
+  StyleSheet,
+  Dimensions,
 } from "react-native";
-import React, { use, useCallback, useEffect, useState } from "react";
-import styles from "./styles";
-import CustomHeader from "@/components/AppHeader/CustomHeader";
-import { height, width } from "@/services/helper";
-import { FontAwesome, FontAwesome5, Ionicons } from "@expo/vector-icons";
+import { FontAwesome, FontAwesome5, Ionicons, MaterialIcons } from "@expo/vector-icons";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+
+import CustomHeader from "@/components/AppHeader/CustomHeader";
 import { getFromSS } from "@/services/storage/SecureStore";
 import { fetchECPPhycialProgress } from "@/services/api/fetch";
 import SkeletonLoader from "@/components/SkeletonDesign/EntryCardSkeleton";
 
+const { width, height } = Dimensions.get("window");
+const ITEMS_PER_PAGE = 10;
+
 const ECPScreen = (props) => {
-  console.log("PROPSSS ECP ::", props?.route?.params);
-  const { data } = props?.route?.params;
+  const { data } = props?.route?.params || {};
   const navigation = useNavigation();
 
+  // State Management
   const [entries, setEntries] = useState([]);
+  const [page, setPage] = useState(1); // For client-side pagination
+  const [load, setLoad] = useState(true);
   const [expandedTitle, setExpandedTitle] = useState(false);
-  const [load, setLoad] = useState(false);
+
+  // Modal & Image Gallery State
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [selectedImages, setSelectedImages] = useState([]);
 
-  const [imgLoad, setImgLoad] = useState(false);
-
-  // 🔹 API call
+  // Fetch Data
   const getEntries = async (id) => {
-    const authToken = await getFromSS("authToken");
-
     setLoad(true);
     try {
+      const authToken = await getFromSS("authToken");
       const res = await fetchECPPhycialProgress(authToken, id);
-      console.log("RESS ::", res);
-
-      setEntries(res?.data || []);
-      setLoad(false);
+      
+      if (res?.status && res?.data) {
+        setEntries(res.data);
+      } else {
+        setEntries([]);
+      }
     } catch (error) {
-      console.log("GET SAFEGUARD API ERROR ::", error);
+      console.error("[ECPScreen] API ERROR ::", error);
+      setEntries([]);
+    } finally {
       setLoad(false);
     }
   };
@@ -51,283 +59,162 @@ const ECPScreen = (props) => {
   useFocusEffect(
     useCallback(() => {
       if (data?.id) {
-        getEntries(data?.id);
+        getEntries(data.id);
+        setPage(1); // Reset pagination on focus
       }
     }, [data?.id])
   );
 
+  // Pagination Logic
+  const paginatedEntries = entries.slice(0, page * ITEMS_PER_PAGE);
+
+  const handleLoadMore = () => {
+    if (page * ITEMS_PER_PAGE < entries.length) {
+      setPage((prev) => prev + 1);
+    }
+  };
+
+  const openImageGallery = (imageUrls) => {
+    setSelectedImages(imageUrls);
+    setModalVisible(true);
+  };
+
+  // Render Individual EPC Entry Card
   const renderItem = ({ item }) => {
-    console.log("ITEMEMM :;", item?.image_urls);
+    // Note: API uses epc_entry_data, falling back to epcentry_data just in case
+    const epcData = item?.epc_entry_data || item?.epcentry_data || {};
+    const hasImages = item?.image_urls && item?.image_urls.length > 0;
+
     return (
       <View style={styles.card}>
-        <View style={styles.row}>
-          <Text style={styles.label}>SNo:</Text>
-          <Text style={styles.value}>{item?.epcentry_data?.sl_no}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Activity:</Text>
-          <Text style={styles.value}>{item?.epcentry_data?.activity_name}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Stage:</Text>
-          <Text style={styles.value}>{item?.epcentry_data?.stage_name}</Text>
-        </View>
-        {item?.percent > 0 && (
-          <View style={styles.row}>
-            <Text style={styles.label}>Percent:</Text>
-            <Text style={styles.value}>{item?.percent}%</Text>
+        {/* Card Header */}
+        <View style={styles.cardHeader}>
+          <View style={styles.badgeContainer}>
+            <Text style={styles.badgeText}>S.No: {epcData?.sl_no || "N/A"}</Text>
           </View>
-        )}
-        <View style={styles.row}>
-          <Text style={styles.label}>Items Done:</Text>
-          <Text style={styles.value}>{item?.items}</Text>
-        </View>
-        <View style={styles.row}>
-          <Text style={styles.label}>Submitted:</Text>
-          <Text style={styles.value}>
-            {new Date(item?.progress_submitted_date)?.toLocaleDateString("en-GB")}
+          <Text style={styles.dateText}>
+            {item?.progress_submitted_date 
+              ? new Date(item.progress_submitted_date).toLocaleDateString("en-GB") 
+              : "No Date"}
           </Text>
         </View>
-        {/* Attractive Button */}
-        {item?.image_urls?.length > 0 && (
-          <TouchableOpacity
-            style={styles.imageButton}
-            //   onPress={() => console.log("View Image Pressed")}
-            onPress={() => {
-              setSelectedImage(item?.image_urls[0]); // 👈 store selected image
-              setModalVisible(true);
-            }}
-          >
-            <Ionicons name="image-outline" size={18} color="#fff" />
-            <Text style={styles.imageButtonText}>View Image</Text>
-          </TouchableOpacity>
+
+        {/* Card Body */}
+        <View style={styles.cardBody}>
+          <Text style={styles.activityTitle}>{epcData?.activity_name || "Unknown Activity"}</Text>
+          <Text style={styles.stageText}>{epcData?.stage_name || "Unknown Stage"}</Text>
+          
+          <View style={styles.divider} />
+
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>Progress</Text>
+              <Text style={styles.statValueGreen}>{item?.percent ? `${item.percent}%` : "0%"}</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statLabel}>Amount</Text>
+              <Text style={styles.statValue}>
+                {item?.amount ? `₹${parseFloat(item.amount).toLocaleString('en-IN')}` : "₹0"}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.itemsDoneContainer}>
+            <Text style={styles.statLabel}>Items Done:</Text>
+            <Text style={styles.itemsDoneText}>{item?.items || "None specified"}</Text>
+          </View>
+        </View>
+
+        {/* Card Footer / Actions */}
+        {hasImages && (
+          <View style={styles.cardFooter}>
+            <TouchableOpacity
+              style={styles.imageButton}
+              activeOpacity={0.8}
+              onPress={() => openImageGallery(item.image_urls)}
+            >
+              <Ionicons name="images-outline" size={16} color="#fff" />
+              <Text style={styles.imageButtonText}>
+                {item.image_urls.length > 1 
+                  ? `View Images (${item.image_urls.length})` 
+                  : "View Image"}
+              </Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
     );
   };
 
-  const renderSkeleton = () => {
-    return (
-      <>
-        {[...Array(1)].map((_, i) => (
-          <View
-            key={i}
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              //   marginVertical: 10,
-              //   paddingHorizontal: 10,
-            }}
-          >
-            <SkeletonLoader
-              width={width * 0.5}
-              height={15}
-              style={{ marginBottom: 6 }}
-            />
-          </View>
-        ))}
-      </>
-    );
-  };
+  // Render Image inside Modal Gallery
+  const renderGalleryImage = ({ item }) => (
+    <View style={styles.galleryImageContainer}>
+      <Image
+        source={{ uri: item }}
+        style={styles.previewImage}
+        resizeMode="contain"
+      />
+    </View>
+  );
 
   return (
     <SafeAreaView style={styles.safe}>
       <View style={styles.container}>
-        <CustomHeader
-          Title={"Physical EPC Progress Management"}
-          GoBack={true}
-        />
+        <CustomHeader Title={"Physical EPC Progress Management"} GoBack={true} />
 
+        {/* Sticky Project Header */}
+        <View style={styles.projectHeaderWrapper}>
+          <View style={styles.projectCard}>
+            <View style={styles.projectTitleRow}>
+              <FontAwesome name="folder-open" size={14} color="#3B82F6" style={{ marginTop: 2 }} />
+              <Text style={styles.projectTitle} numberOfLines={expandedTitle ? undefined : 2}>
+                {data?.name || "Unknown Project"}
+              </Text>
+            </View>
+
+            <View style={styles.projectActionsRow}>
+              <TouchableOpacity
+                activeOpacity={0.8}
+                style={styles.addButton}
+                onPress={() => navigation.navigate("ECPPhysicalProgressForm", { data })}
+              >
+                <FontAwesome5 name="plus-circle" size={14} color="#fff" />
+                <Text style={styles.addButtonText}>Add Progress</Text>
+              </TouchableOpacity>
+
+              {data?.name?.length > 55 && (
+                <TouchableOpacity onPress={() => setExpandedTitle(!expandedTitle)}>
+                  <Text style={styles.expandText}>{expandedTitle ? "Hide ▲" : "View full name ▼"}</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </View>
+
+        {/* List Content */}
         {load ? (
-          <>{renderSkeleton()}</>
+          <View style={{ padding: 15 }}>
+            <SkeletonLoader width="100%" height={150} style={{ marginBottom: 15 }} />
+            <SkeletonLoader width="100%" height={150} style={{ marginBottom: 15 }} />
+          </View>
         ) : (
-          <>
-            <FlatList
-              data={entries}
-              keyExtractor={(i) => i?.id?.toString()}
-              renderItem={renderItem}
-              ItemSeparatorComponent={() => <View style={{ height: 1 }} />}
-              contentContainerStyle={{ paddingBottom: 20, height: height }}
-              stickyHeaderIndices={[0]}
-              ListHeaderComponent={
-                <View style={{ backgroundColor: "#fff" }}>
-                  <View style={[styles.projectCard]}>
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        gap: 4,
-                        width: width * 0.85,
-                      }}
-                    >
-                      <FontAwesome
-                        name="folder-open"
-                        size={12}
-                        color="#007BFF"
-                        style={{ marginTop: 2.5 }}
-                      />
-                      <Text
-                        style={styles.projectTitle}
-                        numberOfLines={expandedTitle ? undefined : 2}
-                      >
-                        {data?.name}
-                      </Text>
-                    </View>
-
-                    <View
-                      style={{
-                        flexDirection: "row",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <TouchableOpacity
-                        activeOpacity={0.5}
-                        style={{
-                          alignSelf: "flex-start",
-                          flexDirection: "row",
-                          alignItems: "center",
-                          backgroundColor: "#28A745",
-                          borderRadius: 10,
-                          paddingVertical: "1.5%",
-                          paddingHorizontal: "2.5%",
-                          gap: 5,
-                        }}
-                        onPress={() =>
-                          navigation.navigate("ECPPhysicalProgressForm", {
-                            data,
-                          })
-                        }
-                      >
-                        <FontAwesome5
-                          name="plus-circle"
-                          size={16}
-                          color="#fff"
-                        />
-                        <Text
-                          style={{
-                            fontFamily: "Jost-SemiBold",
-                            fontSize: 12,
-                            color: "#ffff",
-                          }}
-                        >
-                          Add Progress Entry
-                        </Text>
-                      </TouchableOpacity>
-
-                      {data?.name?.length > 60 && (
-                        <TouchableOpacity
-                          style={{ position: "absolute", right: 0, top: 1 }}
-                          onPress={() => setExpandedTitle(!expandedTitle)}
-                        >
-                          <Text
-                            style={{
-                              fontFamily: "Jost-Regular",
-                              fontSize: 12,
-                              color: "#3488FD",
-                            }}
-                          >
-                            {expandedTitle ? "Hide ▲" : "View ▼"}
-                          </Text>
-                        </TouchableOpacity>
-                      )}
-                    </View>
-                  </View>
-                  {/* Table header */}
-                  <View style={styles.headerRow}>
-                    <Text
-                      style={[
-                        styles.headerCell,
-                        { flex: 0.6, fontFamily: "Jost-SemiBold" },
-                      ]}
-                    >
-                      SNo
-                    </Text>
-                    <Text
-                      style={[
-                        styles.headerCell,
-                        { flex: 0.8, fontFamily: "Jost-SemiBold" },
-                      ]}
-                    >
-                      Activity
-                    </Text>
-
-                    <Text
-                      style={[
-                        styles.headerCell,
-                        { flex: 0.9, fontFamily: "Jost-SemiBold" },
-                      ]}
-                    >
-                      Stage
-                    </Text>
-                    <Text
-                      style={[
-                        styles.headerCell,
-                        { flex: 1, fontFamily: "Jost-SemiBold" },
-                      ]}
-                    >
-                      Percent
-                    </Text>
-                    <Text
-                      style={[
-                        styles.headerCell,
-                        { flex: 1.4, fontFamily: "Jost-SemiBold" },
-                      ]}
-                    >
-                      Items Done
-                    </Text>
-                    <Text
-                      style={[
-                        styles.headerCell,
-                        { flex: 1.6, fontFamily: "Jost-SemiBold" },
-                      ]}
-                    >
-                      Submitted Date
-                    </Text>
-
-                    {/* <Text
-                  style={[
-                    styles.headerCell,
-                    { flex: 1, fontFamily: "Jost-SemiBold" },
-                  ]}
-                >
-                  Action
-                </Text> */}
-                  </View>
-                </View>
-              }
-              ListFooterComponent={
-                <>
-                  {load ? (
-                    <>
-                      {[...Array(2)].map((_, i) => (
-                        <Text>Loading...</Text>
-                      ))}
-                    </>
-                  ) : (
-                    <>
-                      {entries?.length === 0 && (
-                        <View
-                          style={{
-                            alignItems: "center",
-                            justifyContent: "center",
-                            marginVertical: "5%",
-                          }}
-                        >
-                          <Text style={{ fontFamily: "Jost-SemiBold" }}>
-                            No Entries Found!
-                          </Text>
-                        </View>
-                      )}
-                    </>
-                  )}
-                </>
-              }
-            />
-          </>
+          <FlatList
+            data={paginatedEntries}
+            keyExtractor={(item) => item?.id?.toString() || Math.random().toString()}
+            renderItem={renderItem}
+            contentContainerStyle={styles.listContent}
+            onEndReached={handleLoadMore}
+            onEndReachedThreshold={0.5}
+            ListEmptyComponent={
+              <View style={styles.emptyState}>
+                <Ionicons name="document-text-outline" size={48} color="#D1D5DB" />
+                <Text style={styles.emptyStateText}>No Progress Entries Found!</Text>
+              </View>
+            }
+          />
         )}
 
-        {/* Popup Modal */}
-
+        {/* Enhanced Image Gallery Modal */}
         <Modal
           transparent={true}
           visible={modalVisible}
@@ -335,42 +222,275 @@ const ECPScreen = (props) => {
           onRequestClose={() => setModalVisible(false)}
         >
           <View style={styles.modalBackground}>
-            <View style={styles.modalCard}>
-              {/* Close Button */}
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => {
-                  setModalVisible(false), setSelectedImage(null);
-                }}
-              >
-                <Ionicons name="close-circle" size={26} color="#ff4444" />
-              </TouchableOpacity>
-
-              {/* Image */}
-              <View style={styles.imgcontainer}>
-                {imgLoad && (
-                  <ActivityIndicator
-                    size="large"
-                    color="#ccc"
-                    style={styles.loader}
-                  />
-                )}
-                <Image
-                  source={{ uri: selectedImage }}
-                  style={styles.previewImage}
-                  resizeMode="cover"
-                  onLoadStart={() => setImgLoad(true)}
-                  onLoadEnd={() => setImgLoad(false)}
-                />
+            <SafeAreaView style={styles.modalSafeArea}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>
+                  {selectedImages.length} {selectedImages.length > 1 ? "Images" : "Image"} Attached
+                </Text>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={() => {
+                    setModalVisible(false);
+                    setSelectedImages([]);
+                  }}
+                >
+                  <Ionicons name="close-circle" size={30} color="#EF4444" />
+                </TouchableOpacity>
               </View>
 
-              <Text style={styles.previewLabel}>Preview</Text>
-            </View>
+              <FlatList
+                data={selectedImages}
+                keyExtractor={(_, index) => index.toString()}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                renderItem={renderGalleryImage}
+                contentContainerStyle={{ alignItems: 'center' }}
+              />
+              
+              {selectedImages.length > 1 && (
+                <Text style={styles.swipeHint}>Swipe left/right to view more</Text>
+              )}
+            </SafeAreaView>
           </View>
         </Modal>
+
       </View>
     </SafeAreaView>
   );
 };
+
+// ------------------------------------------------------------------
+// Professional Stylesheet
+// ------------------------------------------------------------------
+const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#F3F4F6",
+  },
+  projectHeaderWrapper: {
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#E5E7EB",
+    zIndex: 10,
+  },
+  projectCard: {
+    backgroundColor: "#EFF6FF",
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+  },
+  projectTitleRow: {
+    flexDirection: "row",
+    gap: 8,
+    alignItems: "flex-start",
+    marginBottom: 12,
+  },
+  projectTitle: {
+    flex: 1,
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+    color: "#1E3A8A",
+    lineHeight: 20,
+  },
+  projectActionsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  addButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#10B981", // Emerald Green
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 6,
+    gap: 6,
+  },
+  addButtonText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 13,
+    color: "#FFFFFF",
+  },
+  expandText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 12,
+    color: "#3B82F6",
+  },
+  listContent: {
+    padding: 12,
+    paddingBottom: 40,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    marginBottom: 12,
+    padding: 15,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 10,
+  },
+  badgeContainer: {
+    backgroundColor: "#F3F4F6",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+  },
+  badgeText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 11,
+    color: "#4B5563",
+  },
+  dateText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 12,
+    color: "#9CA3AF",
+  },
+  cardBody: {
+    marginBottom: 10,
+  },
+  activityTitle: {
+    fontFamily: "Jost-Bold",
+    fontSize: 15,
+    color: "#111827",
+    marginBottom: 4,
+  },
+  stageText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 13,
+    color: "#6B7280",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#F3F4F6",
+    marginVertical: 12,
+  },
+  statsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 12,
+  },
+  statBox: {
+    flex: 1,
+  },
+  statLabel: {
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    color: "#6B7280",
+    marginBottom: 2,
+  },
+  statValue: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+    color: "#111827",
+  },
+  statValueGreen: {
+    fontFamily: "Jost-Bold",
+    fontSize: 16,
+    color: "#10B981", // Success green for progress
+  },
+  itemsDoneContainer: {
+    backgroundColor: "#F9FAFB",
+    padding: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#F3F4F6",
+  },
+  itemsDoneText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 13,
+    color: "#374151",
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  cardFooter: {
+    marginTop: 5,
+    alignItems: "flex-start",
+  },
+  imageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#3B82F6", // Blue
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    gap: 6,
+  },
+  imageButtonText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 12,
+    color: "#FFFFFF",
+  },
+  emptyState: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 80,
+    gap: 12,
+  },
+  emptyStateText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 16,
+    color: "#9CA3AF",
+  },
+  // Modal Styles
+  modalBackground: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.9)",
+    justifyContent: "center",
+  },
+  modalSafeArea: {
+    flex: 1,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  modalTitle: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 16,
+    color: "#FFFFFF",
+  },
+  closeButton: {
+    padding: 5,
+  },
+  galleryImageContainer: {
+    width: width,
+    height: height * 0.7,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  previewImage: {
+    width: "100%",
+    height: "100%",
+  },
+  swipeHint: {
+    fontFamily: "Jost-Regular",
+    fontSize: 12,
+    color: "#9CA3AF",
+    textAlign: "center",
+    paddingBottom: 30,
+  },
+});
 
 export default ECPScreen;

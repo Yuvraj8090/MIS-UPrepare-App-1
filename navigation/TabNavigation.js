@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import Navigation from "./Navigation";
 import AppHeader from "@/components/AppHeader/AppHeader";
 import { colors, shadows } from "@/constants/theme";
+import { animationTimings } from "@/constants/animations";
 
 const Tab = createBottomTabNavigator();
 
@@ -50,6 +51,13 @@ const TabNavigation = ({ route }) => {
       screenOptions={{
         header: () => <AppHeader Title="U-PREPARE" />,
         headerShown: true,
+        animation: "shift",
+        transitionSpec: {
+          animation: "timing",
+          config: {
+            duration: animationTimings.standard,
+          },
+        },
         tabBarShowLabel: true,
         tabBarActiveTintColor: "#4f98f3",
         tabBarInactiveTintColor: "#8e8e93",

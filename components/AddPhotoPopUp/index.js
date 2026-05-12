@@ -65,7 +65,13 @@ const AddPhotoPopUp = ({
   };
 
   return (
-    <Modal transparent={true} visible={visible} animationType="slide">
+    <Modal
+      transparent={true}
+      visible={visible}
+      animationType="fade"
+      hardwareAccelerated={true}
+      statusBarTranslucent={true}
+    >
       <View style={styles.mainContainer}>
         <View style={styles.container}>
           <View>

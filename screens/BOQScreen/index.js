@@ -1,38 +1,32 @@
 // screens/BoqListScreen.js
-import React, { useCallback, useEffect, useState } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
   FlatList,
   TouchableOpacity,
-  ActivityIndicator,
-  Image,
   StyleSheet,
   RefreshControl,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { useFocusEffect } from "@react-navigation/native";
+import { Feather, FontAwesome, MaterialIcons, Entypo } from "@expo/vector-icons";
+
 import { fetchBoqEntriesDetails } from "@/services/api/fetch";
 import { getFromSS } from "@/services/storage/SecureStore";
 import CustomHeader from "@/components/AppHeader/CustomHeader";
-import { Feather, FontAwesome, MaterialIcons } from "@expo/vector-icons";
-import { width } from "@/services/helper";
-import Entypo from "@expo/vector-icons/Entypo";
-import { useFocusEffect } from "@react-navigation/native";
 import SkeletonLoader from "@/components/SkeletonDesign/BOQPhysicalProgressSkeleton";
 
-const SUB_PACKAGE_PROJECT_ID = 26; // change as needed or pass from previous screen
-
 export default function BoqListScreen({ navigation, route }) {
-  const { data } = route?.params;
-  // console.log("PPRPPSSS BOQ::", route);
-  console.log("PPRPPSSS BOQ::", data);
+  const { data } = route?.params || {};
+  const insets = useSafeAreaInsets(); // CRITICAL FIX: Initialized safe area insets
 
-  // console.log("NAVIGATION ::", navigation);
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [refresh, setRefresh] = useState(false);
+  
+  // Track expanded state per item ID
   const [expandedRows, setExpandedRows] = useState({});
-  const [expandedTitle, setExpandedTitle] = useState(false);
 
   const toggleExpand = (id) => {
     setExpandedRows((prev) => ({
@@ -41,327 +35,316 @@ export default function BoqListScreen({ navigation, route }) {
     }));
   };
 
+  const loadData = useCallback(async (id, isRefresh = false) => {
+    if (!id) return;
+    
+    if (isRefresh) {
+      setRefresh(true);
+    } else {
+      setLoading(true);
+    }
+
+    try {
+      const authToken = await getFromSS("authToken");
+      const resp = await fetchBoqEntriesDetails(authToken, id);
+      
+      if (resp?.status) {
+        const payload = resp.data.data || resp.data;
+        // Filter out empty or zeroed entries
+        const filtered = payload.filter(
+          (item) =>
+            !(item?.qty === null && item?.rate === null && item?.amount === null) &&
+            !(item?.qty === "0.000" && item?.rate === "0.00" && item?.amount === "0.00")
+        );
+        setItems(filtered);
+      } else {
+        setItems([]);
+      }
+    } catch (e) {
+      console.error("[BoqListScreen] Failed to load BOQ entries:", e);
+      // Optional: Add a toast or UI error message here
+    } finally {
+      setLoading(false);
+      setRefresh(false);
+    }
+  }, []);
+
   useFocusEffect(
     useCallback(() => {
       if (data?.id) {
-        load(data?.id);
+        loadData(data.id, false);
       }
-    }, [data?.id])
+    }, [data?.id, loadData])
   );
 
-  useEffect(() => {}, [data?.id]);
-
-  const load = async (id) => {
-    const authToken = await getFromSS("authToken");
-    setLoading(true);
-    try {
-      const resp = await fetchBoqEntriesDetails(authToken, id);
-      console.log("RESSS ALL BOQQ :", resp);
-      if (resp?.status) {
-        const payload = resp.data.data || resp.data;
-        const filtered = payload.filter(
-          (item) =>
-            !(
-              item?.qty === null &&
-              item?.rate === null &&
-              item?.amount === null
-            ) &&
-            !(
-              item?.qty === "0.000" &&
-              item?.rate === "0.00" &&
-              item?.amount === "0.00"
-            )
-        );
-        setItems(filtered);
-      }
-    } catch (e) {
-      console.error(e);
-      alert("Failed to load BOQ entries");
-    } finally {
-      setLoading(false);
+  const handleRefresh = () => {
+    if (data?.id) {
+      loadData(data.id, true); // CRITICAL FIX: Passed the ID to the refresh function
+    } else {
+      setRefresh(false);
     }
   };
 
   const renderItem = ({ item }) => {
-    // Skip items with zero qty, rate, and amount
+    // Safety check for empty entries
     if (
-      (item.qty === "0.000" &&
-        item.rate === "0.00" &&
-        item.amount === "0.00") ||
-      (item?.qty === null && item?.rate === null && item?.amount === null)
+      (item?.qty === "0.000" && item?.rate === "0.00" && item?.amount === "0.00") ||
+      (item?.qty == null && item?.rate == null && item?.amount == null)
     ) {
       return null;
     }
 
+    const isExpanded = expandedRows[item.id] || false;
+    const description = item?.item_description || "No description available";
+    const needsExpansion = description.length > 55; // Threshold for showing View/Hide
+
     return (
       <TouchableOpacity
-        activeOpacity={0.8}
+        activeOpacity={0.7}
         style={styles.card}
         onPress={() => navigation.navigate("BOQDetailsScreen", { data: item })}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={{ width: width * 0.8 }}>
-            <Text style={styles.title} numberOfLines={2}>
-              {item.sl_no} - {item.item_description?.split("\n")[0]}
-            </Text>
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "flex-end",
-                marginBottom: "1%",
-              }}
+        {/* Header Section */}
+        <View style={styles.cardHeader}>
+          <View style={styles.titleContainer}>
+            <Text 
+              style={styles.title} 
+              numberOfLines={isExpanded ? undefined : 2}
             >
-              {data?.item_description?.length > 60 && (
-                <TouchableOpacity
-                  style={{ position: "relative" }}
-                  onPress={() => setExpandedTitle(!expandedTitle)}
-                >
-                  <Text
-                    style={{
-                      fontFamily: "Jost-Regular",
-                      fontSize: 12,
-                      color: "#3488FD",
-                    }}
-                  >
-                    {expandedTitle ? "Hide ▲" : "View ▼"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-            </View>
-            {/* {item?.name?.length > 60 && (
+              {item.sl_no} - {description}
+            </Text>
+            
+            {needsExpansion && (
               <TouchableOpacity
-                style={{ position: "absolute", right: 0, top: 1 }}
-                onPress={() => setExpandedTitle(!expandedTitle)}
+                style={styles.expandButton}
+                onPress={() => toggleExpand(item.id)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Text
-                  style={{
-                    fontFamily: "Jost-Regular",
-                    fontSize: 12,
-                    color: "#3488FD",
-                  }}
-                >
-                  {expandedTitle ? "Hide ▲" : "View ▼"}
+                <Text style={styles.expandText}>
+                  {isExpanded ? "Hide details ▲" : "View full details ▼"}
                 </Text>
               </TouchableOpacity>
-            )} */}
+            )}
           </View>
-          <View>
-            <MaterialIcons name="arrow-forward-ios" size={20} color="#FF5722" />
-          </View>
+          <MaterialIcons name="arrow-forward-ios" size={16} color="#9CA3AF" style={{ marginTop: 2 }} />
         </View>
 
-        {/* Two-column info layout */}
-        <View style={styles.row}>
-          <View style={styles.col}>
+        {/* Data Grid Section */}
+        <View style={styles.gridRow}>
+          {/* Column 1 */}
+          <View style={styles.column}>
             <View style={styles.iconRow}>
-              <Entypo name="ruler" size={15} color="#4CAF50" />
+              <Entypo name="ruler" size={14} color="#10B981" style={styles.icon} />
               <Text style={styles.label}>Unit:</Text>
-              <Text style={styles.value}>{item?.unit || "N/A"}</Text>
+              <Text style={styles.value} numberOfLines={1}>{item?.unit || "N/A"}</Text>
             </View>
             <View style={styles.iconRow}>
-              <Feather name="package" size={15} color="#2196F3" />
+              <Feather name="package" size={14} color="#3B82F6" style={styles.icon} />
               <Text style={styles.label}>Quantity:</Text>
-              <Text style={styles.value}>
-                {item?.qty ? parseFloat(item.qty).toFixed(2) : "0.00"}
-              </Text>
+              <Text style={styles.value}>{item?.qty ? parseFloat(item.qty).toFixed(2) : "0.00"}</Text>
             </View>
             <View style={styles.iconRow}>
-              <MaterialIcons name="attach-money" size={20} color="#FF9800" />
+              <MaterialIcons name="attach-money" size={16} color="#F59E0B" style={styles.icon} />
               <Text style={styles.label}>Rate:</Text>
-              <Text style={styles.value}>
-                {item?.rate ? parseFloat(item.rate).toFixed(2) : "0.00"}
-              </Text>
+              <Text style={styles.value}>{item?.rate ? parseFloat(item.rate).toFixed(2) : "0.00"}</Text>
             </View>
           </View>
 
-          <View style={styles.col}>
+          {/* Column 2 */}
+          <View style={styles.column}>
             <View style={styles.iconRow}>
-              <MaterialIcons name="monetization-on" size={20} color="#9C27B0" />
+              <MaterialIcons name="monetization-on" size={16} color="#8B5CF6" style={styles.icon} />
               <Text style={styles.label}>Amount:</Text>
-              <Text style={styles.value}>
-                {item?.amount ? parseFloat(item.amount).toFixed(2) : "0.00"}
-              </Text>
+              <Text style={styles.value}>{item?.amount ? parseFloat(item.amount).toFixed(2) : "0.00"}</Text>
             </View>
-            <View style={{ flexDirection: "row" }}>
-              <Feather name="trending-up" size={15} color="#F44336" />
+            <View style={styles.iconRow}>
+              <Feather name="trending-up" size={14} color="#EF4444" style={styles.icon} />
               <Text style={styles.label}>Remaining:</Text>
               <Text style={styles.value}>
-                {item?.remaining_qty
-                  ? parseFloat(item.remaining_qty).toFixed(2)
-                  : "0.00"}
+                {item?.remaining_qty ? parseFloat(item.remaining_qty).toFixed(2) : "0.00"}
               </Text>
             </View>
           </View>
         </View>
-        <View style={[styles.iconRow, { alignSelf: "flex-end" }]}>
-          <MaterialIcons name="calendar-today" size={14} color="#ccc" />
-          <Text style={[styles.label, { fontSize: 10 }]}>Updated:</Text>
-          <Text style={(styles.value, { fontSize: 10.5 })}>
-            {new Date(item?.updated_at).toLocaleDateString()}
+
+        {/* Footer Section */}
+        <View style={styles.cardFooter}>
+          <MaterialIcons name="access-time" size={12} color="#9CA3AF" />
+          <Text style={styles.footerText}>
+            Updated: {item?.updated_at ? new Date(item.updated_at).toLocaleDateString() : "Unknown"}
           </Text>
         </View>
       </TouchableOpacity>
     );
   };
 
-  // if (loading)
-  //   return (
-  //     <View style={{ flex: 1, justifyContent: "center" }}>
-  //       <ActivityIndicator size="large" />
-  //     </View>
-  //   );
-
-  const handleRefresh = () => {
-    setRefresh(true);
-    if (data?.id) {
-      load();
-    }
-    setTimeout(() => setRefresh(false), 1000);
-  };
+  const renderHeader = () => (
+    <View style={styles.projectHeaderCard}>
+      <FontAwesome name="folder-open" size={14} color="#3B82F6" style={{ marginTop: 2 }} />
+      <Text style={styles.projectTitle}>
+        {data?.name || "Unknown Project"}
+      </Text>
+    </View>
+  );
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.mainContainer}>
       <CustomHeader Title={"Physical Progress Update"} GoBack={true} />
-      <View style={{ backgroundColor: "#fff" }}>
-        <View style={[styles.projectCard]}>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 4,
-              width: width * 0.85,
-            }}
-          >
-            <FontAwesome
-              name="folder-open"
-              size={12}
-              color="#007BFF"
-              style={{ marginTop: 2.5 }}
-            />
-            <Text style={styles.projectTitle}>{data?.name}</Text>
-          </View>
-        </View>
-      </View>
+      
       {loading ? (
-        <>
-          <SkeletonLoader />
-        </>
+        <SkeletonLoader />
       ) : (
-        <>
-          <FlatList
-            data={items}
-            keyExtractor={(i) => String(i.id)}
-            refreshControl={
-              <RefreshControl refreshing={refresh} onRefresh={handleRefresh} />
-            }
-            // stickyHeaderIndices={[0]}
-            renderItem={renderItem}
-            ItemSeparatorComponent={() => <View style={{ height: 2 }} />}
-            contentContainerStyle={{ paddingBottom: Math.max(insets.bottom, 20) }}
-            ListEmptyComponent={
-              <View
-                style={{
-                  flex: 1,
-                  justifyContent: "center",
-                  alignItems: "center",
-                  position: "relative",
-                  height: 200,
-                }}
-              >
-                <Text
-                  style={{
-                    fontFamily: "Jost-Medium",
-                    fontSize: 30, // big like watermark
-                    color: "#000", // black or any color
-                    opacity: 0.3, // faded effect
-                    position: "absolute", // behind content
-                    textAlign: "center",
-                  }}
-                >
-                  No found !
-                </Text>
-              </View>
-            }
-          />
-        </>
+        <FlatList
+          data={items}
+          keyExtractor={(item) => String(item?.id || Math.random())}
+          refreshControl={
+            <RefreshControl 
+              refreshing={refresh} 
+              onRefresh={handleRefresh} 
+              tintColor="#3B82F6" 
+            />
+          }
+          ListHeaderComponent={renderHeader}
+          renderItem={renderItem}
+          contentContainerStyle={[
+            styles.listContent, 
+            { paddingBottom: Math.max(insets.bottom, 20) + 20 }
+          ]}
+          ListEmptyComponent={
+            <View style={styles.emptyState}>
+              <Feather name="inbox" size={48} color="#D1D5DB" />
+              <Text style={styles.emptyStateText}>No BOQ entries found</Text>
+            </View>
+          }
+        />
       )}
     </View>
   );
 }
 
+// ------------------------------------------------------------------
+// Professional Stylesheet
+// ------------------------------------------------------------------
 const styles = StyleSheet.create({
-  card: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 15,
-    marginVertical: 2,
-    marginHorizontal: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 5,
+  mainContainer: {
+    flex: 1,
+    backgroundColor: "#F3F4F6", // Light gray background makes white cards pop
   },
-  header: {
+  listContent: {
+    paddingHorizontal: 12,
+    paddingTop: 12,
+    gap: 12, // Modern flex gap replaces ItemSeparatorComponent
+  },
+  projectHeaderCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    backgroundColor: "#EFF6FF", // Light blue tint for context
+    padding: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#BFDBFE",
+    marginBottom: 4,
+    gap: 8,
+  },
+  projectTitle: {
+    flex: 1,
+    fontSize: 14,
+    fontFamily: "Jost-SemiBold",
+    color: "#1E3A8A",
+    lineHeight: 20,
+  },
+  card: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 10,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    // Premium soft shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  cardHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    // alignItems: "center",
-    marginBottom: 10,
+    alignItems: "flex-start",
+    marginBottom: 12,
+    gap: 12,
+  },
+  titleContainer: {
+    flex: 1,
   },
   title: {
     fontSize: 14,
     fontFamily: "Jost-SemiBold",
-    // color: "#333",
-    flex: 1,
+    color: "#111827",
+    lineHeight: 20,
   },
-  row: {
+  expandButton: {
+    alignSelf: "flex-end",
+    marginTop: 4,
+  },
+  expandText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 12,
+    color: "#3B82F6",
+  },
+  gridRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: 8,
   },
-  col: {
+  column: {
     flex: 1,
+    gap: 6,
   },
   iconRow: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 4,
+  },
+  icon: {
+    width: 20, // Fixed width ensures all text aligns perfectly vertically
+    textAlign: "center",
   },
   label: {
-    fontSize: 14,
-    color: "#555",
+    fontSize: 12,
+    color: "#6B7280",
     fontFamily: "Jost-Medium",
-    marginHorizontal: 8,
-    // width: "40%",
+    marginHorizontal: 4,
   },
   value: {
-    fontSize: 14,
-    color: "#000",
+    flex: 1,
+    fontSize: 12.5,
+    color: "#111827",
     fontFamily: "Jost-SemiBold",
   },
-  projectCard: {
-    backgroundColor: "#fff",
-    padding: 12,
-    borderRadius: 8,
-    // marginBottom: 12,
-    shadowColor: "#00000011",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    elevation: 1,
-  },
-  projectTitle: {
-    fontSize: 13,
-    fontFamily: "Jost-Medium",
-    marginBottom: 8,
-  },
-  mediaBox: { width: 80, alignItems: "center", justifyContent: "center" },
-  thumb: { width: 72, height: 48, resizeMode: "cover", borderRadius: 4 },
-  noThumb: {
-    width: 72,
-    height: 48,
-    borderRadius: 4,
-    borderWidth: 1,
-    borderColor: "#eee",
+  cardFooter: {
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "flex-end",
+    marginTop: 12,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#F3F4F6",
+    gap: 4,
+  },
+  footerText: {
+    fontSize: 10.5,
+    fontFamily: "Jost-Medium",
+    color: "#9CA3AF",
+  },
+  emptyState: {
+    flex: 1,
+    minHeight: 300,
     justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  emptyStateText: {
+    fontFamily: "Jost-Medium",
+    fontSize: 16,
+    color: "#9CA3AF",
   },
 });

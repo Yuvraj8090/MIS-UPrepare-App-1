@@ -29,6 +29,7 @@ import LoaderCard from "../../../components/LoaderCard";
 import { useAuth } from "../../../navigation/AuthContext/AuthContext";
 import { userLogin } from "../../../services/api/fetch";
 import loginStyles, { feedbackVariants } from "./styles";
+import { animationTimings, springPresets } from "@/constants/animations";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -99,10 +100,10 @@ const LoginScreen = () => {
 
   useEffect(() => {
     usernameFocus.value = withTiming(activeField === "username" ? 1 : 0, {
-      duration: 180,
+      duration: animationTimings.quick,
     });
     passwordFocus.value = withTiming(activeField === "password" ? 1 : 0, {
-      duration: 180,
+      duration: animationTimings.quick,
     });
   }, [activeField, passwordFocus, usernameFocus]);
 
@@ -183,7 +184,7 @@ const LoginScreen = () => {
       message: "Signing you in securely...",
     });
 
-    buttonScale.value = withSpring(0.98, { damping: 12, stiffness: 180 });
+    buttonScale.value = withSpring(0.98, springPresets.button);
 
     try {
       const response = await userLogin({
@@ -235,7 +236,7 @@ const LoginScreen = () => {
         message,
       });
     } finally {
-      buttonScale.value = withSpring(1, { damping: 12, stiffness: 180 });
+      buttonScale.value = withSpring(1, springPresets.button);
       setLocalLoading(false);
     }
   };

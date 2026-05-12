@@ -27,6 +27,7 @@ import { forgotPassword } from "../../services/api/fetch";
 import loginStyles, { feedbackVariants } from "../Auth/Login/styles";
 import styles from "./styles";
 import { showFeedback } from "@/services/platform/feedback";
+import { animationTimings, springPresets } from "@/constants/animations";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -90,7 +91,7 @@ const ForgotScreen = () => {
 
   useEffect(() => {
     usernameFocus.value = withTiming(activeField === "username" ? 1 : 0, {
-      duration: 180,
+      duration: animationTimings.quick,
     });
   }, [activeField, usernameFocus]);
 
@@ -145,7 +146,7 @@ const ForgotScreen = () => {
       type: "info",
       message: "Preparing password reset instructions...",
     });
-    buttonScale.value = withSpring(0.98, { damping: 12, stiffness: 180 });
+    buttonScale.value = withSpring(0.98, springPresets.button);
 
     try {
       const response = await forgotPassword({
@@ -184,7 +185,7 @@ const ForgotScreen = () => {
       });
       showFeedback(message);
     } finally {
-      buttonScale.value = withSpring(1, { damping: 12, stiffness: 180 });
+      buttonScale.value = withSpring(1, springPresets.button);
       setLoading(false);
     }
   };

@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Dimensions,
 } from "react-native";
+import { animationEasing, animationTimings } from "@/constants/animations";
 
 const { width, height } = Dimensions.get("window");
 
@@ -22,29 +23,34 @@ export default function AnimatedSplash({ onFinish }) {
       Animated.parallel([
         Animated.timing(logoScale, {
           toValue: 1,
-          duration: 700,
+          duration: animationTimings.splash,
+          easing: animationEasing.standard,
           useNativeDriver: true,
         }),
         Animated.timing(logoOpacity, {
           toValue: 1,
-          duration: 700,
+          duration: animationTimings.splash,
+          easing: animationEasing.standard,
           useNativeDriver: true,
         }),
         Animated.timing(mountainTranslateY, {
           toValue: 0,
-          duration: 900,
+          duration: animationTimings.splash,
+          easing: animationEasing.emphasized,
           useNativeDriver: true,
         }),
       ]),
       Animated.parallel([
         Animated.timing(titleOpacity, {
           toValue: 1,
-          duration: 500,
+          duration: animationTimings.standard,
+          easing: animationEasing.standard,
           useNativeDriver: true,
         }),
         Animated.timing(progress, {
           toValue: 1,
-          duration: 600,
+          duration: animationTimings.splash,
+          easing: animationEasing.standard,
           useNativeDriver: false,
         }),
       ]),

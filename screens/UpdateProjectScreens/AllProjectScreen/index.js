@@ -167,69 +167,7 @@ const AllProjectScreen = () => {
       <CustomHeader Title={"All Sub-Projects"} GoBack={true} />
 
       <View style={styles.contentContainer}>
-        <Animated.View
-          style={[
-            styles.heroCardContainer,
-            {
-              height: heroMeasuredHeight ? heroContainerHeight : undefined,
-              marginTop: heroContainerMarginTop,
-              opacity: heroMeasuredHeight ? 1 : 0,
-            },
-          ]}
-        >
-          <Animated.View
-            onLayout={handleHeroLayout}
-            style={[
-              styles.heroCard,
-              {
-                transform: [{ translateY: heroTranslateY }, { scale: heroScale }],
-                opacity: heroOpacity,
-              },
-            ]}
-          >
-            <View style={styles.heroTopRow}>
-              <View style={styles.heroCopy}>
-                <Text style={styles.eyebrow}>Project Workspace</Text>
-                <Text style={styles.heroTitle}>Track progress with clarity</Text>
-              </View>
-
-              <View style={styles.statusPill}>
-                <Feather
-                  name={isInternet === false ? "wifi-off" : "wifi"}
-                  size={14}
-                  color={isInternet === false ? "#b54708" : "#027a48"}
-                />
-                <Text
-                  style={[
-                    styles.statusText,
-                    { color: isInternet === false ? "#b54708" : "#027a48" },
-                  ]}
-                >
-                  {isInternet === false ? "Offline" : "Live"}
-                </Text>
-              </View>
-            </View>
-
-            <View style={styles.metricsRow}>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricValue}>{totalProjects}</Text>
-                <Text style={styles.metricLabel}>Sub-projects</Text>
-              </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricValue}>{totalEPCProjects}</Text>
-                <Text style={styles.metricLabel}>EPC projects</Text>
-              </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricValue}>{totalItemRateProjects}</Text>
-                <Text style={styles.metricLabel}>BOQ projects</Text>
-              </View>
-              <View style={styles.metricCard}>
-                <Text style={styles.metricValue}>{activeTeamName}</Text>
-                <Text style={styles.metricLabel}>Active team</Text>
-              </View>
-            </View>
-          </Animated.View>
-        </Animated.View>
+       
 
         {errorMessage ? (
           <View style={styles.noticeCard}>

@@ -28,6 +28,7 @@ import LoaderCard from "../../../components/LoaderCard";
 import loginStyles, { feedbackVariants } from "../Login/styles";
 import styles from "./styles";
 import { showFeedback } from "@/services/platform/feedback";
+import { animationTimings, springPresets } from "@/constants/animations";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
@@ -155,15 +156,15 @@ const ResetPassword = (props) => {
 
   useEffect(() => {
     usernameFocus.value = withTiming(activeField === "username" ? 1 : 0, {
-      duration: 180,
+      duration: animationTimings.quick,
     });
     passwordFocus.value = withTiming(activeField === "password" ? 1 : 0, {
-      duration: 180,
+      duration: animationTimings.quick,
     });
     confirmPasswordFocus.value = withTiming(
       activeField === "confirmPassword" ? 1 : 0,
       {
-        duration: 180,
+        duration: animationTimings.quick,
       }
     );
   }, [activeField, confirmPasswordFocus, passwordFocus, usernameFocus]);
@@ -244,7 +245,7 @@ const ResetPassword = (props) => {
       type: "info",
       message: "Updating your password securely...",
     });
-    buttonScale.value = withSpring(0.98, { damping: 12, stiffness: 180 });
+    buttonScale.value = withSpring(0.98, springPresets.button);
 
     try {
       const data = await resetPassword(formData);
@@ -277,7 +278,7 @@ const ResetPassword = (props) => {
       });
       showFeedback(message);
     } finally {
-      buttonScale.value = withSpring(1, { damping: 12, stiffness: 180 });
+      buttonScale.value = withSpring(1, springPresets.button);
       setLoading(false);
     }
   };

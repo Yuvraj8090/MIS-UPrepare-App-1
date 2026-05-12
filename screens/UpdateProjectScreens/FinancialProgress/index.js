@@ -12,23 +12,21 @@ import {
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import * as DocumentPicker from "expo-document-picker";
+import { FontAwesome, Ionicons } from "@expo/vector-icons";
+
+// Components & Services
 import CustomHeader from "@/components/AppHeader/CustomHeader";
 import TextField from "@/components/TextField/TextField";
 import CalenderField from "@/components/TextField/CalenderField/CalenderField";
 import LoaderCard from "@/components/LoaderCard";
 import { getFromSS } from "@/services/storage/SecureStore";
-import {
-  saveECPPhycialProgressImage,
-  saveFinancialProgress,
-} from "@/services/api/fetch";
-import { formatDate, width } from "@/services/helper";
-import * as DocumentPicker from "expo-document-picker";
-import { FontAwesome } from "@expo/vector-icons";
+import { saveFinancialProgress } from "@/services/api/fetch";
+import { formatDate } from "@/services/helper";
 import { showFeedback } from "@/services/platform/feedback";
-import { colors, radius, shadows, spacing } from "@/constants/theme";
 
 const FinancialProgress = (props) => {
-  const { data } = props?.route?.params;
+  const { data } = props?.route?.params || {};
   const navigation = useNavigation();
   const projectId = data?.id;
 
@@ -66,12 +64,12 @@ const FinancialProgress = (props) => {
         type: "application/pdf",
         copyToCacheDirectory: true,
       });
-      if (!result.canceled) {
+      if (!result.canceled && result.assets?.length > 0) {
         setImages((prev) => [
           ...prev,
           {
-            uri: result?.assets[0]?.uri,
-            name: result?.assets[0]?.name,
+            uri: result.assets[0].uri,
+            name: result.assets[0].name,
             type: "application/pdf",
           },
         ]);
@@ -80,15 +78,15 @@ const FinancialProgress = (props) => {
       console.log("Financial document picker error:", err);
     }
   };
-
+const [expandedTitle, setExpandedTitle] = useState(false);
   const handleSubmit = async () => {
     if (!financeAmount || !noOfBills || !submitDate || !projectId) {
-      Alert.alert("All required fields must be filled");
+      Alert.alert("Required Fields Missing", "Please fill in all mandatory fields marked with an asterisk (*).");
       return;
     }
 
     if (images.length === 0) {
-      Alert.alert("Please upload at least one file");
+      Alert.alert("Attachment Required", "Please upload at least one payment slip or bill document.");
       return;
     }
 
@@ -100,7 +98,6 @@ const FinancialProgress = (props) => {
     formData.append("finance_amount", financeAmount);
     formData.append("no_of_bills", noOfBills);
     formData.append("bill_serial_no", billSerialNo);
-
     formData.append("submit_date", formatDate(submitDate));
 
     images.forEach((file, index) => {
@@ -109,8 +106,7 @@ const FinancialProgress = (props) => {
       let mimeType = file.type;
 
       if (!mimeType) {
-        if (fileUri.endsWith(".jpg") || fileUri.endsWith(".jpeg"))
-          mimeType = "image/jpeg";
+        if (fileUri.endsWith(".jpg") || fileUri.endsWith(".jpeg")) mimeType = "image/jpeg";
         else if (fileUri.endsWith(".png")) mimeType = "image/png";
         else if (fileUri.endsWith(".pdf")) mimeType = "application/pdf";
         else mimeType = "application/octet-stream";
@@ -132,274 +128,341 @@ const FinancialProgress = (props) => {
     try {
       const res = await saveFinancialProgress(authToken, formData);
       if (res?.status) {
-        Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
+        Platform.OS === "ios" ? Alert.alert("Success", res?.message) : showFeedback(res?.message);
         setTimeout(() => navigation.goBack(), 2000);
       } else {
-        Alert.alert(res?.message || "Submission failed");
+        Alert.alert("Error", res?.message || "Submission failed");
       }
     } catch (error) {
       console.log("Financial progress submit error:", error);
-      Alert.alert("Something went wrong. Try again.");
+      Alert.alert("Error", "Something went wrong. Try again.");
     } finally {
       setShowLoader(false);
     }
   };
 
-  const handleReset = () => {
-    setFinanceAmount("");
-    setNoOfBills("");
-    setBillSerialNo("");
-    setSubmitDate(new Date());
-    setImages([]);
-  };
-
   return (
-    <SafeAreaView style={styles.mainContainer} edges={["bottom"]}>
-      <CustomHeader Title={"Add Financial Progress"} GoBack={true} />
+    <SafeAreaView style={styles.safeArea} edges={["bottom"]}>
+      <View style={styles.container}>
+        <CustomHeader Title={"Add Financial Progress"} GoBack={true} />
 
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.formCard}>
-          <View style={styles.projectTag}>
-            <FontAwesome
-              name="folder-open"
-              size={12}
-              color={colors.primary}
-              style={styles.projectTagIcon}
-            />
-            <Text style={styles.projectTagText}>{data?.name}</Text>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.formCard}>
+            
+            {/* Project Context Card */}
+            <TouchableOpacity 
+  style={styles.projectCard} 
+  activeOpacity={0.8}
+  onPress={() => setExpandedTitle(!expandedTitle)}
+>
+  <FontAwesome name="folder-open" size={16} color="#3B82F6" style={styles.projectTagIcon} />
+  <View style={styles.projectTextContainer}>
+    <Text style={styles.projectLabel}>Posting to Project</Text>
+    <Text 
+      style={styles.projectTagText} 
+      numberOfLines={expandedTitle ? undefined : 2}
+    >
+      {data?.name || "Unknown Project"}
+    </Text>
+    
+    {/* Only show the toggle indicator if the name is long */}
+    {data?.name?.length > 50 && (
+      <Text style={styles.expandText}>
+        {expandedTitle ? "Hide ▲" : "View full name ▼"}
+      </Text>
+    )}
+  </View>
+</TouchableOpacity>
+
+            {/* Input Fields */}
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Finance Amount (₹) <Text style={styles.requiredAsterisk}>*</Text>
+              </Text>
+              <TextField
+                placeholder="e.g. 50000"
+                value={financeAmount}
+                setData={setFinanceAmount}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Number of Bills <Text style={styles.requiredAsterisk}>*</Text>
+              </Text>
+              <TextField
+                placeholder="e.g. 5"
+                value={noOfBills}
+                setData={setNoOfBills}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Bill Serial Numbers (Optional)</Text>
+              <TextField
+                placeholder="Example: 123, 124, 125"
+                value={billSerialNo}
+                setData={setBillSerialNo}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>
+                Submit Date <Text style={styles.requiredAsterisk}>*</Text>
+              </Text>
+              <CalenderField
+                placeholder="dd/mm/yyyy"
+                setCDate={setSubmitDate}
+                Cdate={submitDate}
+                bigSize={true}
+              />
+            </View>
+
+            {/* File Upload Section */}
+            <View style={styles.uploadSection}>
+              <Text style={styles.label}>
+                Upload Payment Slips <Text style={styles.requiredAsterisk}>*</Text>
+              </Text>
+              <View style={styles.rowBetween}>
+                <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={pickFromCamera}>
+                  <View style={[styles.iconCircle, { backgroundColor: '#E0F2FE' }]}>
+                    <Ionicons name="camera" size={22} color="#0284C7" />
+                  </View>
+                  <Text style={styles.actionBtnText}>Camera</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={pickFromGallery}>
+                  <View style={[styles.iconCircle, { backgroundColor: '#F3E8FF' }]}>
+                    <Ionicons name="images" size={22} color="#9333EA" />
+                  </View>
+                  <Text style={styles.actionBtnText}>Gallery</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.actionBtn} activeOpacity={0.7} onPress={pickFromFiles}>
+                  <View style={[styles.iconCircle, { backgroundColor: '#FEE2E2' }]}>
+                    <Ionicons name="document-text" size={22} color="#DC2626" />
+                  </View>
+                  <Text style={styles.actionBtnText}>PDF File</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Preview Section */}
+            {images?.length > 0 && (
+              <ScrollView
+                horizontal
+                style={styles.previewScroller}
+                contentContainerStyle={{ paddingRight: 20 }}
+                showsHorizontalScrollIndicator={false}
+              >
+                {images.map((file, i) => (
+                  <View key={i} style={styles.filePreviewContainer}>
+                    <TouchableOpacity
+                      style={styles.removeBtn}
+                      activeOpacity={0.8}
+                      onPress={() => setImages((prev) => prev.filter((_, index) => index !== i))}
+                    >
+                      <Ionicons name="close" size={14} color="#FFF" />
+                    </TouchableOpacity>
+
+                    {file.type?.startsWith("image") ? (
+                      <Image source={{ uri: file.uri }} style={styles.previewImg} />
+                    ) : (
+                      <View style={styles.pdfPreview}>
+                        <Ionicons name="document-text" size={32} color="#EF4444" />
+                        <Text numberOfLines={1} style={styles.pdfText}>
+                          {file.name || "PDF File"}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </ScrollView>
+            )}
+
+            {/* Action Buttons */}
+            <View style={styles.btnRow}>
+              <TouchableOpacity
+                style={styles.cancelButton}
+                activeOpacity={0.8}
+                onPress={() => navigation.goBack()}
+              >
+                <Text style={styles.cancelBtnText}>Cancel</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.saveButton}
+                activeOpacity={0.8}
+                onPress={handleSubmit}
+              >
+                <Ionicons name="checkmark-circle-outline" size={18} color="#FFF" />
+                <Text style={styles.saveBtnText}>Save Progress</Text>
+              </TouchableOpacity>
+            </View>
           </View>
+        </ScrollView>
 
-          <Text style={styles.label}>
-            Finance Amount (₹) <Text style={{ color: "red" }}>*</Text>
-          </Text>
-          <TextField
-            placeholder="Enter finance amount"
-            value={financeAmount}
-            setData={setFinanceAmount}
-            keyboardType="numeric"
-          />
-
-          <Text style={styles.label}>
-            Number of Bills <Text style={{ color: "red" }}>*</Text>
-          </Text>
-          <TextField
-            placeholder="Enter number of bills"
-            value={noOfBills}
-            setData={setNoOfBills}
-            keyboardType="numeric"
-          />
-
-          <Text style={styles.label}>Bill Serial Numbers (Optional)</Text>
-          <TextField
-            placeholder="Example: 123, 124, 125"
-            value={billSerialNo}
-            setData={setBillSerialNo}
-          />
-
-          <Text style={styles.label}>
-            Submit Date <Text style={{ color: "red" }}>*</Text>
-          </Text>
-          <CalenderField
-            placeholder="dd/mm/yyyy"
-            setCDate={setSubmitDate}
-            Cdate={submitDate}
-            bigSize={true}
-          />
-
-          <Text style={styles.label}>Upload Payment Slips</Text>
-          <View style={styles.rowBetween}>
-            <TouchableOpacity style={styles.fileBtn} onPress={pickFromCamera}>
-              <Text style={styles.fileBtnText}>📷 Camera</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.fileBtn} onPress={pickFromGallery}>
-              <Text style={styles.fileBtnText}>🖼️ Gallery</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.fileBtn} onPress={pickFromFiles}>
-              <Text style={styles.fileBtnText}>📄 PDF</Text>
-            </TouchableOpacity>
-          </View>
-
-          {images?.length > 0 && (
-            <ScrollView
-              horizontal
-              style={styles.previewScroller}
-              showsHorizontalScrollIndicator={false}
-            >
-              {images.map((file, i) => (
-                <View key={i} style={styles.filePreview}>
-                  <TouchableOpacity
-                    style={styles.removeBtn}
-                    onPress={() =>
-                      setImages((prev) =>
-                        prev.filter((_, index) => index !== i)
-                      )
-                    }
-                  >
-                    <Text style={styles.removeText}>✕</Text>
-                  </TouchableOpacity>
-
-                  {file.type?.startsWith("image") ? (
-                    <Image
-                      source={{ uri: file.uri }}
-                      style={styles.previewImg}
-                    />
-                  ) : (
-                    <View style={styles.pdfPreview}>
-                      <Text style={{ fontSize: 30 }}>📄</Text>
-                      <Text numberOfLines={1} style={styles.pdfText}>
-                        {file.name || "PDF File"}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              ))}
-            </ScrollView>
-          )}
-
-          <View style={styles.btnRow}>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: "#777" }]}
-              onPress={handleReset}
-            >
-              <Text style={styles.btnText}>Cancel</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, { backgroundColor: "green" }]}
-              onPress={handleSubmit}
-            >
-              <Text style={styles.btnText}>Save Financial Progress</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-
-      <LoaderCard visible={showLoader} message={"Submitting..."} />
+        <LoaderCard visible={showLoader} message={"Submitting..."} />
+      </View>
     </SafeAreaView>
   );
 };
 
 export default FinancialProgress;
 
+// ------------------------------------------------------------------
+// Professional Stylesheet
+// ------------------------------------------------------------------
 const styles = StyleSheet.create({
-  mainContainer: {
+  safeArea: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: "#FFFFFF",
+  },
+  container: {
+    flex: 1,
+    backgroundColor: "#F3F4F6", // Light gray matching the reference
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
-    padding: spacing.md,
+    padding: 16,
+    paddingBottom: 40,
   },
   formCard: {
-    backgroundColor: colors.surface,
-    padding: spacing.lg,
-    borderRadius: radius.lg,
-    marginBottom: spacing.lg,
-    alignItems: "stretch",
-    ...shadows.card,
+    backgroundColor: "#FFFFFF",
+    padding: 20,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    // Premium soft shadow
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
   },
-  projectTag: {
+  projectCard: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    borderRadius: radius.md,
-    backgroundColor: colors.primarySoft,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: spacing.sm,
+    backgroundColor: "#EFF6FF", // Subtle blue tint
+    borderWidth: 1,
+    width: "100%",
+    borderColor: "#BFDBFE",
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 20,
+    gap: 12,
   },
   projectTagIcon: {
-    marginTop: 1,
+    marginTop: 2,
+  },
+  projectLabel: {
+    fontFamily: "Jost-Medium",
+    fontSize: 11,
+    color: "#6B7280",
+    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   projectTagText: {
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+    width: "90%",
+    color: "#1E3A8A",
+  },
+  projectTextContainer: {
     flex: 1,
+  },
+  expandText: {
     fontFamily: "Jost-Medium",
-    fontSize: 13,
-    color: colors.text,
+    fontSize: 12,
+    color: "#3B82F6",
+    marginTop: 4,
+  },
+  inputGroup: {
+    marginBottom: 16,
   },
   label: {
     fontFamily: "Jost-SemiBold",
     fontSize: 13,
-    marginTop: 12,
-    marginBottom: 4,
-    color: colors.text,
+    color: "#374151",
+    marginBottom: 6,
+  },
+  requiredAsterisk: {
+    color: "#EF4444",
+  },
+  uploadSection: {
+    marginTop: 4,
+    marginBottom: 12,
   },
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
-    gap: spacing.sm,
+    gap: 12,
     marginTop: 8,
   },
-  fileBtn: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surfaceMuted,
-    borderRadius: radius.md,
-    padding: 10,
+  actionBtn: {
     flex: 1,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    backgroundColor: "#F9FAFB",
+    borderRadius: 12,
+    paddingVertical: 14,
     alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
   },
-  fileBtnText: {
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  actionBtnText: {
     fontFamily: "Jost-Medium",
-    fontSize: 13,
-    color: colors.text,
+    fontSize: 12,
+    color: "#4B5563",
   },
   previewScroller: {
-    marginTop: spacing.md,
-    paddingVertical: spacing.sm,
+    marginTop: 8,
+    marginBottom: 16,
   },
-  previewImg: {
-    width: 80,
-    height: 80,
-    borderRadius: 6,
-    marginRight: 8,
-  },
-  btnRow: {
-    flexDirection: "row-reverse",
-    justifyContent: "space-between",
-    gap: spacing.sm,
-    marginTop: 20,
-  },
-  button: {
-    flex: 1,
-    padding: 12,
-    borderRadius: radius.md,
-    alignItems: "center",
-    ...shadows.soft,
-  },
-  btnText: {
-    color: "#fff",
-    fontFamily: "Jost-SemiBold",
-  },
-
-  filePreview: {
+  filePreviewContainer: {
     position: "relative",
-    marginRight: 10,
-    alignItems: "center",
+    marginRight: 16,
+    marginTop: 8,
   },
   previewImg: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
   },
   pdfPreview: {
     width: 80,
     height: 80,
-    borderRadius: radius.md,
-    backgroundColor: colors.surfaceMuted,
+    borderRadius: 10,
+    backgroundColor: "#FEF2F2",
+    borderWidth: 1,
+    borderColor: "#FECACA",
     justifyContent: "center",
     alignItems: "center",
-    padding: 5,
+    padding: 8,
   },
   pdfText: {
-    fontSize: 12,
-    marginTop: 4,
-    maxWidth: 70,
+    fontFamily: "Jost-Medium",
+    fontSize: 10,
+    color: "#991B1B",
+    marginTop: 6,
     textAlign: "center",
   },
   removeBtn: {
@@ -407,14 +470,52 @@ const styles = StyleSheet.create({
     top: -8,
     right: -8,
     zIndex: 10,
-    backgroundColor: colors.danger,
-    borderRadius: 12,
-    paddingHorizontal: 4,
-    paddingVertical: 2,
+    backgroundColor: "#EF4444",
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#FFFFFF",
   },
-  removeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
+  btnRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    marginTop: 24,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: "#F3F4F6",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  cancelBtnText: {
+    color: "#4B5563",
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
+  },
+  saveButton: {
+    flex: 1,
+    flexDirection: "row",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 10,
+    backgroundColor: "#10B981", // Emerald Green for positive action
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#10B981",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  saveBtnText: {
+    color: "#FFFFFF",
+    fontFamily: "Jost-SemiBold",
+    fontSize: 14,
   },
 });

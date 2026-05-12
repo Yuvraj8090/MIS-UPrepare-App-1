@@ -1,8 +1,9 @@
 import React, { useEffect, useRef } from "react";
-import { View, Text, StyleSheet, Animated, Easing, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, Animated, useWindowDimensions } from "react-native";
 import * as SplashScreen from "expo-splash-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { animationEasing, animationTimings, springPresets } from "@/constants/animations";
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -30,14 +31,13 @@ export default function AnimatedSplash({ onFinish }) {
       Animated.parallel([
         Animated.spring(scale, {
           toValue: 1,
-          friction: 7,
-          tension: 100,
+          ...springPresets.gentle,
           useNativeDriver: true,
         }),
         Animated.timing(opacity, {
           toValue: 1,
-          duration: 600,
-          easing: Easing.out(Easing.cubic),
+          duration: animationTimings.splash,
+          easing: animationEasing.standard,
           useNativeDriver: true,
         }),
       ]).start();
@@ -49,7 +49,7 @@ export default function AnimatedSplash({ onFinish }) {
               toValue: 1,
               duration: 2000,
               delay: delay,
-              easing: Easing.out(Easing.cubic),
+              easing: animationEasing.standard,
               useNativeDriver: true,
             }),
             Animated.timing(animatedValue, {
@@ -67,14 +67,14 @@ export default function AnimatedSplash({ onFinish }) {
       Animated.parallel([
         Animated.timing(textY, {
           toValue: 0,
-          duration: 600,
+          duration: animationTimings.splash,
           delay: 400,
-          easing: Easing.out(Easing.cubic),
+          easing: animationEasing.standard,
           useNativeDriver: true,
         }),
         Animated.timing(textOp, {
           toValue: 1,
-          duration: 600,
+          duration: animationTimings.splash,
           delay: 400,
           useNativeDriver: true,
         }),

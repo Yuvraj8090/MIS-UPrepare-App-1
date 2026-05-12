@@ -23,6 +23,7 @@ export default function LoaderCard({
       visible={visible}
       transparent
       animationType={modalProps.animationType ?? "fade"}
+      hardwareAccelerated={modalProps.hardwareAccelerated ?? true}
       onRequestClose={modalProps.onRequestClose ?? (() => {})}
       statusBarTranslucent={modalProps.statusBarTranslucent ?? true}
       {...modalProps}
