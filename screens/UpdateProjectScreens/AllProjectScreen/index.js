@@ -14,9 +14,12 @@ const AllProjectScreen = () => {
   const [load, setLoad] = React.useState(true);
   const [refresh, setRefresh] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState("");
+  const [heroMeasuredHeight, setHeroMeasuredHeight] = React.useState(0);
 
   const isInternet = useNetConnected();
   const { user } = useAuth();
+  const heroContainerHeight = React.useRef(new Animated.Value(0)).current;
+  const heroContainerMarginTop = React.useRef(new Animated.Value(16)).current;
   const heroTranslateY = React.useRef(new Animated.Value(0)).current;
   const heroOpacity = React.useRef(new Animated.Value(1)).current;
   const heroScale = React.useRef(new Animated.Value(1)).current;
@@ -99,6 +102,16 @@ const AllProjectScreen = () => {
     heroHiddenRef.current = false;
 
     Animated.parallel([
+      Animated.timing(heroContainerHeight, {
+        toValue: heroMeasuredHeight,
+        duration: 240,
+        useNativeDriver: false,
+      }),
+      Animated.timing(heroContainerMarginTop, {
+        toValue: 16,
+        duration: 240,
+        useNativeDriver: false,
+      }),
       Animated.timing(heroTranslateY, {
         toValue: 0,
         duration: 220,
@@ -115,7 +128,14 @@ const AllProjectScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [heroOpacity, heroScale, heroTranslateY]);
+  }, [
+    heroContainerHeight,
+    heroContainerMarginTop,
+    heroMeasuredHeight,
+    heroOpacity,
+    heroScale,
+    heroTranslateY,
+  ]);
 
   const hideHeroCard = React.useCallback(() => {
     if (heroHiddenRef.current) {
@@ -125,6 +145,16 @@ const AllProjectScreen = () => {
     heroHiddenRef.current = true;
 
     Animated.parallel([
+      Animated.timing(heroContainerHeight, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: false,
+      }),
+      Animated.timing(heroContainerMarginTop, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: false,
+      }),
       Animated.timing(heroTranslateY, {
         toValue: -22,
         duration: 220,
@@ -141,7 +171,25 @@ const AllProjectScreen = () => {
         useNativeDriver: true,
       }),
     ]).start();
-  }, [heroOpacity, heroScale, heroTranslateY]);
+  }, [heroContainerHeight, heroContainerMarginTop, heroOpacity, heroScale, heroTranslateY]);
+
+  const handleHeroLayout = React.useCallback(
+    (event) => {
+      const measuredHeight = event?.nativeEvent?.layout?.height ?? 0;
+
+      if (!measuredHeight || measuredHeight === heroMeasuredHeight) {
+        return;
+      }
+
+      setHeroMeasuredHeight(measuredHeight);
+
+      if (!heroHiddenRef.current) {
+        heroContainerHeight.setValue(measuredHeight);
+        heroContainerMarginTop.setValue(16);
+      }
+    },
+    [heroContainerHeight, heroContainerMarginTop, heroMeasuredHeight]
+  );
 
   const handleTableScroll = React.useCallback(
     (event) => {
@@ -182,58 +230,67 @@ const AllProjectScreen = () => {
       <View style={styles.contentContainer}>
         <Animated.View
           style={[
-            styles.heroCard,
-            {
-              transform: [
-                { translateY: heroTranslateY },
-                { scale: heroScale },
-              ],
-              opacity: heroOpacity,
-            },
+            styles.heroCardContainer,
+            heroMeasuredHeight
+              ? {
+                  height: heroContainerHeight,
+                  marginTop: heroContainerMarginTop,
+                }
+              : { marginTop: 16 },
           ]}
         >
-          <View style={styles.heroTopRow}>
-            <View style={styles.heroCopy}>
-              <Text style={styles.eyebrow}>Project Workspace</Text>
-              <Text style={styles.heroTitle}>Track progress with clarity</Text>
-             
+          <Animated.View
+            onLayout={handleHeroLayout}
+            style={[
+              styles.heroCard,
+              {
+                transform: [{ translateY: heroTranslateY }, { scale: heroScale }],
+                opacity: heroOpacity,
+              },
+            ]}
+          >
+            <View style={styles.heroTopRow}>
+              <View style={styles.heroCopy}>
+                <Text style={styles.eyebrow}>Project Workspace</Text>
+                <Text style={styles.heroTitle}>Track progress with clarity</Text>
+              </View>
+
+              <View style={styles.statusPill}>
+                <Feather
+                  name={isInternet === false ? "wifi-off" : "wifi"}
+                  size={14}
+                  color={isInternet === false ? "#b54708" : "#027a48"}
+                />
+                <Text
+                  style={[
+                    styles.statusText,
+                    { color: isInternet === false ? "#b54708" : "#027a48" },
+                  ]}
+                >
+                  {isInternet === false ? "Offline" : "Live"}
+                </Text>
+              </View>
             </View>
 
-            <View style={styles.statusPill}>
-              <Feather
-                name={isInternet === false ? "wifi-off" : "wifi"}
-                size={14}
-                color={isInternet === false ? "#b54708" : "#027a48"}
-              />
-              <Text
-                style={[
-                  styles.statusText,
-                  { color: isInternet === false ? "#b54708" : "#027a48" },
-                ]}
-              >
-                {isInternet === false ? "Offline" : "Live"}
-              </Text>
+            <View style={styles.metricsRow}>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{totalProjects}</Text>
+                <Text style={styles.metricLabel}>Sub-projects</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{totalEPCProjects}</Text>
+                <Text style={styles.metricLabel}>EPC projects</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{totalItemRateProjects}</Text>
+                <Text style={styles.metricLabel}>BOQ projects</Text>
+              </View>
+              <View style={styles.metricCard}>
+                <Text style={styles.metricValue}>{activeTeamName}</Text>
+                <Text style={styles.metricLabel}>Active team</Text>
+              </View>
             </View>
-          </View>
-
-          <View style={styles.metricsRow}>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{totalProjects}</Text>
-              <Text style={styles.metricLabel}>Sub-projects</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{totalEPCProjects}</Text>
-              <Text style={styles.metricLabel}>EPC projects</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{totalItemRateProjects}</Text>
-              <Text style={styles.metricLabel}>BOQ projects</Text>
-            </View>
-            <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{activeTeamName}</Text>
-              <Text style={styles.metricLabel}>Active team</Text>
-            </View>
-          </View>
+          </Animated.View>
         </Animated.View>
 
         {errorMessage ? (

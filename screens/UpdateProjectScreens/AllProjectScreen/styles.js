@@ -11,6 +11,10 @@ const styles = StyleSheet.create({
     // REMOVE paddingHorizontal from here because we need the list to span the screen properly
     backgroundColor: colors.background,
   },
+  heroCardContainer: {
+    overflow: "hidden",
+    marginHorizontal: spacing.md,
+  },
   animatedHeader: {
     position: 'absolute',
     top: 0,
@@ -21,7 +25,6 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
  heroCard: {
-    marginTop: spacing.md,
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
     padding: spacing.lg,
