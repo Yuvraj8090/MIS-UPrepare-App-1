@@ -26,7 +26,7 @@ const FinancialMediaPopUp = ({ data, visible, setVisible }) => {
       file?.type?.toLowerCase() || file?.meta_data?.mime?.toLowerCase() || "";
     const isPdf = mime.includes("pdf");
     const isImage = mime.startsWith("image/");
-    const url = `https://u-prepare.com/storage/app/public/${file.path}`;
+    const url = `https://uprepare-storage-2026.s3.ap-south-1.amazonaws.com/${file.path}`;
     return { file, isPdf, isImage, url };
   });
 
