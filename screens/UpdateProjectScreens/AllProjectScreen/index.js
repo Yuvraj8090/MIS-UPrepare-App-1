@@ -18,15 +18,7 @@ const AllProjectScreen = () => {
 
   const isInternet = useNetConnected();
   const { user } = useAuth();
-  const heroContainerHeight = React.useRef(new Animated.Value(0)).current;
-  const heroContainerMarginTop = React.useRef(new Animated.Value(16)).current;
-  const heroTranslateY = React.useRef(new Animated.Value(0)).current;
-  const heroOpacity = React.useRef(new Animated.Value(1)).current;
-  const heroScale = React.useRef(new Animated.Value(1)).current;
-  const lastScrollOffset = React.useRef(0);
-  const heroHiddenRef = React.useRef(false);
-  const scrollHideThreshold = 24;
-  const scrollShowThreshold = 12;
+  const scrollY = React.useRef(new Animated.Value(0)).current;
 
   const getProjectsData = React.useCallback(async () => {
     try {
@@ -94,85 +86,6 @@ const AllProjectScreen = () => {
     setRefresh(false);
   }, [fetchDataBasedOnConnectivity]);
 
-  const showHeroCard = React.useCallback(() => {
-    if (!heroHiddenRef.current) {
-      return;
-    }
-
-    heroHiddenRef.current = false;
-
-    Animated.parallel([
-      Animated.timing(heroContainerHeight, {
-        toValue: heroMeasuredHeight,
-        duration: 240,
-        useNativeDriver: false,
-      }),
-      Animated.timing(heroContainerMarginTop, {
-        toValue: 16,
-        duration: 240,
-        useNativeDriver: false,
-      }),
-      Animated.timing(heroTranslateY, {
-        toValue: 0,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.timing(heroOpacity, {
-        toValue: 1,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.timing(heroScale, {
-        toValue: 1,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [
-    heroContainerHeight,
-    heroContainerMarginTop,
-    heroMeasuredHeight,
-    heroOpacity,
-    heroScale,
-    heroTranslateY,
-  ]);
-
-  const hideHeroCard = React.useCallback(() => {
-    if (heroHiddenRef.current) {
-      return;
-    }
-
-    heroHiddenRef.current = true;
-
-    Animated.parallel([
-      Animated.timing(heroContainerHeight, {
-        toValue: 0,
-        duration: 220,
-        useNativeDriver: false,
-      }),
-      Animated.timing(heroContainerMarginTop, {
-        toValue: 0,
-        duration: 220,
-        useNativeDriver: false,
-      }),
-      Animated.timing(heroTranslateY, {
-        toValue: -22,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-      Animated.timing(heroOpacity, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(heroScale, {
-        toValue: 0.96,
-        duration: 220,
-        useNativeDriver: true,
-      }),
-    ]).start();
-  }, [heroContainerHeight, heroContainerMarginTop, heroOpacity, heroScale, heroTranslateY]);
-
   const handleHeroLayout = React.useCallback(
     (event) => {
       const measuredHeight = event?.nativeEvent?.layout?.height ?? 0;
@@ -182,33 +95,59 @@ const AllProjectScreen = () => {
       }
 
       setHeroMeasuredHeight(measuredHeight);
-
-      if (!heroHiddenRef.current) {
-        heroContainerHeight.setValue(measuredHeight);
-        heroContainerMarginTop.setValue(16);
-      }
     },
-    [heroContainerHeight, heroContainerMarginTop, heroMeasuredHeight]
+    [heroMeasuredHeight]
   );
 
-  const handleTableScroll = React.useCallback(
-    (event) => {
-      const currentOffset = event?.nativeEvent?.contentOffset?.y ?? 0;
-      const diff = currentOffset - lastScrollOffset.current;
+  const collapseDistance = React.useMemo(() => {
+    if (!heroMeasuredHeight) {
+      return 120;
+    }
 
-      if (currentOffset <= 4) {
-        showHeroCard();
-        lastScrollOffset.current = currentOffset;
-        return;
-      }
+    return Math.max(96, Math.min(heroMeasuredHeight, 160));
+  }, [heroMeasuredHeight]);
 
-      if (diff > scrollHideThreshold) {
-        hideHeroCard();
-      }
+  const clampedScrollY = React.useMemo(
+    () => Animated.diffClamp(scrollY, 0, collapseDistance),
+    [collapseDistance, scrollY]
+  );
 
-      lastScrollOffset.current = currentOffset;
-    },
-    [hideHeroCard, showHeroCard]
+  const heroContainerHeight = clampedScrollY.interpolate({
+    inputRange: [0, collapseDistance],
+    outputRange: [heroMeasuredHeight || 1, 0],
+    extrapolate: "clamp",
+  });
+
+  const heroContainerMarginTop = clampedScrollY.interpolate({
+    inputRange: [0, collapseDistance],
+    outputRange: [16, 0],
+    extrapolate: "clamp",
+  });
+
+  const heroTranslateY = clampedScrollY.interpolate({
+    inputRange: [0, collapseDistance],
+    outputRange: [0, -18],
+    extrapolate: "clamp",
+  });
+
+  const heroOpacity = clampedScrollY.interpolate({
+    inputRange: [0, collapseDistance * 0.8, collapseDistance],
+    outputRange: [1, 0.12, 0],
+    extrapolate: "clamp",
+  });
+
+  const heroScale = clampedScrollY.interpolate({
+    inputRange: [0, collapseDistance],
+    outputRange: [1, 0.985],
+    extrapolate: "clamp",
+  });
+
+  const handleTableScroll = React.useMemo(
+    () =>
+      Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+        useNativeDriver: false,
+      }),
+    [scrollY]
   );
 
   const totalProjects = projectData.length;
@@ -231,12 +170,11 @@ const AllProjectScreen = () => {
         <Animated.View
           style={[
             styles.heroCardContainer,
-            heroMeasuredHeight
-              ? {
-                  height: heroContainerHeight,
-                  marginTop: heroContainerMarginTop,
-                }
-              : { marginTop: 16 },
+            {
+              height: heroMeasuredHeight ? heroContainerHeight : undefined,
+              marginTop: heroContainerMarginTop,
+              opacity: heroMeasuredHeight ? 1 : 0,
+            },
           ]}
         >
           <Animated.View

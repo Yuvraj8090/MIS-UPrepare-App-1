@@ -25,8 +25,7 @@ const { width: screenWidth } = Dimensions.get("window");
 const FILTER_KEYS = {
   name: "name",
   procurement: "procurement",
-  contractMin: "contractMin",
-  contractMax: "contractMax",
+ 
   physicalMin: "physicalMin",
   physicalMax: "physicalMax",
   financialMin: "financialMin",
@@ -188,9 +187,7 @@ const AllprojectTable = ({
     [FILTER_KEYS.physicalMin]: "",
     [FILTER_KEYS.physicalMax]: "",
     [FILTER_KEYS.financialMin]: "",
-    [FILTER_KEYS.financialMax]: "",
-    [FILTER_KEYS.updatedFrom]: "",
-    [FILTER_KEYS.updatedTo]: "",
+    [FILTER_KEYS.financialMax]: ""
   });
 
   const procurementOptions = useMemo(() => {
@@ -374,143 +371,10 @@ const AllprojectTable = ({
           ) : null}
         </View>
 
-        <TouchableOpacity
-          style={[styles.filterToggleButton, activeFilterCount > 0 && styles.filterToggleActive]}
-          onPress={() => setShowFilters((current) => !current)}
-          activeOpacity={0.8}
-          accessibilityRole="button"
-          accessibilityLabel="Toggle table filters"
-        >
-          <Feather
-            name="sliders"
-            size={16}
-            color={activeFilterCount > 0 ? colors.primary : colors.textMuted}
-          />
-          <Text
-            style={[
-              styles.filterToggleText,
-              activeFilterCount > 0 && styles.filterToggleTextActive,
-            ]}
-          >
-            Filters
-          </Text>
-          {activeFilterCount > 0 ? (
-            <View style={styles.filterCountBadge}>
-              <Text style={styles.filterCountText}>{activeFilterCount}</Text>
-            </View>
-          ) : null}
-        </TouchableOpacity>
+        
       </View>
 
-      {showFilters ? (
-        <View style={styles.filterPanel}>
-          <View style={styles.filterHeaderRow}>
-            <Text style={styles.filterPanelTitle}>Filter sub-projects</Text>
-            <TouchableOpacity onPress={clearAllFilters} activeOpacity={0.75}>
-              <Text style={styles.clearAllText}>Clear all</Text>
-            </TouchableOpacity>
-          </View>
-
-          <View style={styles.filterGrid}>
-            <FilterField
-              label="Project name"
-              value={filters[FILTER_KEYS.name]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.name, value)}
-              placeholder="Contains text"
-            />
-            <FilterField
-              label="Updated from"
-              value={filters[FILTER_KEYS.updatedFrom]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.updatedFrom, value)}
-              placeholder="YYYY-MM-DD"
-            />
-            <FilterField
-              label="Updated to"
-              value={filters[FILTER_KEYS.updatedTo]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.updatedTo, value)}
-              placeholder="YYYY-MM-DD"
-            />
-            <FilterField
-              label="Contract min"
-              value={filters[FILTER_KEYS.contractMin]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.contractMin, value)}
-              placeholder="Minimum value"
-              keyboardType="numeric"
-            />
-            <FilterField
-              label="Contract max"
-              value={filters[FILTER_KEYS.contractMax]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.contractMax, value)}
-              placeholder="Maximum value"
-              keyboardType="numeric"
-            />
-            <FilterField
-              label="Physical min %"
-              value={filters[FILTER_KEYS.physicalMin]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.physicalMin, value)}
-              placeholder="0"
-              keyboardType="numeric"
-            />
-            <FilterField
-              label="Physical max %"
-              value={filters[FILTER_KEYS.physicalMax]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.physicalMax, value)}
-              placeholder="100"
-              keyboardType="numeric"
-            />
-            <FilterField
-              label="Financial min %"
-              value={filters[FILTER_KEYS.financialMin]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.financialMin, value)}
-              placeholder="0"
-              keyboardType="numeric"
-            />
-            <FilterField
-              label="Financial max %"
-              value={filters[FILTER_KEYS.financialMax]}
-              onChangeText={(value) => setFilterValue(FILTER_KEYS.financialMax, value)}
-              placeholder="100"
-              keyboardType="numeric"
-            />
-          </View>
-
-          <View style={styles.procurementSection}>
-            <Text style={styles.filterFieldLabel}>Procurement type</Text>
-            <View style={styles.procurementChipRow}>
-              {procurementOptions.map((option) => {
-                const isActive =
-                  normaliseText(filters[FILTER_KEYS.procurement]) === normaliseText(option);
-
-                return (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.procurementChip,
-                      isActive && styles.procurementChipActive,
-                    ]}
-                    onPress={() =>
-                      setFilterValue(
-                        FILTER_KEYS.procurement,
-                        isActive ? "" : option
-                      )
-                    }
-                    activeOpacity={0.75}
-                  >
-                    <Text
-                      style={[
-                        styles.procurementChipText,
-                        isActive && styles.procurementChipTextActive,
-                      ]}
-                    >
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        </View>
-      ) : null}
+     
 
       {activeFilterCount > 0 ? (
         <View style={styles.activeFiltersWrap}>
