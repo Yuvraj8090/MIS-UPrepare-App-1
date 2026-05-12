@@ -4,18 +4,15 @@ import * as SplashScreen from "expo-splash-screen";
 import { LinearGradient } from "expo-linear-gradient";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-// Keep native splash visible while JS loads
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
 export default function AnimatedSplash({ onFinish }) {
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
 
-  // Animation Values
   const scale = useRef(new Animated.Value(0.85)).current;
   const opacity = useRef(new Animated.Value(0)).current;
-  
-  // Staggered rings for a modern "Radar/Pulse" effect
+
   const ring1 = useRef(new Animated.Value(0)).current;
   const ring2 = useRef(new Animated.Value(0)).current;
   
@@ -30,7 +27,6 @@ export default function AnimatedSplash({ onFinish }) {
 
       if (!isMounted) return;
 
-      // 1. Logo entry (Smooth spring)
       Animated.parallel([
         Animated.spring(scale, {
           toValue: 1,
@@ -46,7 +42,6 @@ export default function AnimatedSplash({ onFinish }) {
         }),
       ]).start();
 
-      // 2. Double-pulse "Monitoring" effect
       const createPulse = (animatedValue, delay) => {
         return Animated.loop(
           Animated.sequence([
@@ -67,9 +62,8 @@ export default function AnimatedSplash({ onFinish }) {
       };
 
       createPulse(ring1, 0).start();
-      createPulse(ring2, 1000).start(); // Stagger the second ring by 1 second
+      createPulse(ring2, 1000).start();
 
-      // 3. Typography reveal
       Animated.parallel([
         Animated.timing(textY, {
           toValue: 0,
@@ -96,41 +90,36 @@ export default function AnimatedSplash({ onFinish }) {
     };
   }, [scale, opacity, ring1, ring2, textY, textOp]);
 
-  // Interpolations for Rings
   const createRingStyle = (animatedValue) => ({
     transform: [{
       scale: animatedValue.interpolate({
         inputRange: [0, 1],
-        outputRange: [0.8, 1.5], // Scales outward
+        outputRange: [0.8, 1.5],
       })
     }],
     opacity: animatedValue.interpolate({
       inputRange: [0, 0.5, 1],
-      outputRange: [0, 0.3, 0], // Fades in then out smoothly
+      outputRange: [0, 0.3, 0],
     }),
   });
 
   return (
-    // A subtle, premium gradient. White at top, very subtle earthy/green tint at bottom.
     <LinearGradient colors={["#FFFFFF", "#F4F7F5"]} style={styles.container}>
       
       <View style={styles.center}>
-        {/* Radar Pulses */}
         <Animated.View style={[styles.ring, createRingStyle(ring1)]} />
         <Animated.View style={[styles.ring, createRingStyle(ring2)]} />
-        
-        {/* Logo */}
+
         <Animated.Image
           source={require("../assets/images/logo.png")} 
           style={[
             styles.logo, 
-            { width: Math.min(width * 0.55, 250) }, // Cap max width for tablets
+            { width: Math.min(width * 0.55, 250) },
             { opacity, transform: [{ scale }] }
           ]}
           resizeMode="contain"
         />
 
-        {/* Tagline */}
         <Animated.Text
           style={[
             styles.tagline,
@@ -141,7 +130,6 @@ export default function AnimatedSplash({ onFinish }) {
         </Animated.Text>
       </View>
 
-      {/* Footer pinned securely above device insets */}
       <Animated.View 
         style={[
           styles.footer, 
@@ -169,7 +157,7 @@ const styles = StyleSheet.create({
   },
   logo: { 
     height: 90, 
-    zIndex: 10 // Ensure logo sits above the rings
+    zIndex: 10
   },
   ring: {
     position: "absolute",
@@ -177,15 +165,15 @@ const styles = StyleSheet.create({
     height: 200,
     borderRadius: 100,
     borderWidth: 1.5,
-    borderColor: "#D4A017", // Signature Gold
-    backgroundColor: "rgba(212, 160, 23, 0.05)", // Slight fill for better depth
+    borderColor: "#D4A017",
+    backgroundColor: "rgba(212, 160, 23, 0.05)",
   },
   tagline: {
     marginTop: 24,
-    fontSize: 13, // Increased for readability
+    fontSize: 13,
     letterSpacing: 0.5,
-    color: "#0F5132", // Authority Green
-    fontFamily: "Jost-SemiBold", // Assuming this font is loaded based on your setup
+    color: "#0F5132",
+    fontFamily: "Jost-SemiBold",
     textAlign: "center",
   },
   footer: {

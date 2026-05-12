@@ -200,7 +200,9 @@ const AllprojectTable = ({ refresh, handleRefresh, projectData, loading }) => {
           paddingHorizontal: 10,
           marginVertical: 5,
           marginHorizontal: 5,
-          height: height * 0.04,
+          height: 50,
+          borderColor: "#E0E0E0",
+          borderWidth: 1,
         }}
       >
         <Ionicons name="search" size={18} color="#666" />
@@ -245,9 +247,9 @@ const AllprojectTable = ({ refresh, handleRefresh, projectData, loading }) => {
               </Text>
               <Text style={[styles.headerCell, { color: "#000" }]}>
                 {user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
-                user?.role?.department == "FIELD-PWD-SOCIAL" ||
-                user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
-                user?.role_department == "FIELD-PWD-SOCIAL"
+                  user?.role?.department == "FIELD-PWD-SOCIAL" ||
+                  user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
+                  user?.role_department == "FIELD-PWD-SOCIAL"
                   ? "Action"
                   : "Action"}
                 {/* : "Update Milestone"} */}
@@ -323,30 +325,7 @@ const AllprojectTable = ({ refresh, handleRefresh, projectData, loading }) => {
 
                 {/* Action / Update button */}
                 <View style={[styles.cellView, { alignItems: "cente" }]}>
-                  {/* <TouchableOpacity
-                    style={styles.buttonView}
-                    onPress={() =>
-                      navigation.navigate("ProjectInfoScreen", { data: item })
-                    }
-                  >
-                    <Feather name="edit" size={15} color="#fff" />
-                    <Text
-                      style={{
-                        fontFamily: "Jost-Medium",
-                        color: "#fff",
-                        fontSize: 12,
-                        textAlign: "center",
-                        marginLeft: 6,
-                      }}
-                    >
-                      {user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
-                      user?.role?.department == "FIELD-PWD-SOCIAL" ||
-                      user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
-                      user?.role_department == "FIELD-PWD-SOCIAL"
-                        ? "Update Activities"
-                        : "Update Milestone"}
-                    </Text>
-                  </TouchableOpacity> */}
+
                   <ActionButton
                     label="Financial"
                     color="#28a745"

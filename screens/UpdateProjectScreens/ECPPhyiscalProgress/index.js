@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import CustomHeader from "@/components/AppHeader/CustomHeader";
 import TextField from "@/components/TextField/TextField";
 import CalenderField from "@/components/TextField/CalenderField/CalenderField";
@@ -28,9 +29,9 @@ import {
 } from "@expo/vector-icons";
 import { width } from "@/services/helper";
 import { showFeedback } from "@/services/platform/feedback";
+import { colors, radius, shadows, spacing } from "@/constants/theme";
 
 const EPCPhysicalProgressForm = (props) => {
-  console.log("PORPSPPSPSPSP ::", props?.route?.params);
   const { data, remainProgress } = props?.route?.params;
   const navigation = useNavigation();
 
@@ -45,31 +46,26 @@ const EPCPhysicalProgressForm = (props) => {
   const [expandedTitle, setExpandedTitle] = useState(false);
   const [load, setLoad] = useState(false);
 
-  // 🔹 API call
   const getActivity = async (id) => {
     const authToken = await getFromSS("authToken");
 
     setLoad(true);
     try {
       const res = await fetchECPActivityStages(authToken, id);
-      //   console.log("RESS ::", res);
-
       setAcitvity(res?.data || []);
       setLoad(false);
     } catch (error) {
-      console.log("GET API ERROR ::", error);
+      console.log("EPC activity fetch error ::", error);
       setLoad(false);
     }
   };
 
-  // 🔹 Load default data when screen opens
   useEffect(() => {
     if (data?.id) {
       getActivity(data?.id);
     }
   }, [data?.id]);
 
-  // 📸 Pick from Camera
   const pickFromCamera = async () => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -81,7 +77,6 @@ const EPCPhysicalProgressForm = (props) => {
     }
   };
 
-  // 🖼️ Pick from Gallery
   const pickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -94,14 +89,7 @@ const EPCPhysicalProgressForm = (props) => {
     }
   };
 
-  // ✅ Submit
   const handleSubmit = async () => {
-    // if (!progress || !date) {
-    //   Platform.OS === "android"
-    //     ? ToastAndroid.show("Please fill required fields", ToastAndroid.SHORT)
-    //     : Alert.alert("Please fill required fields");
-    //   return;
-    // }
     if (!stage) {
       Alert.alert("Stage is required");
       return;
@@ -116,17 +104,7 @@ const EPCPhysicalProgressForm = (props) => {
 
     const formData = new FormData();
     formData.append("epcentry_data_id", stage?.id);
-    // formData.append("progress", progress);
     formData.append("remarks", items);
-    // formData.append("date", date);
-
-    // images.forEach((img, index) => {
-    //   formData.append("images[]", {
-    //     uri: img.uri,
-    //     type: "image/jpeg",
-    //     name: `photo_${index}.jpg`,
-    //   });
-    // });
 
     let localUri = images[0]?.uri;
     let filename = localUri.split("/").pop();
@@ -139,11 +117,8 @@ const EPCPhysicalProgressForm = (props) => {
       type,
     });
 
-    console.log("FORMDATA PROHERSTS ::", JSON.stringify(formData));
-
     try {
       const res = await saveECPPhycialProgressImage(authToken, formData);
-      console.log("RESS UDPALED IMAHESS ::", res);
       if (res?.status) {
         Platform.OS === "ios" ? Alert.alert(res?.message) : showFeedback(res?.message);
         setTimeout(() => {
@@ -154,14 +129,13 @@ const EPCPhysicalProgressForm = (props) => {
       }
       setShowLCard(false);
     } catch (error) {
-      console.log("Error ::", error);
+      console.log("EPC progress submit error ::", error);
       setShowLCard(false);
     } finally {
       setShowLCard(false);
     }
   };
 
-  // ♻️ Reset
   const handleReset = () => {
     setDate(new Date());
     setProgress("");
@@ -170,40 +144,26 @@ const EPCPhysicalProgressForm = (props) => {
   };
 
   return (
-    <View style={styles.mainConatiner}>
+    <SafeAreaView style={styles.mainConatiner} edges={["bottom"]}>
       <CustomHeader Title={"Add Physical EPC Progress"} GoBack={true} />
 
-      <ScrollView style={{ margin: 8 }}>
-        {/* <Text style={styles.headerTitle}>
-          Update Progress for Milestone: {data?.milestone?.name}
-        </Text> */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
 
         <View style={styles.formCard}>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 4,
-              width: width * 0.85,
-            }}
-          >
+          <View style={styles.projectTag}>
             <FontAwesome
               name="folder-open"
               size={12}
-              color="#007BFF"
-              style={{ marginTop: 2.5 }}
+              color={colors.primary}
+              style={styles.projectTagIcon}
             />
-            <Text
-              style={{
-                fontFamily: "Jost-Medium",
-                fontSize: 13,
-                marginRight: 2,
-              }}
-            >
-              {data?.name}
-            </Text>
+            <Text style={styles.projectTagText}>{data?.name}</Text>
           </View>
 
-          {/* Activity */}
           <Text style={styles.label}>Activity Name & Stage</Text>
           <SelectDropdown
             data={activity}
@@ -246,24 +206,9 @@ const EPCPhysicalProgressForm = (props) => {
               );
             }}
             dropdownIconPosition={"right"}
-            dropdownStyle={styles.dropdownMenu} // 👈 added
+            dropdownStyle={styles.dropdownMenu}
           />
 
-          {/* Progress */}
-          {/* <View style={styles.rowBetween}>
-            <Text style={styles.label}>Progress (%)</Text>
-            <Text style={[styles.label, { color: "green" }]}>
-              Remaining: {remainProgress}%
-            </Text>
-          </View>
-          <TextField
-            placeholder="Enter percent"
-            value={progress}
-            setData={setProgress}
-            number={3}
-          /> */}
-
-          {/* Items */}
           <Text style={styles.label}>Items</Text>
           <TextField
             placeholder="Enter items description"
@@ -273,15 +218,6 @@ const EPCPhysicalProgressForm = (props) => {
             numberOfLines={3}
           />
 
-          {/* Date */}
-          {/* <Text style={styles.label}>Progress Submitted Date</Text>
-          <CalenderField
-            placeholder="dd/mm/yyyy"
-            setCDate={setDate}
-            Cdate={date}
-          /> */}
-
-          {/* Images */}
           <Text style={styles.label}>Upload Images</Text>
           <View style={styles.rowBetween}>
             <TouchableOpacity style={styles.fileBtn} onPress={pickFromCamera}>
@@ -292,25 +228,18 @@ const EPCPhysicalProgressForm = (props) => {
             </TouchableOpacity>
           </View>
 
-          {/* Preview */}
           {images.length > 0 && (
-            <ScrollView horizontal style={{ marginTop: 8 }}>
+            <ScrollView horizontal style={styles.previewScroller} showsHorizontalScrollIndicator={false}>
               {images.map((img, i) => (
                 <Image
                   key={i}
                   source={{ uri: img.uri }}
-                  style={{
-                    width: 80,
-                    height: 80,
-                    borderRadius: 6,
-                    marginRight: 8,
-                  }}
+                  style={styles.previewImg}
                 />
               ))}
             </ScrollView>
           )}
 
-          {/* Buttons */}
           <View style={styles.btnRow}>
             <TouchableOpacity
               style={[styles.button, { backgroundColor: "#777" }]}
@@ -329,33 +258,53 @@ const EPCPhysicalProgressForm = (props) => {
       </ScrollView>
 
       <LoaderCard visible={showLCard} message={"Updating Progress..."} />
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   mainConatiner: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
   },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: "600",
-    marginBottom: 10,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.md,
   },
   formCard: {
-    backgroundColor: "#fff",
-    padding: 24,
-    borderRadius: 10,
-    elevation: 2,
-    // width: width * 0.85,
-    alignSelf: "center",
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    alignSelf: "stretch",
+    ...shadows.card,
+  },
+  projectTag: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: spacing.sm,
+  },
+  projectTagIcon: {
+    marginTop: 1,
+  },
+  projectTagText: {
+    flex: 1,
+    fontFamily: "Jost-Medium",
+    fontSize: 13,
+    color: colors.text,
   },
   label: {
     fontSize: 13,
-    fontWeight: "500",
+    fontFamily: "Jost-SemiBold",
     marginTop: 10,
     marginBottom: 4,
+    color: colors.text,
   },
   readonlyBox: {
     backgroundColor: "#f0f0f0",
@@ -370,8 +319,9 @@ const styles = StyleSheet.create({
   },
   fileBtn: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
     padding: 10,
     marginTop: 5,
     flex: 0.48,
@@ -379,50 +329,63 @@ const styles = StyleSheet.create({
   },
   fileBtnText: {
     fontSize: 13,
-    color: "#333",
+    color: colors.text,
+    fontFamily: "Jost-Medium",
+  },
+  previewScroller: {
+    marginTop: spacing.sm,
+  },
+  previewImg: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.md,
+    marginRight: spacing.sm,
   },
   btnRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: spacing.sm,
     marginTop: 20,
   },
   button: {
     flex: 0.48,
     padding: 12,
-    borderRadius: 6,
+    borderRadius: radius.md,
     alignItems: "center",
+    ...shadows.soft,
   },
   btnText: {
     color: "#fff",
-    fontWeight: "600",
+    fontFamily: "Jost-SemiBold",
   },
 
   dropdownBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    width: width * 0.8,
-    height: 40,
+    width: "100%",
+    minHeight: 48,
     paddingHorizontal: 16,
-    backgroundColor: "#fff",
-    borderRadius: 5,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: "#ccc",
-    elevation: 2,
+    borderColor: colors.border,
     zIndex: 1000,
   },
   dropdownBtnText: {
     fontSize: 14,
-    color: "#000",
+    color: colors.text,
     textAlign: "left",
     fontFamily: "Jost-Medium",
+    flex: 1,
+    marginRight: spacing.sm,
   },
   dropdownMenu: {
-    borderRadius: 4,
-    elevation: 5,
-    backgroundColor: "#fff",
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
     zIndex: 2000,
     padding: 6,
+    ...shadows.card,
   },
   dropdownItemTxtStyle: {
     padding: 10,

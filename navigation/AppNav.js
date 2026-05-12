@@ -8,6 +8,7 @@ import AnimatedSplash from "./SplashScreen";
 import { useAuth } from "./AuthContext/AuthContext";
 import { UpdateFlowProvider } from "./UpdateFlowContext";
 import { initDB } from "@/services/database/database";
+import { navigationRef } from "./navigationRef";
 
 const AppNav = () => {
   const { user, loading } = useAuth();
@@ -23,7 +24,7 @@ const AppNav = () => {
   return (
     <UpdateFlowProvider>
       <SQLiteProvider databaseName="u_prepare_app.db">
-        <NavigationContainer>
+        <NavigationContainer ref={navigationRef}>
           {user ? <DrawerNavigation /> : <AuthStack />}
         </NavigationContainer>
       </SQLiteProvider>

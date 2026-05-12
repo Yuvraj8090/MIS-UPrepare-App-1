@@ -1,4 +1,4 @@
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Text } from "react-native";
 import React, { useEffect, useState, useCallback } from "react";
 import styles from "./styles";
 import CustomHeader from "../../../components/AppHeader/CustomHeader";
@@ -18,10 +18,11 @@ import {
 } from "@/services/database/database";
 import { NetConnected } from "@/services/helper";
 import { UPDATE_REFRESH_KEYS, useUpdateFlow } from "@/navigation/UpdateFlowContext";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { colors } from "@/constants/theme";
 
 const ProjectMilestones = (props) => {
   const { data } = props?.route?.params;
-  console.log("Milestones Data ::", data);
 
   const [projectMilestonesData, setProjectMilestonesData] = useState([]);
   const [projectPhasesData, setProjectPhasesData] = useState([]);
@@ -70,11 +71,10 @@ const ProjectMilestones = (props) => {
   const getProjectMilestoneSql = async (PID) => {
     try {
       await fetchProjectMilestonesData(PID).then((res) => {
-        console.log("RESS PROJECTT Deatils SQL ::", res);
         setProjectMilestonesData(res);
       });
     } catch (error) {
-      console.log("Eroro ::", error);
+      console.log("Milestone local fetch error ::", error);
     } finally {
       setLoad(false);
     }
@@ -83,11 +83,10 @@ const ProjectMilestones = (props) => {
   const getProjectPhasesSql = async (PID) => {
     try {
       await fetchProjectPhasesData(PID).then((res) => {
-        // console.log("RESS PROJECTT PHASESS SQL ::", res);
         setProjectPhasesData(res);
       });
     } catch (error) {
-      console.log("Eroro ::", error);
+      console.log("Phase local fetch error ::", error);
     } finally {
       setLoad(false);
     }
@@ -101,9 +100,7 @@ const ProjectMilestones = (props) => {
     };
 
     try {
-       console.log("Calling Fetch Milestones -->>")
       const res = await fetchProjectsMilestonesByPId(formData, authToken);
-      console.log("FETCH MILESTONE ::", res?.data);
       if (res?.data) {
         setProjectMilestonesData(res?.data?.milestones);
         const storeSql = {
@@ -113,7 +110,7 @@ const ProjectMilestones = (props) => {
         await saveSqlProjectMilestone(storeSql);
       }
     } catch (error) {
-      console.log("error ::", error);
+      console.log("Milestone remote fetch error ::", error);
     } finally {
       setLoad(false);
     }
@@ -127,10 +124,8 @@ const ProjectMilestones = (props) => {
     };
 
     try {
-      console.log("Calling Fetch Milestones -->>")
       const res = await fetchProjectPhasesByPID(formData, authToken);
       if (res?.data) {
-        console.log("RESS ::", res?.data);
         setProjectPhasesData(res?.data?.phases);
         const storeSql = {
           project_id: data?.id,
@@ -139,14 +134,14 @@ const ProjectMilestones = (props) => {
         await saveSqlProjectActivities(storeSql);
       }
     } catch (error) {
-      console.log("error ::", error);
+      console.log("Phase remote fetch error ::", error);
     } finally {
       setLoad(false);
     }
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <SafeAreaView style={styles.mainContainer} edges={["bottom"]}>
       <CustomHeader
         Title={
           user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
@@ -160,29 +155,28 @@ const ProjectMilestones = (props) => {
       />
 
       {load ? (
-        <>
-          <ActivityIndicator size="small" color="#000" />
-        </>
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="small" color={colors.primary} />
+          <Text style={styles.loaderText}>Loading progress workflow...</Text>
+        </View>
       ) : (
-        <>
-          <View>
-            <ProjectActivitiesMilestone
-              project={data}
-              data={
-                user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
-                user?.role?.department == "FIELD-PWD-SOCIAL" ||
-                user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
-                user?.role_department == "FIELD-PWD-SOCIAL"
-                  ? projectPhasesData
-                  : projectMilestonesData
-              }
-              refreshing={load}
-              onRefresh={fetchProjectData}
-            />
-          </View>
-        </>
+        <View style={styles.contentWrap}>
+          <ProjectActivitiesMilestone
+            project={data}
+            data={
+              user?.role?.department == "FIELD-PWD-ENVIRONMENT" ||
+              user?.role?.department == "FIELD-PWD-SOCIAL" ||
+              user?.role_department == "FIELD-PWD-ENVIRONMENT" ||
+              user?.role_department == "FIELD-PWD-SOCIAL"
+                ? projectPhasesData
+                : projectMilestonesData
+            }
+            refreshing={load}
+            onRefresh={fetchProjectData}
+          />
+        </View>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

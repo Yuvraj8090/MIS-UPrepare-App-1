@@ -18,28 +18,48 @@ const AllProjectScreen = () => {
   const isInternet = useNetConnected();
   const { user } = useAuth();
 
-  const getProjectsData = React.useCallback(async () => {
-    const authToken = await getFromSS("authToken");
+ const getProjectsData = React.useCallback(async () => {
+    console.log("[getProjectsData] Initiating fetch sequence...");
 
-    if (!authToken) {
+    try {
+      const authToken = await getFromSS("authToken");
+      // Security practice: Log the presence of the token, never the token itself
+      console.log("[getProjectsData] Auth Token check:", authToken ? "Valid" : "Missing");
+
+      if (!authToken) {
+        console.warn("[getProjectsData] Aborting fetch: No auth token found.");
+        setProjectData([]);
+        setErrorMessage("Your session has expired. Please sign in again.");
+        return;
+      }
+
+      console.log("[getProjectsData] Calling API: fetchSubProjects...");
+      const res = await fetchSubProjects(authToken);
+      
+      // Log the raw response object to inspect structure
+      console.log("[getProjectsData] Raw API Response received:", res);
+
+      const subProjects = res?.data?.sub_packages;
+
+      if (Array.isArray(subProjects)) {
+        console.log(`[getProjectsData] Success: Extracted ${subProjects.length} sub-projects.`, subProjects);
+        setProjectData(subProjects);
+        setErrorMessage("");
+        return;
+      }
+
+      console.warn("[getProjectsData] Handled Error: Invalid data format or API message:", res?.data?.msg);
       setProjectData([]);
-      setErrorMessage("Your session has expired. Please sign in again.");
-      return;
+      setErrorMessage(
+        res?.data?.msg || "We couldn't load the sub-projects right now."
+      );
+
+    } catch (error) {
+      // Catch network failures, 500s, or JSON parsing errors
+      console.error("[getProjectsData] Critical Exception during fetch:", error);
+      setProjectData([]);
+      setErrorMessage("An unexpected error occurred while connecting to the server.");
     }
-
-    const res = await fetchSubProjects(authToken);
-    const subProjects = res?.data?.sub_packages;
-
-    if (Array.isArray(subProjects)) {
-      setProjectData(subProjects);
-      setErrorMessage("");
-      return;
-    }
-
-    setProjectData([]);
-    setErrorMessage(
-      res?.data?.msg || "We couldn't load the sub-projects right now.",
-    );
   }, []);
 
   const fetchDataBasedOnConnectivity = React.useCallback(async () => {
@@ -78,8 +98,11 @@ const AllProjectScreen = () => {
   }, [fetchDataBasedOnConnectivity]);
 
   const totalProjects = projectData.length;
-  const epcProjects = projectData.filter(
+  const totalEPCProjects = projectData.filter(
     (item) => item?.type_of_procurement === "EPC",
+  ).length;
+  const totalItemRateProjects = projectData.filter(
+    (item) => item?.type_of_procurement === "Item-Rate",
   ).length;
   const activeTeamName =
     typeof user?.department === "object"
@@ -96,10 +119,7 @@ const AllProjectScreen = () => {
             <View style={styles.heroCopy}>
               <Text style={styles.eyebrow}>Project Workspace</Text>
               <Text style={styles.heroTitle}>Track progress with clarity</Text>
-              <Text style={styles.heroSubtitle}>
-                Review sub-project health, drill into progress streams, and
-                move quickly to milestone, BOQ, EPC, and safeguard updates.
-              </Text>
+             
             </View>
 
             <View style={styles.statusPill}>
@@ -125,8 +145,12 @@ const AllProjectScreen = () => {
               <Text style={styles.metricLabel}>Sub-projects</Text>
             </View>
             <View style={styles.metricCard}>
-              <Text style={styles.metricValue}>{epcProjects}</Text>
+              <Text style={styles.metricValue}>{totalEPCProjects}</Text>
               <Text style={styles.metricLabel}>EPC projects</Text>
+            </View>
+            <View style={styles.metricCard}>
+              <Text style={styles.metricValue}>{totalItemRateProjects}</Text>
+              <Text style={styles.metricLabel}>BOQ projects</Text>
             </View>
             <View style={styles.metricCard}>
               <Text style={styles.metricValue}>{activeTeamName}</Text>

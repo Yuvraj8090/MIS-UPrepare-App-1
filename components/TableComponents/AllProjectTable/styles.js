@@ -4,10 +4,15 @@ import { width, height } from "../../../services/helper";
 const styles = StyleSheet.create({
   table: {
     flexDirection: "column",
-    borderWidth: 1,
-    borderColor: "#ccc",
-    marginHorizontal: "0.5%",
+    marginHorizontal: "2%",
+    marginVertical: "3%",
     borderRadius: 5,
+    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
   },
   row: {
     flexDirection: "row",

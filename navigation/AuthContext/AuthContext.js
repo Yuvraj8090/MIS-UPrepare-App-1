@@ -2,6 +2,7 @@ import * as React from "react";
 import { Alert, BackHandler, Platform, ToastAndroid } from "react-native";
 import * as LocalAuthentication from "expo-local-authentication";
 import NetInfo from "@react-native-community/netinfo";
+import axios from "axios";
 
 import { userDetails } from "../../services/api/fetch";
 import {
@@ -19,8 +20,11 @@ import {
   getAuthBootstrapState,
   saveAuthSession,
 } from "@/services/auth/tokenStorage";
+import { getCurrentRouteSnapshot } from "@/navigation/navigationRef";
 
 const AuthContext = React.createContext();
+const AUTH_REDIRECT_STATE_KEY = "authRedirectState";
+const EXPIRED_TOKEN_MESSAGE = "Invalid or expired token";
 
 const showFeedbackMessage = (message) => {
   if (!message) {
@@ -68,6 +72,7 @@ const AuthProvider = ({ children }) => {
   const [isBiometricAvailable, setIsBiometricAvailable] = React.useState(false);
   const [loading, setLoading] = React.useState(true);
   const [authError, setAuthError] = React.useState("");
+  const authExpiryHandledRef = React.useRef(false);
 
   const clearSessionState = React.useCallback(() => {
     setUser(null);
@@ -192,6 +197,33 @@ const AuthProvider = ({ children }) => {
     await clearSession();
   }, [clearSession]);
 
+  const handleSessionExpired = React.useCallback(
+    async (message) => {
+      if (authExpiryHandledRef.current) {
+        return;
+      }
+
+      authExpiryHandledRef.current = true;
+      const routeSnapshot = getCurrentRouteSnapshot();
+
+      await clearSession();
+
+      if (routeSnapshot?.name && routeSnapshot.name !== "LoginScreen") {
+        await saveStorageData(AUTH_REDIRECT_STATE_KEY, {
+          route: routeSnapshot,
+          triggeredAt: Date.now(),
+        });
+      }
+
+      setAuthError(message || "Your session has expired. Please log in again.");
+
+      setTimeout(() => {
+        authExpiryHandledRef.current = false;
+      }, 400);
+    },
+    [clearSession]
+  );
+
   const checkLogin = React.useCallback(async () => {
     setLoading(true);
     setAuthError("");
@@ -269,6 +301,36 @@ const AuthProvider = ({ children }) => {
   React.useEffect(() => {
     checkLogin();
   }, [checkLogin]);
+
+  React.useEffect(() => {
+    const interceptorId = axios.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const statusCode = error?.response?.status;
+        const responseMessage =
+          error?.response?.data?.message ||
+          error?.response?.data?.msg ||
+          error?.message ||
+          "";
+
+        if (
+          statusCode === 401 &&
+          typeof responseMessage === "string" &&
+          responseMessage
+            .toLowerCase()
+            .includes(EXPIRED_TOKEN_MESSAGE.toLowerCase())
+        ) {
+          await handleSessionExpired(responseMessage);
+        }
+
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptorId);
+    };
+  }, [handleSessionExpired]);
 
   return (
     <AuthContext.Provider

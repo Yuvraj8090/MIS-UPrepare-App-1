@@ -1,4 +1,3 @@
-// components/AnimatedSplash.js
 import React, { useEffect, useRef } from "react";
 import {
   View,
@@ -46,12 +45,11 @@ export default function AnimatedSplash({ onFinish }) {
         Animated.timing(progress, {
           toValue: 1,
           duration: 600,
-          useNativeDriver: false, // width animation uses layout
+          useNativeDriver: false,
         }),
       ]),
       Animated.delay(400),
     ]).start(() => {
-      // small timeout so hide looks smooth
       requestAnimationFrame(() => onFinish && onFinish());
     });
   }, []);
@@ -63,7 +61,6 @@ export default function AnimatedSplash({ onFinish }) {
 
   return (
     <View style={styles.container}>
-      {/* Mountain background - subtle */}
       <Animated.Image
         source={require("../../assets/images/mountains.png")}
         style={[
@@ -74,10 +71,8 @@ export default function AnimatedSplash({ onFinish }) {
         accessible={false}
       />
 
-      {/* Logo */}
       <Animated.View
         style={[
-          // styles.logoWrap,
           { opacity: logoOpacity, transform: [{ scale: logoScale }] },
         ]}
       >
@@ -88,13 +83,6 @@ export default function AnimatedSplash({ onFinish }) {
         />
       </Animated.View>
 
-      {/* Title & tagline */}
-      {/* <Animated.View style={[styles.titleWrap, { opacity: titleOpacity }]}>
-        <Text style={styles.title}>U-PREPARE</Text>
-        <Text style={styles.tag}>Resilient Uttarakhand</Text>
-      </Animated.View> */}
-
-      {/* Progress bar */}
       <View style={styles.progressContainer}>
         <Animated.View style={[styles.progress, { width: progressWidth }]} />
       </View>
@@ -105,7 +93,7 @@ export default function AnimatedSplash({ onFinish }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#FFFFFF", // soft bg
+    backgroundColor: "#FFFFFF",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -122,7 +110,6 @@ const styles = StyleSheet.create({
     borderRadius: 100,
     alignItems: "center",
     justifyContent: "center",
-    // optional soft shadow on iOS
     shadowColor: "#000",
     shadowOpacity: 0.08,
     shadowRadius: 18,

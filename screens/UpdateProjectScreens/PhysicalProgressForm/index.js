@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import React, { useMemo, useState } from "react";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import TextField from "../../../components/TextField/TextField";
 import styles from "./styles";
@@ -53,7 +54,7 @@ const PhysicalProgressForm = (props) => {
   };
 
   return (
-    <View style={styles.mainConatiner}>
+    <SafeAreaView style={styles.mainConatiner} edges={["bottom"]}>
       <CustomHeader Title={"Update Physical Progress"} GoBack={true} />
       <View style={screenStyles.content}>
         <View style={screenStyles.heroCard}>
@@ -110,7 +111,7 @@ const PhysicalProgressForm = (props) => {
           </View>
         </View>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 

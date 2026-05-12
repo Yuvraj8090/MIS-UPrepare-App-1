@@ -11,7 +11,7 @@ export default function CustomHeader({ GoBack, Title }) {
   const insets = useSafeAreaInsets();
 
   return (
-    <View style={[styles.mainContainer, { paddingTop: Math.max(insets.top, 10) }]}>
+    <View style={[styles.mainContainer, { paddingTop:  insets.top }]}>
       <View style={styles.sideWrap}>
         {GoBack ? (
           <Pressable
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
   },
   sideWrap: {
     width: 40,
-    height: 40,
+    height: 10,
     alignItems: "center",
     justifyContent: "center",
   },

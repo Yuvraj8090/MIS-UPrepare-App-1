@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import { useNavigation } from "@react-navigation/native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import CustomHeader from "@/components/AppHeader/CustomHeader";
 import TextField from "@/components/TextField/TextField";
 import CalenderField from "@/components/TextField/CalenderField/CalenderField";
@@ -24,13 +25,13 @@ import { formatDate, width } from "@/services/helper";
 import * as DocumentPicker from "expo-document-picker";
 import { FontAwesome } from "@expo/vector-icons";
 import { showFeedback } from "@/services/platform/feedback";
+import { colors, radius, shadows, spacing } from "@/constants/theme";
 
 const FinancialProgress = (props) => {
   const { data } = props?.route?.params;
   const navigation = useNavigation();
   const projectId = data?.id;
 
-  // States
   const [financeAmount, setFinanceAmount] = useState("");
   const [noOfBills, setNoOfBills] = useState("");
   const [billSerialNo, setBillSerialNo] = useState("");
@@ -38,7 +39,6 @@ const FinancialProgress = (props) => {
   const [images, setImages] = useState([]);
   const [showLoader, setShowLoader] = useState(false);
 
-  // 📸 Pick Camera
   const pickFromCamera = async () => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -49,7 +49,6 @@ const FinancialProgress = (props) => {
     }
   };
 
-  // 🖼️ Pick Gallery
   const pickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -67,8 +66,6 @@ const FinancialProgress = (props) => {
         type: "application/pdf",
         copyToCacheDirectory: true,
       });
-      console.log("SELECT PDF RESULT  ::", result);
-
       if (!result.canceled) {
         setImages((prev) => [
           ...prev,
@@ -80,11 +77,10 @@ const FinancialProgress = (props) => {
         ]);
       }
     } catch (err) {
-      console.log("Error picking document:", err);
+      console.log("Financial document picker error:", err);
     }
   };
 
-  // ✅ Submit Handler
   const handleSubmit = async () => {
     if (!financeAmount || !noOfBills || !submitDate || !projectId) {
       Alert.alert("All required fields must be filled");
@@ -100,30 +96,26 @@ const FinancialProgress = (props) => {
     const authToken = await getFromSS("authToken");
 
     const formData = new FormData();
-    formData.append("project_id", projectId); // ✅ REQUIRED FIELD
+    formData.append("project_id", projectId);
     formData.append("finance_amount", financeAmount);
     formData.append("no_of_bills", noOfBills);
     formData.append("bill_serial_no", billSerialNo);
 
-    // ✅ Convert Date object to string: YYYY-MM-DD
     formData.append("submit_date", formatDate(submitDate));
 
-    // ✅ Append each media file properly
     images.forEach((file, index) => {
       let fileUri = file.uri;
       let fileName = file.name || `file_${index}`;
       let mimeType = file.type;
 
-      // ✅ Detect type correctly
       if (!mimeType) {
         if (fileUri.endsWith(".jpg") || fileUri.endsWith(".jpeg"))
           mimeType = "image/jpeg";
         else if (fileUri.endsWith(".png")) mimeType = "image/png";
         else if (fileUri.endsWith(".pdf")) mimeType = "application/pdf";
-        else mimeType = "application/octet-stream"; // fallback
+        else mimeType = "application/octet-stream";
       }
 
-      // ✅ Ensure name has extension
       if (!fileName.includes(".")) {
         if (mimeType === "image/jpeg") fileName += ".jpg";
         else if (mimeType === "image/png") fileName += ".png";
@@ -137,12 +129,6 @@ const FinancialProgress = (props) => {
       });
     });
 
-    // console.log("FORMDATTA :", formData);
-
-    for (let [key, value] of formData._parts) {
-      console.log("FormData =>", key, value);
-    }
-
     try {
       const res = await saveFinancialProgress(authToken, formData);
       if (res?.status) {
@@ -152,14 +138,13 @@ const FinancialProgress = (props) => {
         Alert.alert(res?.message || "Submission failed");
       }
     } catch (error) {
-      console.log("Error submitting:", error);
+      console.log("Financial progress submit error:", error);
       Alert.alert("Something went wrong. Try again.");
     } finally {
       setShowLoader(false);
     }
   };
 
-  // ♻️ Reset
   const handleReset = () => {
     setFinanceAmount("");
     setNoOfBills("");
@@ -169,36 +154,25 @@ const FinancialProgress = (props) => {
   };
 
   return (
-    <View style={styles.mainContainer}>
+    <SafeAreaView style={styles.mainContainer} edges={["bottom"]}>
       <CustomHeader Title={"Add Financial Progress"} GoBack={true} />
 
-      <ScrollView style={{ margin: 12 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.formCard}>
-          <View
-            style={{
-              flexDirection: "row",
-              gap: 4,
-              width: width * 0.85,
-            }}
-          >
+          <View style={styles.projectTag}>
             <FontAwesome
               name="folder-open"
               size={12}
-              color="#007BFF"
-              style={{ marginTop: 2.5 }}
+              color={colors.primary}
+              style={styles.projectTagIcon}
             />
-            <Text
-              style={{
-                fontFamily: "Jost-Medium",
-                fontSize: 13,
-                marginRight: 2,
-              }}
-            >
-              {data?.name}
-            </Text>
+            <Text style={styles.projectTagText}>{data?.name}</Text>
           </View>
 
-          {/* Finance Amount */}
           <Text style={styles.label}>
             Finance Amount (₹) <Text style={{ color: "red" }}>*</Text>
           </Text>
@@ -209,7 +183,6 @@ const FinancialProgress = (props) => {
             keyboardType="numeric"
           />
 
-          {/* Number of Bills */}
           <Text style={styles.label}>
             Number of Bills <Text style={{ color: "red" }}>*</Text>
           </Text>
@@ -220,7 +193,6 @@ const FinancialProgress = (props) => {
             keyboardType="numeric"
           />
 
-          {/* Bill Serial Numbers */}
           <Text style={styles.label}>Bill Serial Numbers (Optional)</Text>
           <TextField
             placeholder="Example: 123, 124, 125"
@@ -228,7 +200,6 @@ const FinancialProgress = (props) => {
             setData={setBillSerialNo}
           />
 
-          {/* Submit Date */}
           <Text style={styles.label}>
             Submit Date <Text style={{ color: "red" }}>*</Text>
           </Text>
@@ -239,7 +210,6 @@ const FinancialProgress = (props) => {
             bigSize={true}
           />
 
-          {/* Upload Files */}
           <Text style={styles.label}>Upload Payment Slips</Text>
           <View style={styles.rowBetween}>
             <TouchableOpacity style={styles.fileBtn} onPress={pickFromCamera}>
@@ -253,18 +223,14 @@ const FinancialProgress = (props) => {
             </TouchableOpacity>
           </View>
 
-          {/* Preview */}
           {images?.length > 0 && (
             <ScrollView
               horizontal
-              style={{
-                marginTop: 16,
-                paddingVertical: 10,
-              }}
+              style={styles.previewScroller}
+              showsHorizontalScrollIndicator={false}
             >
               {images.map((file, i) => (
                 <View key={i} style={styles.filePreview}>
-                  {/* Remove Button */}
                   <TouchableOpacity
                     style={styles.removeBtn}
                     onPress={() =>
@@ -294,7 +260,6 @@ const FinancialProgress = (props) => {
             </ScrollView>
           )}
 
-          {/* Buttons */}
           <View style={styles.btnRow}>
             <TouchableOpacity
               style={[styles.button, { backgroundColor: "#777" }]}
@@ -313,7 +278,7 @@ const FinancialProgress = (props) => {
       </ScrollView>
 
       <LoaderCard visible={showLoader} message={"Submitting..."} />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -322,41 +287,71 @@ export default FinancialProgress;
 const styles = StyleSheet.create({
   mainContainer: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: spacing.md,
   },
   formCard: {
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 10,
-    elevation: 2,
-    marginBottom: 20,
+    backgroundColor: colors.surface,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    marginBottom: spacing.lg,
+    alignItems: "stretch",
+    ...shadows.card,
+  },
+  projectTag: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 6,
+    borderRadius: radius.md,
+    backgroundColor: colors.primarySoft,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: spacing.sm,
+  },
+  projectTagIcon: {
+    marginTop: 1,
+  },
+  projectTagText: {
+    flex: 1,
+    fontFamily: "Jost-Medium",
+    fontSize: 13,
+    color: colors.text,
   },
   label: {
+    fontFamily: "Jost-SemiBold",
     fontSize: 13,
-    fontWeight: "500",
     marginTop: 12,
     marginBottom: 4,
-    alignSelf: "flex-start",
-    marginLeft: 16,
+    color: colors.text,
   },
   rowBetween: {
     flexDirection: "row",
     justifyContent: "space-between",
+    gap: spacing.sm,
     marginTop: 8,
   },
   fileBtn: {
     borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 6,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radius.md,
     padding: 10,
-    flex: 0.48,
+    flex: 1,
     alignItems: "center",
-    marginHorizontal: 6,
   },
   fileBtnText: {
+    fontFamily: "Jost-Medium",
     fontSize: 13,
-    color: "#333",
+    color: colors.text,
+  },
+  previewScroller: {
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
   },
   previewImg: {
     width: 80,
@@ -367,18 +362,19 @@ const styles = StyleSheet.create({
   btnRow: {
     flexDirection: "row-reverse",
     justifyContent: "space-between",
+    gap: spacing.sm,
     marginTop: 20,
   },
   button: {
-    // width: width * 0.3,
+    flex: 1,
     padding: 12,
-    margin: 8,
-    borderRadius: 6,
+    borderRadius: radius.md,
     alignItems: "center",
+    ...shadows.soft,
   },
   btnText: {
     color: "#fff",
-    fontWeight: "600",
+    fontFamily: "Jost-SemiBold",
   },
 
   filePreview: {
@@ -394,8 +390,8 @@ const styles = StyleSheet.create({
   pdfPreview: {
     width: 80,
     height: 80,
-    borderRadius: 8,
-    backgroundColor: "#f2f2f2",
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceMuted,
     justifyContent: "center",
     alignItems: "center",
     padding: 5,
@@ -411,7 +407,7 @@ const styles = StyleSheet.create({
     top: -8,
     right: -8,
     zIndex: 10,
-    backgroundColor: "red",
+    backgroundColor: colors.danger,
     borderRadius: 12,
     paddingHorizontal: 4,
     paddingVertical: 2,
