@@ -156,8 +156,6 @@ const AllProjectScreen = () => {
 
       if (diff > scrollHideThreshold) {
         hideHeroCard();
-      } else if (diff < -scrollShowThreshold) {
-        showHeroCard();
       }
 
       lastScrollOffset.current = currentOffset;
