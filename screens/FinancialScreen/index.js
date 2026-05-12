@@ -288,6 +288,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 12,
+    height:"auto",
+    minHeight: 780,
   },
   card: {
     backgroundColor: "#FFFFFF",

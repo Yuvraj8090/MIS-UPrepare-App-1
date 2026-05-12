@@ -205,6 +205,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingBottom: spacing.md,
+    height:"auto",
+    minHeight: 780,
   },
   projectCard: {
     flexDirection: "row",

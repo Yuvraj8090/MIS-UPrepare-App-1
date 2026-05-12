@@ -263,6 +263,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 14,
     paddingBottom: 28,
+    height:"auto",
+    minHeight: 780,
   },
   headerBlock: {
     gap: 14,

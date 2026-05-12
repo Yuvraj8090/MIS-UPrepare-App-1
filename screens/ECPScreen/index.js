@@ -326,7 +326,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 12,
-    paddingBottom: 40,
+    height:"auto",
+    minHeight: 780,
+ 
   },
   card: {
     backgroundColor: "#FFFFFF",

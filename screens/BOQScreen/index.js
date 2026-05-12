@@ -233,6 +233,8 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: 12,
     paddingTop: 12,
+    height:"auto",
+    minHeight: 780,
     gap: 12, // Modern flex gap replaces ItemSeparatorComponent
   },
   projectHeaderCard: {

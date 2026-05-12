@@ -226,6 +226,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   listContent: {
+    height:"auto",
+    minHeight: 780,
     paddingBottom: 20,
   },
   card: {   
@@ -254,6 +256,8 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   listContent: {
+    height:"auto",
+    minHeight: 780,
     paddingBottom: 20,
   },
   card: {

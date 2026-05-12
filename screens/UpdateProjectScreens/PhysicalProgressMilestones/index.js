@@ -278,6 +278,8 @@ const screenStyles = StyleSheet.create({
   },
   listContent: {
     padding: spacing.md,
+    height:"auto",
+    minHeight: 780,
     paddingBottom: 28,
   },
   heroCard: {

@@ -518,6 +518,8 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    height:"auto",
+    minHeight: 780,
     paddingBottom: 28,
   },
   loaderWrap: {

@@ -184,10 +184,13 @@ export default ProjectDetailsScreen;
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
+    
     backgroundColor: "#F3F4F6", // Premium light gray background
   },
   listContent: {
     padding: 16,
+    height:"auto",
+    minHeight: 780, // Ensures content fills screen but allows for scrolling
     paddingBottom: 40,
   },
   // Top Header Banner
