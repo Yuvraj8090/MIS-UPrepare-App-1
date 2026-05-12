@@ -143,32 +143,25 @@ const AllProjectScreen = () => {
     ]).start();
   }, [heroOpacity, heroScale, heroTranslateY]);
 
-  const handleTableScroll = React.useMemo(
-    () =>
-      Animated.event(
-        [{ nativeEvent: { contentOffset: { y: new Animated.Value(0) } } }],
-        {
-          useNativeDriver: true,
-          listener: (event) => {
-            const currentOffset = event?.nativeEvent?.contentOffset?.y ?? 0;
-            const diff = currentOffset - lastScrollOffset.current;
+  const handleTableScroll = React.useCallback(
+    (event) => {
+      const currentOffset = event?.nativeEvent?.contentOffset?.y ?? 0;
+      const diff = currentOffset - lastScrollOffset.current;
 
-            if (currentOffset <= 4) {
-              showHeroCard();
-              lastScrollOffset.current = currentOffset;
-              return;
-            }
+      if (currentOffset <= 4) {
+        showHeroCard();
+        lastScrollOffset.current = currentOffset;
+        return;
+      }
 
-            if (diff > scrollHideThreshold) {
-              hideHeroCard();
-            } else if (diff < -scrollShowThreshold) {
-              showHeroCard();
-            }
+      if (diff > scrollHideThreshold) {
+        hideHeroCard();
+      } else if (diff < -scrollShowThreshold) {
+        showHeroCard();
+      }
 
-            lastScrollOffset.current = currentOffset;
-          },
-        }
-      ),
+      lastScrollOffset.current = currentOffset;
+    },
     [hideHeroCard, showHeroCard]
   );
 
@@ -200,7 +193,6 @@ const AllProjectScreen = () => {
               opacity: heroOpacity,
             },
           ]}
-          pointerEvents={heroHiddenRef.current ? "none" : "auto"}
         >
           <View style={styles.heroTopRow}>
             <View style={styles.heroCopy}>
