@@ -5,11 +5,11 @@ import { colors, radius, shadows, spacing } from "@/constants/theme";
 const styles = StyleSheet.create({
   table: {
     flex: 1,
-    marginHorizontal: spacing.md,
-    marginTop: spacing.md,
-    borderRadius: radius.lg,
+
+
     backgroundColor: colors.surface,
-    borderWidth: 1,
+    
+    width: "100%",
     borderColor: colors.border,
     overflow: "hidden",
     ...shadows.card,
