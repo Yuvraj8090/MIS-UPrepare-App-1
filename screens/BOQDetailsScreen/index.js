@@ -84,7 +84,7 @@ export default function BoqDetailScreen(props) {
 
     if (Number(valid) > Number(data?.remaining_qty)) {
       setError(
-        `⚠ Quantity cannot exceed remaining (${
+        `Quantity cannot exceed remaining (${
           data?.remaining_qty
             ? parseFloat(data.remaining_qty).toFixed(2)
             : "0.00"
@@ -95,7 +95,7 @@ export default function BoqDetailScreen(props) {
     }
   };
 
-  // 📸 Pick Camera
+  // Pick from camera
   const pickFromCamera = async () => {
     const result = await ImagePicker.launchCameraAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -106,7 +106,7 @@ export default function BoqDetailScreen(props) {
     }
   };
 
-  // 🖼️ Pick Gallery
+  // Pick from gallery
   const pickFromGallery = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -400,14 +400,20 @@ export default function BoqDetailScreen(props) {
           />
           <View style={{ flexDirection: "row", gap: 8, marginVertical: 8 }}>
             <TouchableOpacity onPress={pickFromCamera} style={styles.btn}>
-              <Text style={styles.btnText}>📷 Camera</Text>
+              <View style={styles.actionLabelRow}>
+                <Feather name="camera" size={16} color="#111827" />
+                <Text style={styles.btnText}>Camera</Text>
+              </View>
             </TouchableOpacity>
             <TouchableOpacity onPress={pickFromGallery} style={styles.btn}>
-              <Text style={styles.btnText}>🖼️ Gallery</Text>
+              <View style={styles.actionLabelRow}>
+                <MaterialIcons name="photo-library" size={16} color="#111827" />
+                <Text style={styles.btnText}>Gallery</Text>
+              </View>
             </TouchableOpacity>
 
             {/* <TouchableOpacity style={styles.btn} onPress={pickFromFiles}>
-            <Text style={styles.btnText}>📄 PDF</Text>
+            <Text style={styles.btnText}>PDF</Text>
           </TouchableOpacity> */}
           </View>
           {selectedImages?.length > 0 && (
@@ -425,7 +431,7 @@ export default function BoqDetailScreen(props) {
                     style={styles.removeBtn}
                     onPress={() => removeImage(i)}
                   >
-                    <Text style={styles.removeText}>✕</Text>
+                    <Entypo name="cross" size={18} color="#fff" />
                   </TouchableOpacity>
 
                   {file.type?.startsWith("image") ? (
@@ -435,7 +441,11 @@ export default function BoqDetailScreen(props) {
                     />
                   ) : (
                     <View style={styles.pdfPreview}>
-                      <Text style={{ fontSize: 30 }}>📄</Text>
+                      <MaterialIcons
+                        name="picture-as-pdf"
+                        size={30}
+                        color="#ef4444"
+                      />
                       <Text numberOfLines={1} style={styles.pdfText}>
                         {file.name || "PDF File"}
                       </Text>
@@ -605,6 +615,11 @@ const styles = StyleSheet.create({
     flex: 0.48,
     alignItems: "center",
   },
+  actionLabelRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
   btnText: { fontWeight: "600" },
   submitBtn: {
     backgroundColor: "#007bff",
@@ -687,10 +702,5 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 4,
     paddingVertical: 2,
-  },
-  removeText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "bold",
   },
 });

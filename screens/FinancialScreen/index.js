@@ -34,7 +34,7 @@ const FinancialScreen = (props) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
 
-  // 🔹 Fetch Data
+  // Fetch data
   const getEntries = async (id, isRefresh = false) => {
     if (isRefresh) setRefresh(true);
     else setLoad(true);
@@ -71,7 +71,7 @@ const FinancialScreen = (props) => {
     }
   };
 
-  // 🔹 Render Individual Financial Card
+  // Render individual financial card
   const renderItem = ({ item, index }) => {
     // Safely format Indian currency
     const formattedAmount = item?.finance_amount 
@@ -149,7 +149,7 @@ const FinancialScreen = (props) => {
     );
   };
 
-  // 🔹 Render Project Sticky Header
+  // Render project sticky header
   const renderHeader = () => (
     <View style={styles.projectHeaderWrapper}>
       <View style={styles.projectCard}>

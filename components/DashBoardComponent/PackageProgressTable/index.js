@@ -14,6 +14,7 @@ import {
   UIManager,
   ScrollView,
 } from "react-native";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { layoutAnimationPresets } from "@/constants/animations";
 
 // const data = [
@@ -171,10 +172,18 @@ export default function ProjectList({ data }) {
         {isOpen &&
           item?.safeguards?.map((sg, i) => (
             <View key={i} style={styles.safeBox}>
-              <Text style={styles.safeTitle}>
-                {sg.compliance === "Environmental" ? "🌿" : "👥"}{" "}
-                {sg.compliance}
-              </Text>
+              <View style={styles.safeTitleRow}>
+                {sg.compliance === "Environmental" ? (
+                  <MaterialCommunityIcons
+                    name="leaf-circle-outline"
+                    size={18}
+                    color="#1fa750"
+                  />
+                ) : (
+                  <Ionicons name="people-outline" size={18} color="#2563eb" />
+                )}
+                <Text style={styles.safeTitle}>{sg.compliance}</Text>
+              </View>
 
               {sg?.phases?.map((p) => renderProgress(p.phase, p.percent || 0))}
             </View>
@@ -186,7 +195,14 @@ export default function ProjectList({ data }) {
   return (
     <View style={{ flex: 1, padding: 10 }}>
       <View style={styles.headerBox}>
-        <Text style={styles.headerTitle}>📦 Package SubProject Progress</Text>
+        <View style={styles.headerTitleRow}>
+          <MaterialCommunityIcons
+            name="package-variant-closed"
+            size={20}
+            color="#ffffff"
+          />
+          <Text style={styles.headerTitle}>Package SubProject Progress</Text>
+        </View>
       </View>
 
       {/* Search */}
@@ -286,6 +302,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: "Jost-Bold",
   },
+  headerTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
 
   sortContainer: {
     paddingVertical: 8,
@@ -364,5 +385,11 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginTop: 6,
   },
-  safeTitle: { fontFamily: "Jost-Medium", marginBottom: 4 },
+  safeTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    marginBottom: 4,
+  },
+  safeTitle: { fontFamily: "Jost-Medium" },
 });

@@ -62,7 +62,7 @@ const SafeguardScreen = (props) => {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
 
-  // 🔹 API call
+  // API call
   const getSafeguardEntries = async (
     compliance = filterCompliance?.value,
     phase = filterPhase,
@@ -85,14 +85,14 @@ const SafeguardScreen = (props) => {
     }
   };
 
-  // 🔹 Load default data when screen opens
+  // Load default data when screen opens
   useEffect(() => {
     if (data?.id) {
       getSafeguardEntries();
     }
   }, [data?.id]);
 
-  // 🔹 Whenever filters change, re-fetch API
+  // Whenever filters change, re-fetch API
   useEffect(() => {
     if (data?.id) {
       getSafeguardEntries(filterCompliance?.value, filterPhase, filterDate);

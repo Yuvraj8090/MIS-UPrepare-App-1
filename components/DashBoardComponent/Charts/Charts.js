@@ -88,8 +88,8 @@ const ChartCard = ({ title, chartData = [] }) => {
           <View style={styles.pieRow}>
             <PieChart
               data={pieChartData}
-              width={screenWidth - 40}
-              height={230}
+              width={screenWidth}
+              height={200}
               chartConfig={chartConfig}
               accessor="value"
               backgroundColor="transparent"
@@ -116,8 +116,8 @@ const ChartCard = ({ title, chartData = [] }) => {
         {chartType === "Bar Chart" && (
           <BarChart
             data={barLineData}
-            width={screenWidth - 40}
-            height={230}
+            width={screenWidth}
+            height={200}
             chartConfig={chartConfig}
             fromZero
             showValuesOnTopOfBars
@@ -127,8 +127,8 @@ const ChartCard = ({ title, chartData = [] }) => {
         {chartType === "Line Chart" && (
           <LineChart
             data={barLineData}
-            width={screenWidth - 40}
-            height={230}
+            width={screenWidth}
+            height={200}
             chartConfig={chartConfig}
             bezier
             fromZero

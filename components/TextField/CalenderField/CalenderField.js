@@ -32,7 +32,7 @@ export default function CalenderField({
     }
 
     if (selectedDate) {
-      setCDate(selectedDate); // ✅ send back Date object
+      setCDate(selectedDate);
     }
   };
 
@@ -107,7 +107,7 @@ export default function CalenderField({
         </View>
       </TouchableOpacity>
 
-      {/* ✅ iOS Modal Date Picker */}
+      {/* iOS Modal Date Picker */}
       {Platform.OS === "ios" && show && (
         <Modal transparent={true} animationType="slide">
           <View
@@ -138,7 +138,7 @@ export default function CalenderField({
         </Modal>
       )}
 
-      {/* ✅ Android inline Picker */}
+      {/* Android inline Picker */}
       {Platform.OS === "android" && show && (
         <DateTimePicker
           value={date}

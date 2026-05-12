@@ -15,8 +15,6 @@ const TAB_SCREENS = [
     name: "Home",
     label: "Dashboard",
     component: Navigation,
-    // Add the specific screen name from your Navigation stack here
-    initialParams: { screen: "DashboardScreen" }, 
     activeIcon: "grid",
     inactiveIcon: "grid-outline",
   },
@@ -24,7 +22,6 @@ const TAB_SCREENS = [
     name: "Packages",
     label: "Packages",
     component: Navigation,
-    initialParams: { screen: "AllPackagesScreen" },
     activeIcon: "cube",
     inactiveIcon: "cube-outline",
   },
@@ -32,7 +29,6 @@ const TAB_SCREENS = [
     name: "UpdateProgress",
     label: "Update",
     component: Navigation,
-    initialParams: { screen: "UpdateProgressScreen" },
     activeIcon: "cloud-upload",
     inactiveIcon: "cloud-upload-outline",
   },
@@ -40,7 +36,6 @@ const TAB_SCREENS = [
     name: "Work",
     label: "Progress",
     component: Navigation,
-    initialParams: { screen: "WorkProgressScreen" },
     activeIcon: "bar-chart",
     inactiveIcon: "bar-chart-outline",
   },
@@ -55,7 +50,6 @@ const TabNavigation = ({ route }) => {
       initialRouteName={initialRoute}
       // Access navigation dynamically from screenOptions callback
       screenOptions={({ navigation }) => ({
-        // Ensure GoBack and navigation are passed so the back button actually works
         header: () => (
           <AppHeader 
             Title="U-PREPARE" 
@@ -99,7 +93,6 @@ const TabNavigation = ({ route }) => {
           key={screen.name}
           name={screen.name}
           component={screen.component}
-          initialParams={screen.initialParams}
           options={{
             tabBarLabel: screen.label,
             tabBarLabelPosition: "below-icon",

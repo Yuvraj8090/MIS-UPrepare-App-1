@@ -66,7 +66,7 @@ const AllPackageTable = ({ refresh, handleRefresh, projectData, loading }) => {
 
   return (
     <View style={styles.container}>
-      {/* 🔍 Premium Search Bar */}
+      {/* Search Bar */}
       <View style={styles.searchContainer}>
         <Ionicons name="search" size={20} color="#6B7280" />
         <TextInput

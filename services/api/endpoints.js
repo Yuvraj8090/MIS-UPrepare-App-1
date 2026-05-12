@@ -3,9 +3,9 @@ const apiURL = `${baseURL}/api`;
 
 const endpoints = {
   // Auth Section API
-  user: `${apiURL}/me`, // New Route✅
+  user: `${apiURL}/me`,
   login: `${apiURL}/login`,
-  logout: `${apiURL}/logout`, // New Route✅
+  logout: `${apiURL}/logout`,
   forgot: `${apiURL}/forgot`,
   verifyOTP: `${apiURL}/verify-otp`,
   resendOTP: `${apiURL}/resend-otp`,

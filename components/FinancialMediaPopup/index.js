@@ -78,7 +78,7 @@ const FinancialMediaPopUp = ({ data, visible, setVisible }) => {
           <View style={styles.header}>
             <Text style={styles.title}>Attached Media</Text>
             <TouchableOpacity onPress={() => setVisible(false)}>
-              <Text style={styles.closeBtn}>✕</Text>
+              <Ionicons name="close" size={22} color="#ef4444" />
             </TouchableOpacity>
           </View>
 
@@ -231,7 +231,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 0.8,
   },
   title: { fontSize: 16, fontWeight: "600", flex: 1 },
-  closeBtn: { fontSize: 22, color: "red", paddingHorizontal: 10 },
   infoBox: { marginTop: 5 },
   infoText: {
     fontSize: 15,
