@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View, Text, TouchableOpacity, Animated } from "react-native";
 import React from "react";
 import styles from "./styles";
 import CustomHeader from "../../../components/AppHeader/CustomHeader";
@@ -17,45 +17,39 @@ const AllProjectScreen = () => {
 
   const isInternet = useNetConnected();
   const { user } = useAuth();
+  const heroTranslateY = React.useRef(new Animated.Value(0)).current;
+  const heroOpacity = React.useRef(new Animated.Value(1)).current;
+  const heroScale = React.useRef(new Animated.Value(1)).current;
+  const lastScrollOffset = React.useRef(0);
+  const heroHiddenRef = React.useRef(false);
+  const scrollHideThreshold = 24;
+  const scrollShowThreshold = 12;
 
- const getProjectsData = React.useCallback(async () => {
-    console.log("[getProjectsData] Initiating fetch sequence...");
-
+  const getProjectsData = React.useCallback(async () => {
     try {
       const authToken = await getFromSS("authToken");
-      // Security practice: Log the presence of the token, never the token itself
-      console.log("[getProjectsData] Auth Token check:", authToken ? "Valid" : "Missing");
 
       if (!authToken) {
-        console.warn("[getProjectsData] Aborting fetch: No auth token found.");
         setProjectData([]);
         setErrorMessage("Your session has expired. Please sign in again.");
         return;
       }
 
-      console.log("[getProjectsData] Calling API: fetchSubProjects...");
       const res = await fetchSubProjects(authToken);
-      
-      // Log the raw response object to inspect structure
-      console.log("[getProjectsData] Raw API Response received:", res);
-
       const subProjects = res?.data?.sub_packages;
 
       if (Array.isArray(subProjects)) {
-        console.log(`[getProjectsData] Success: Extracted ${subProjects.length} sub-projects.`, subProjects);
         setProjectData(subProjects);
         setErrorMessage("");
         return;
       }
 
-      console.warn("[getProjectsData] Handled Error: Invalid data format or API message:", res?.data?.msg);
       setProjectData([]);
       setErrorMessage(
         res?.data?.msg || "We couldn't load the sub-projects right now."
       );
 
     } catch (error) {
-      // Catch network failures, 500s, or JSON parsing errors
       console.error("[getProjectsData] Critical Exception during fetch:", error);
       setProjectData([]);
       setErrorMessage("An unexpected error occurred while connecting to the server.");
@@ -97,6 +91,87 @@ const AllProjectScreen = () => {
     setRefresh(false);
   }, [fetchDataBasedOnConnectivity]);
 
+  const showHeroCard = React.useCallback(() => {
+    if (!heroHiddenRef.current) {
+      return;
+    }
+
+    heroHiddenRef.current = false;
+
+    Animated.parallel([
+      Animated.timing(heroTranslateY, {
+        toValue: 0,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heroOpacity, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heroScale, {
+        toValue: 1,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [heroOpacity, heroScale, heroTranslateY]);
+
+  const hideHeroCard = React.useCallback(() => {
+    if (heroHiddenRef.current) {
+      return;
+    }
+
+    heroHiddenRef.current = true;
+
+    Animated.parallel([
+      Animated.timing(heroTranslateY, {
+        toValue: -22,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heroOpacity, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(heroScale, {
+        toValue: 0.96,
+        duration: 220,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, [heroOpacity, heroScale, heroTranslateY]);
+
+  const handleTableScroll = React.useMemo(
+    () =>
+      Animated.event(
+        [{ nativeEvent: { contentOffset: { y: new Animated.Value(0) } } }],
+        {
+          useNativeDriver: true,
+          listener: (event) => {
+            const currentOffset = event?.nativeEvent?.contentOffset?.y ?? 0;
+            const diff = currentOffset - lastScrollOffset.current;
+
+            if (currentOffset <= 4) {
+              showHeroCard();
+              lastScrollOffset.current = currentOffset;
+              return;
+            }
+
+            if (diff > scrollHideThreshold) {
+              hideHeroCard();
+            } else if (diff < -scrollShowThreshold) {
+              showHeroCard();
+            }
+
+            lastScrollOffset.current = currentOffset;
+          },
+        }
+      ),
+    [hideHeroCard, showHeroCard]
+  );
+
   const totalProjects = projectData.length;
   const totalEPCProjects = projectData.filter(
     (item) => item?.type_of_procurement === "EPC",
@@ -114,7 +189,19 @@ const AllProjectScreen = () => {
       <CustomHeader Title={"All Sub-Projects"} GoBack={true} />
 
       <View style={styles.contentContainer}>
-        <View style={styles.heroCard}>
+        <Animated.View
+          style={[
+            styles.heroCard,
+            {
+              transform: [
+                { translateY: heroTranslateY },
+                { scale: heroScale },
+              ],
+              opacity: heroOpacity,
+            },
+          ]}
+          pointerEvents={heroHiddenRef.current ? "none" : "auto"}
+        >
           <View style={styles.heroTopRow}>
             <View style={styles.heroCopy}>
               <Text style={styles.eyebrow}>Project Workspace</Text>
@@ -157,7 +244,7 @@ const AllProjectScreen = () => {
               <Text style={styles.metricLabel}>Active team</Text>
             </View>
           </View>
-        </View>
+        </Animated.View>
 
         {errorMessage ? (
           <View style={styles.noticeCard}>
@@ -194,6 +281,7 @@ const AllProjectScreen = () => {
           projectData={projectData}
           loading={load}
           isInternet={isInternet}
+          onTableScroll={handleTableScroll}
         />
       </View>
     </View>
