@@ -28,7 +28,6 @@ import {
 import LoaderCard from "../../../components/LoaderCard";
 import { useAuth } from "../../../navigation/AuthContext/AuthContext";
 import { userLogin } from "../../../services/api/fetch";
-import { saveAuthSession } from "../../../services/auth/tokenStorage";
 import loginStyles, { feedbackVariants } from "./styles";
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -81,7 +80,7 @@ const FieldShell = ({
 
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const { setUser, setUserToken, setLoading, runApiValidation } = useAuth();
+  const { completeLoginSession } = useAuth();
   const netInfo = NetInfo.useNetInfo();
 
   const [userName, setUserName] = useState("");
@@ -179,7 +178,6 @@ const LoginScreen = () => {
     }
 
     setLocalLoading(true);
-    setLoading(true);
     setFeedback({
       type: "info",
       message: "Signing you in securely...",
@@ -205,21 +203,7 @@ const LoginScreen = () => {
           : "We couldn't sign you in. Please try again.");
 
       if (isSuccess && token && user) {
-        const apiStatus = await runApiValidation(token);
-
-        if (!apiStatus.ok) {
-          setFeedback({
-            type: "error",
-            message:
-              apiStatus.message ||
-              "The API is unreachable, so protected screens are blocked.",
-          });
-          return;
-        }
-
-        await saveAuthSession(responseData);
-        setUserToken(token);
-        setUser(user);
+        await completeLoginSession(responseData);
         setFeedback({
           type: "success",
           message,
@@ -253,7 +237,6 @@ const LoginScreen = () => {
     } finally {
       buttonScale.value = withSpring(1, { damping: 12, stiffness: 180 });
       setLocalLoading(false);
-      setLoading(false);
     }
   };
 
