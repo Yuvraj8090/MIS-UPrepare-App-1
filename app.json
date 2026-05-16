@@ -30,7 +30,7 @@
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.uprepare.app"
+      "package": "uprepare.com"
     },
     "web": {
       "bundler": "metro",
