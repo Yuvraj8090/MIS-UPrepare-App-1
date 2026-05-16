@@ -14,7 +14,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.uprepare.app",
+      "bundleIdentifier": "uprepare.com",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "We need your location to show nearby project data.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Location is required to provide accurate services."
