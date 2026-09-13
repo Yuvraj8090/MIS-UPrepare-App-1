@@ -1,2 +1,48 @@
-node_modules
-node_modules
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native builds
+android/app/build/
+android/build/
+android/.gradle/
+android/.kotlin/
+android/local.properties
+android/app/src/main/assets/index.android.bundle
+**/.cxx/
+ios/build/
+ios/Pods/
+ios/Podfile.lock
+*.apk
+*.aab
+*.keystore
+!android/app/debug.keystore
+
+# Metro / bundler
+.metro-health-check*
+*.tsbuildinfo
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# Editor / OS
+.DS_Store
+*.pem
+*.swp
+*.swo
+.idea/
+.vscode/
+*.iml
+
+# Secrets
+.env
+.env.local
+.env.*.local
