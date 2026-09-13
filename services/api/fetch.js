@@ -2,9 +2,7 @@ import axios from "axios";
 import endpoints from "./endpoints";
 
 export async function userLogin(data) {
-  console.log("USER DATA Credenatils ::", data);
   try {
-    console.log("Call User Login API ::");
     const response = await axios.post(endpoints.login, data);
     return response;
   } catch (error) {
@@ -37,7 +35,6 @@ export async function userDetails(authToken) {
   // console.log("Auth ::", AuthStr);
 
   try {
-    console.log("Call User Details API ::");
     const response = await axios.get(endpoints.user, {
       headers: { Authorization: AuthStr },
     });
@@ -480,7 +477,6 @@ export async function saveSafeGuardEntriesImage(authToken, payload) {
 
 export async function fetchECPPhycialProgress(authToken, Id) {
   const AuthStr = "Bearer ".concat(authToken);
-  console.log("Auth ::", AuthStr, Id);
 
   try {
     const response = await axios.get(
@@ -501,7 +497,6 @@ export async function fetchECPPhycialProgress(authToken, Id) {
 
 export async function fetchECPActivityStages(authToken, Id) {
   const AuthStr = "Bearer ".concat(authToken);
-  console.log("Auth ::", AuthStr, Id);
 
   try {
     const response = await axios.get(`${endpoints.getECPActivityStages}${Id}`, {
@@ -519,7 +514,6 @@ export async function fetchECPActivityStages(authToken, Id) {
 
 export async function saveECPPhycialProgressImage(authToken, payload) {
   const AuthStr = "Bearer ".concat(authToken);
-  console.log("Auth ::", AuthStr, payload);
 
   try {
     const response = await axios.post(
@@ -543,7 +537,6 @@ export async function saveECPPhycialProgressImage(authToken, payload) {
 // Fixing Remaining Id
 export async function fetchOldSubpackageBoqEntries(authToken, Id) {
   const AuthStr = "Bearer ".concat(authToken);
-  console.log("Auth OLD BOQ ::", AuthStr, Id);
 
   try {
     const response = await axios.get(
@@ -564,7 +557,6 @@ export async function fetchOldSubpackageBoqEntries(authToken, Id) {
 
 export async function fetchBoqEntriesDetails(authToken, Id) {
   const AuthStr = "Bearer ".concat(authToken);
-  console.log("Auth ::", AuthStr, Id);
 
   try {
     const response = await axios.get(
@@ -585,7 +577,6 @@ export async function fetchBoqEntriesDetails(authToken, Id) {
 
 export async function saveBOQProgress(authToken, payload, onUploadProgress) {
   const AuthStr = "Bearer ".concat(authToken);
-  console.log("Auth ::", AuthStr, payload);
 
   try {
     const response = await axios.post(`${endpoints.saveBOQProgress}`, payload, {
@@ -605,7 +596,6 @@ export async function saveBOQProgress(authToken, payload, onUploadProgress) {
 
 export async function fetchFinancalProgress(authToken, Id) {
   const AuthStr = "Bearer ".concat(authToken);
-  console.log("Auth ::", AuthStr, Id);
 
   try {
     const response = await axios.get(`${endpoints.getFinancialProgress}${Id}`, {
@@ -623,7 +613,6 @@ export async function fetchFinancalProgress(authToken, Id) {
 
 export async function saveFinancialProgress(authToken, payload) {
   const AuthStr = "Bearer ".concat(authToken);
-  console.log("Auth ::", AuthStr, payload);
 
   try {
     const response = await axios.post(
@@ -730,19 +719,10 @@ function returnErrorMsg(error) {
   // Extracting different parts of the error
   let msg = error?.response?.data?.msg || error.message;
   let status = error?.response?.status || "No Status";
-  let headers = error?.response?.headers || "No Headers";
-  let request = error?.request || "No Request Object";
 
-  // Logging the error details for debugging
-  console.log("Error :", error);
-  console.log("Error Message:", msg);
-  console.log("Error Status:", status);
-  console.log("Error Headers:", headers);
-  console.log("Error Request:", request);
-  // alert(JSON.stringify(request));
-  console.log("Full Error Object:", error);
-  console.log("Error Request _REsponse:", request?._response);
-  console.log("Error Request _URL:", request?._url);
+  // Log only non-sensitive fields. The full axios error carries
+  // config.headers.Authorization, so it must never be logged.
+  console.log("API Error:", status, msg);
 
   // Returning a structured error message
   return { data: { status: false, msg: msg } };

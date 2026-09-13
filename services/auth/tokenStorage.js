@@ -218,7 +218,7 @@ export const refreshAuthSession = async () => {
     };
   }
 
-  if (!endpoints.refresh) {
+  if (!endpoints.refresh || typeof refreshUserToken !== "function") {
     return {
       ok: false,
       status: 501,

@@ -17,12 +17,10 @@ import { animationTimings } from "@/constants/animations";
 const { height } = Dimensions.get("window");
 
 const FinancialMediaPopUp = ({ data, visible, setVisible }) => {
-  if (!data?.media_files?.length) return null;
-
   const [currentIndex, setCurrentIndex] = useState(0);
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
 
-  const mediaList = data.media_files.map((file) => {
+  const mediaList = (data?.media_files ?? []).map((file) => {
     const mime =
       file?.type?.toLowerCase() || file?.meta_data?.mime?.toLowerCase() || "";
     const isPdf = mime.includes("pdf");
@@ -31,17 +29,15 @@ const FinancialMediaPopUp = ({ data, visible, setVisible }) => {
     return { file, isPdf, isImage, url };
   });
 
-  console.log("MEDIAA LISTT :", mediaList);
-
   const currentFile = mediaList[currentIndex];
   const totalFiles = mediaList.length;
+
+  if (!totalFiles) return null;
 
   // Filter only images for image viewer
   const imageUrls = mediaList
     .filter((f) => f.isImage)
     .map((f) => ({ uri: f.url }));
-
-  console.log("Image URLs for viewer =>", imageUrls);
 
   const openImageViewer = (index) => {
     setCurrentIndex(index);

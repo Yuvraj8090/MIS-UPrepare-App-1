@@ -7,12 +7,13 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Linking,
 } from "react-native";
 import { PieChart, BarChart, LineChart } from "react-native-chart-kit";
 import SelectDropdown from "react-native-select-dropdown";
 import { AntDesign, MaterialCommunityIcons } from "@expo/vector-icons";
 import { width as screenHelperWidth, width } from "@/services/helper"; // keep if you already use it
-import Svg from "react-native-svg";
+import { Text as SvgText } from "react-native-svg";
 
 const screenWidth = Dimensions.get("window").width;
 const dropdownWidth = (screenHelperWidth || screenWidth) * 0.28;

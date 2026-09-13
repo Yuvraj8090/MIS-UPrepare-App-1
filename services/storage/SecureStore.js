@@ -5,12 +5,15 @@ export async function savetoSS(key, value) {
 }
 
 export async function getFromSS(key) {
-  let result = await SecureStore.getItemAsync(key);
-
-  console.log(`SS for key: ${key} —`, result);
-  return result;
+  return await SecureStore.getItemAsync(key);
 }
 
 export async function deleteFromSS(key) {
   await SecureStore.deleteItemAsync(key);
+}
+
+const SESSION_KEYS = ["authToken", "refreshToken", "authSessionMeta"];
+
+export async function clearSecureSessionStore() {
+  await Promise.allSettled(SESSION_KEYS.map((key) => deleteFromSS(key)));
 }

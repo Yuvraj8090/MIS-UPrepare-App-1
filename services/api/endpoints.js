@@ -67,7 +67,7 @@ const endpoints = {
   saveECPPhysicalProgressImage: `${apiURL}/epc-progress`,
 
   // Get BOQ Progress BY Sub_Project ID -------->>>>>>>>>
-  getOldWiseBOQProgress: `${apiURL}/boq-progress?sub_package_project_id=26`,
+  getOldWiseBOQProgress: `${apiURL}/boq-progress?sub_package_project_id=`,
 
   // Get BOQ Progress Details BY Sub_Project ID -------->>>>>>>>>
   getBOQProgressDetails: `${apiURL}/boq-progress/entries?sub_package_project_id=`,

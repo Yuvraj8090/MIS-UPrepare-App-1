@@ -54,7 +54,6 @@
     "react-dom": "19.0.0",
     "react-native": "0.79.6",
     "react-native-calendars": "^1.1303.0",
-    "react-native-call-log": "^2.1.2",
     "react-native-chart-kit": "^6.12.0",
     "react-native-dropdown-picker": "^5.4.6",
     "react-native-gesture-handler": "~2.24.0",
@@ -88,8 +87,7 @@
     "jest-expo": "~53.0.14",
     "typescript": "~5.8.3"
   },
-  "private": true
-  ,
+  "private": true,
   "expo": {
     "install": {
       "exclude": [
