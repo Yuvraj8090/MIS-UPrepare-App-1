@@ -40,7 +40,6 @@ const UploadProgress = ({
           position: "absolute",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "red",
           backgroundColor: "rgba(0, 0, 0, 0.15)",
           //   borderTopLeftRadius: 10,
           //   borderTopLeftRadius: 10,

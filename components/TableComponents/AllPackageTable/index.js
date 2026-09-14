@@ -230,41 +230,12 @@ const styles = StyleSheet.create({
     minHeight: 780,
     paddingBottom: 20,
   },
-  card: {   
-    backgroundColor: "#FFFFFF",
-  },
-  searchContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F3F4F6",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    marginHorizontal: 16,
-    marginVertical: 12,
-    height: 48,
-    borderWidth: 1,
-    borderColor: "#E5E7EB",
-  },
-  searchInput: {
-    flex: 1,
-    marginLeft: 8,
-    fontFamily: "Jost-Medium",
-    fontSize: 14,
-    color: "#111827",
-  },
-  clearIcon: {
-    padding: 4,
-  },
-  listContent: {
-    height:"auto",
-    minHeight: 780,
-    paddingBottom: 20,
-  },
   card: {
     flexDirection: "row",
     padding: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#F3F4F6",
+    backgroundColor: "#FFFFFF",
   },
   serialContainer: {
     marginRight: 12,
