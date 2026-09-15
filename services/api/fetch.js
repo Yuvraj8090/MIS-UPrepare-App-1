@@ -104,7 +104,26 @@ export async function fetchDashBoardData(authToken) {
   }
 }
 
-// export async function fetchProjects(authToken) {
+// Projects for the signed-in user. Distinct from fetchPackages below:
+// this returns `data.projects` (each carrying project_id), which the
+// project image gallery dropdown needs.
+export async function fetchProjects(authToken) {
+  const AuthStr = "Bearer ".concat(authToken);
+
+  try {
+    const response = await axios.get(endpoints.projects, {
+      headers: {
+        Authorization: AuthStr,
+      },
+    });
+
+    return response;
+  } catch (error) {
+    console.log("Fetch Projects API Error: ", error.message);
+    return returnErrorMsg(error);
+  }
+}
+
 export async function fetchPackages(authToken) {
   const AuthStr = "Bearer ".concat(authToken);
   // console.log("Auth ::", AuthStr);
@@ -634,6 +653,24 @@ export async function saveFinancialProgress(authToken, payload) {
 }
 
 // <<<<<------------------ Work Progresss -------------------->>>>>>>>>>>>>
+export async function saveWorkProgress(authToken, payload) {
+  const AuthStr = "Bearer ".concat(authToken);
+
+  try {
+    const response = await axios.post(endpoints.saveWorkProgress, payload, {
+      headers: {
+        Authorization: AuthStr,
+        Accept: "application/json",
+      },
+    });
+
+    return response?.data;
+  } catch (error) {
+    console.log("Save Work Progress API Error: ", error.message);
+    return returnErrorMsg(error);
+  }
+}
+
 export async function fetchWorkProgress(authToken) {
   const AuthStr = "Bearer ".concat(authToken);
   // console.log("Auth ::", AuthStr);

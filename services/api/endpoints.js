@@ -90,6 +90,9 @@ const endpoints = {
   // Delete Work Progress Sub-Project By Id -------->>>>>>>>>
   deleteWorkProgressById: `${apiURL}/work-progress`,
 
+  // Save / Update Work Progress -------->>>>>>>>>
+  saveWorkProgress: `${apiURL}/work-progress`,
+
   // Get All Work Progress Sub-Package Project By Id -------->>>>>>>>>
   getAllWorkProgressSubPackageProjectById: `${apiURL}/work-progress/create?sub_package_project_id=`,
 };
