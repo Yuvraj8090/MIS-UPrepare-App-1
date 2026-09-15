@@ -32,4 +32,5 @@ export const PROTECTED_STACK_ROUTES = [
   "WorkProgress",
   "WorkProgressList",
   "UpdateWorkProgress",
+  "WorkProgressPhotoUpload",
 ];

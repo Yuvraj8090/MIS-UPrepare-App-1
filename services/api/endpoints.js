@@ -90,6 +90,9 @@ const endpoints = {
   // Delete Work Progress Sub-Project By Id -------->>>>>>>>>
   deleteWorkProgressById: `${apiURL}/work-progress`,
 
+  // Upload Work Progress Images (multipart, images[]) -------->>>>>>>>>
+  uploadWorkProgressImages: `${apiURL}/work-progress/upload-images`,
+
   // Save / Update Work Progress -------->>>>>>>>>
   saveWorkProgress: `${apiURL}/work-progress`,
 

@@ -653,6 +653,52 @@ export async function saveFinancialProgress(authToken, payload) {
 }
 
 // <<<<<------------------ Work Progresss -------------------->>>>>>>>>>>>>
+export async function uploadWorkProgressImages(
+  authToken,
+  payload,
+  onUploadProgress
+) {
+  const AuthStr = "Bearer ".concat(authToken);
+
+  // `payload` is FormData: project_id, work_component_id, description,
+  // lat, long and images[]. The Accept header is required - without it
+  // Laravel answers validation errors with a 302 HTML redirect, not 422 JSON.
+  try {
+    const response = await axios.post(
+      endpoints.uploadWorkProgressImages,
+      payload,
+      {
+        headers: {
+          Authorization: AuthStr,
+          Accept: "application/json",
+          "Content-Type": "multipart/form-data",
+        },
+        onUploadProgress,
+      }
+    );
+
+    return response?.data;
+  } catch (error) {
+    // 422 carries field errors; 401 carries only `message`.
+    const validation = error?.response?.data?.errors;
+
+    if (validation) {
+      const firstField = Object.keys(validation)[0];
+      return {
+        success: false,
+        message: validation[firstField]?.[0] || error?.response?.data?.message,
+      };
+    }
+
+    if (error?.response?.data?.message) {
+      return { success: false, message: error.response.data.message };
+    }
+
+    console.log("Upload Work Progress Images API Error: ", error.message);
+    return returnErrorMsg(error);
+  }
+}
+
 export async function saveWorkProgress(authToken, payload) {
   const AuthStr = "Bearer ".concat(authToken);
 

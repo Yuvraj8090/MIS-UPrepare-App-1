@@ -24,6 +24,7 @@ import PackageInfoScreen from "@/screens/Packages/PackageDetailsScreen";
 import WorkProgressScreen from "@/screens/WorkProgress";
 import WorkProjectProgressList from "@/screens/WorkProjectProgressList";
 import UpdateWorkProjectProgress from "@/screens/UpdateWorkProgress";
+import WorkProgressPhotoUpload from "@/screens/WorkProgressPhotoUpload";
 
 const Stack = createStackNavigator();
 
@@ -133,6 +134,10 @@ const Navigation = ({ route }) => {
       <Stack.Screen
         name="UpdateWorkProgress"
         component={UpdateWorkProjectProgress}
+      />
+      <Stack.Screen
+        name="WorkProgressPhotoUpload"
+        component={WorkProgressPhotoUpload}
       />
     </Stack.Navigator>
   );

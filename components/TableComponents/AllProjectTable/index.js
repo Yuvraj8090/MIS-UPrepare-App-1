@@ -497,11 +497,9 @@ const AllprojectTable = ({
                     color="#6c63ff"
                     icon="camera"
                     onPress={() =>
-                      item?.type_of_procurement === "EPC"
-                        ? navigation.navigate("ECPPhysicalProgressForm", {
-                            data: item,
-                          })
-                        : navigation.navigate("BOQScreen", { data: item })
+                      navigation.navigate("WorkProgressPhotoUpload", {
+                        data: item,
+                      })
                     }
                   />
                 </View>
