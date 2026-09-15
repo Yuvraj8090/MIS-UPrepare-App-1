@@ -492,21 +492,18 @@ const AllprojectTable = ({
                     icon="vial"
                     onPress={() => navigation.navigate("SafeguardScreen", { data: item })}
                   />
-                  {item?.type_of_procurement === "EPC" ? (
-                    <ActionButton
-                      label="EPC"
-                      color="#007BFF"
-                      icon="building"
-                      onPress={() => navigation.navigate("ECPScreen", { data: item })}
-                    />
-                  ) : (
-                    <ActionButton
-                      label="BOQ"
-                      color="#17A2B8"
-                      icon="list-alt"
-                      onPress={() => navigation.navigate("BOQScreen", { data: item })}
-                    />
-                  )}
+                  <ActionButton
+                    label="Add Photo"
+                    color="#6c63ff"
+                    icon="camera"
+                    onPress={() =>
+                      item?.type_of_procurement === "EPC"
+                        ? navigation.navigate("ECPPhysicalProgressForm", {
+                            data: item,
+                          })
+                        : navigation.navigate("BOQScreen", { data: item })
+                    }
+                  />
                 </View>
               </View>
             );
